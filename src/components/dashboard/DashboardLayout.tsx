@@ -32,9 +32,9 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Leaf className="h-5 w-5 text-primary-foreground" />
+              <span className="text-sm font-display font-bold text-primary-foreground">ES</span>
             </div>
-            <span className="font-display font-bold text-lg">ESONO BIS</span>
+            <span className="font-display font-bold text-lg">ESONO</span>
             <span className="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">
               {role}
             </span>
