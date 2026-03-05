@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import SelectRole from "./pages/SelectRole";
 import Dashboard from "./pages/Dashboard";
 import BmcModule from "./pages/modules/BmcModule";
+import GenericModule from "./pages/modules/GenericModule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,9 @@ const App = () => (
             } />
             <Route path="/module/bmc" element={
               <ProtectedRoute><BmcModule /></ProtectedRoute>
+            } />
+            <Route path="/module/:moduleCode" element={
+              <ProtectedRoute><GenericModule /></ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>
