@@ -81,10 +81,10 @@ export default function EntrepreneurDashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const files = e.target.files;
     if (!files || !enterprise) return;
-    setUploading(true);
+    setUploading(category);
 
     try {
       for (const file of Array.from(files)) {
@@ -97,8 +97,9 @@ export default function EntrepreneurDashboard() {
     } catch (err: any) {
       toast.error(err.message || "Erreur d'upload");
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setUploading(null);
+      if (docInputRef.current) docInputRef.current.value = '';
+      if (finInputRef.current) finInputRef.current.value = '';
     }
   };
 
