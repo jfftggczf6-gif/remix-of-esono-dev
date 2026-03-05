@@ -120,6 +120,7 @@ export type Database = {
           name: string
           sector: string | null
           updated_at: string
+          uploaded_files: Json | null
           user_id: string
         }
         Insert: {
@@ -136,6 +137,7 @@ export type Database = {
           name: string
           sector?: string | null
           updated_at?: string
+          uploaded_files?: Json | null
           user_id: string
         }
         Update: {
@@ -152,6 +154,7 @@ export type Database = {
           name?: string
           sector?: string | null
           updated_at?: string
+          uploaded_files?: Json | null
           user_id?: string
         }
         Relationships: []
