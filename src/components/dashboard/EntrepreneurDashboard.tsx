@@ -182,6 +182,37 @@ export default function EntrepreneurDashboard() {
 
   const handleSignOut = async () => { await signOut(); navigate('/login'); };
 
+  const handleDownload = async (type: string, format: string) => {
+    if (!enterprise) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Erreur');
+      }
+
+      const blob = await response.blob();
+      const ext = format === 'csv' ? '.csv' : format === 'json' ? '.json' : '.html';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${enterprise.name.replace(/[^a-zA-Z0-9]/g, '_')}_${type}${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success('Fichier téléchargé !');
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur de téléchargement');
+    }
+  };
+
   // No enterprise yet
   if (!enterprise) {
     return (
@@ -423,9 +454,11 @@ export default function EntrepreneurDashboard() {
             {DELIVERABLE_CONFIG.map(dc => {
               const deliv = getDeliverable(dc.type);
               const isReady = !!deliv;
+              const downloadFormat = dc.ext === '.xlsx' ? 'csv' : dc.ext === '.docx' ? 'html' : 'html';
               return (
                 <div
                   key={dc.type}
+                  onClick={() => isReady && handleDownload(dc.type, downloadFormat)}
                   className={`flex items-center justify-between p-3 rounded-lg border bg-card transition-colors ${
                     isReady ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-60'
                   }`}
@@ -437,13 +470,18 @@ export default function EntrepreneurDashboard() {
                       <p className="text-[10px] text-muted-foreground">{dc.ext}</p>
                     </div>
                   </div>
-                  {isReady ? (
-                    <Badge variant="default" className="text-[10px] bg-success/10 text-success border-success/20">
-                      {deliv.score ? `${deliv.score}/100` : 'Prêt'}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[10px]">En attente</Badge>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {isReady ? (
+                      <>
+                        <Badge variant="default" className="text-[10px] bg-success/10 text-success border-success/20">
+                          {deliv.score ? `${deliv.score}/100` : 'Prêt'}
+                        </Badge>
+                        <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                      </>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">En attente</Badge>
+                    )}
+                  </div>
                 </div>
               );
             })}

@@ -2,3 +2,6 @@ project_id = "vppsiryckhqchucmphuu"
 
 [functions.generate-deliverables]
 verify_jwt = false
+
+[functions.download-deliverable]
+verify_jwt = false
