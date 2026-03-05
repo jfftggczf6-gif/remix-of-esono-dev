@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import {
   LayoutGrid, Globe, FileSpreadsheet, BarChart3,
   Stethoscope, ListChecks, FileText, Target,
   Plus, Building2, Upload, Sparkles, Download,
-  ChevronRight, LogOut, User, Clock, CheckCircle2
+  LogOut, User, Clock, CheckCircle2, Loader2, X, FileUp
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -30,39 +30,110 @@ const MODULE_CONFIG = [
   { code: 'odd' as const, title: 'Due Diligence ODD', description: 'Checklist investment readiness', icon: Target, category: 'automatic' as const, step: 8 },
 ];
 
+const DELIVERABLE_CONFIG = [
+  { type: 'bmc_analysis', label: 'BMC Analysé', ext: '.docx', icon: '📄', color: 'text-info' },
+  { type: 'sic_analysis', label: 'SIC Analysé', ext: '.docx', icon: '📄', color: 'text-info' },
+  { type: 'inputs_html', label: 'Inputs HTML', ext: '.html', icon: '🌐', color: 'text-primary' },
+  { type: 'framework_data', label: 'Framework Excel', ext: '.xlsx', icon: '📊', color: 'text-success' },
+  { type: 'diagnostic_data', label: 'Diagnostic Expert', ext: '.html', icon: '🌐', color: 'text-primary' },
+  { type: 'plan_ovo', label: 'Plan OVO', ext: '.xlsx', icon: '📊', color: 'text-success' },
+  { type: 'business_plan', label: 'Business Plan', ext: '.docx', icon: '📄', color: 'text-info' },
+  { type: 'odd_analysis', label: 'Due Diligence ODD', ext: '.xlsx', icon: '📊', color: 'text-success' },
+];
+
 export default function EntrepreneurDashboard() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [enterprise, setEnterprise] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
+  const [deliverables, setDeliverables] = useState<any[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newSector, setNewSector] = useState('');
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initials = profile?.full_name
-    ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
   const fetchData = useCallback(async () => {
     if (!user) return;
     const { data: ent } = await supabase
-      .from('enterprises')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .from('enterprises').select('*').eq('user_id', user.id).maybeSingle();
 
     if (ent) {
       setEnterprise(ent);
-      const { data: mods } = await supabase
-        .from('enterprise_modules')
-        .select('*')
-        .eq('enterprise_id', ent.id);
-      setModules(mods || []);
+      const [modsRes, delivRes, filesRes] = await Promise.all([
+        supabase.from('enterprise_modules').select('*').eq('enterprise_id', ent.id),
+        supabase.from('deliverables').select('*').eq('enterprise_id', ent.id),
+        supabase.storage.from('documents').list(ent.id),
+      ]);
+      setModules(modsRes.data || []);
+      setDeliverables(delivRes.data || []);
+      setUploadedFiles((filesRes.data || []).map((f: any) => f.name));
     }
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !enterprise) return;
+    setUploading(true);
+
+    try {
+      for (const file of Array.from(files)) {
+        const filePath = `${enterprise.id}/${file.name}`;
+        const { error } = await supabase.storage.from('documents').upload(filePath, file, { upsert: true });
+        if (error) throw error;
+      }
+      toast.success(`${files.length} fichier(s) uploadé(s)`);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Erreur d'upload");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!enterprise) return;
+    setGenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-deliverables`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ enterprise_id: enterprise.id }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Erreur de génération');
+      }
+
+      const result = await response.json();
+      toast.success(`${result.deliverables_count} livrables générés ! Score: ${result.global_score}/100`);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur de génération');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const createEnterprise = async () => {
     if (!user || !newName.trim()) return;
@@ -71,14 +142,10 @@ export default function EntrepreneurDashboard() {
       const { data, error } = await supabase
         .from('enterprises')
         .insert({ user_id: user.id, name: newName.trim(), sector: newSector.trim() || null })
-        .select()
-        .single();
+        .select().single();
       if (error) throw error;
 
-      const moduleInserts = MODULE_CONFIG.map(m => ({
-        enterprise_id: data.id,
-        module: m.code,
-      }));
+      const moduleInserts = MODULE_CONFIG.map(m => ({ enterprise_id: data.id, module: m.code }));
       await supabase.from('enterprise_modules').insert(moduleInserts);
 
       toast.success('Entreprise créée !');
@@ -94,22 +161,24 @@ export default function EntrepreneurDashboard() {
   };
 
   const getModuleData = (code: string) => {
-    const mod = modules.find(m => m.module === code);
+    const mod = modules.find((m: any) => m.module === code);
     return {
       status: (mod?.status || 'not_started') as 'not_started' | 'in_progress' | 'completed',
       progress: mod?.progress || 0,
     };
   };
 
-  const completedCount = modules.filter(m => m.status === 'completed').length;
+  const getDeliverable = (type: string) => deliverables.find((d: any) => d.type === type);
+
+  const completedCount = modules.filter((m: any) => m.status === 'completed').length;
   const avgProgress = modules.length > 0
-    ? Math.round(modules.reduce((sum, m) => sum + (m.progress || 0), 0) / modules.length)
+    ? Math.round(modules.reduce((sum: number, m: any) => sum + (m.progress || 0), 0) / modules.length)
+    : 0;
+  const globalScore = deliverables.length > 0
+    ? Math.round(deliverables.reduce((sum: number, d: any) => sum + (d.score || 0), 0) / deliverables.length)
     : 0;
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
+  const handleSignOut = async () => { await signOut(); navigate('/login'); };
 
   // No enterprise yet
   if (!enterprise) {
@@ -127,23 +196,17 @@ export default function EntrepreneurDashboard() {
         </header>
         <div className="container py-20 flex justify-center">
           <Card className="max-w-md w-full">
-            <CardHeader className="text-center">
+            <div className="p-6 text-center">
               <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Building2 className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="font-display">Créer votre entreprise</CardTitle>
-            </CardHeader>
-            <CardContent>
+              <h2 className="text-xl font-display font-bold mb-4">Créer votre entreprise</h2>
               <Dialog open={showCreate} onOpenChange={setShowCreate}>
                 <DialogTrigger asChild>
-                  <Button className="w-full gap-2">
-                    <Plus className="h-4 w-4" /> Commencer
-                  </Button>
+                  <Button className="w-full gap-2"><Plus className="h-4 w-4" /> Commencer</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="font-display">Nouvelle entreprise</DialogTitle>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle className="font-display">Nouvelle entreprise</DialogTitle></DialogHeader>
                   <div className="space-y-4 mt-4">
                     <div className="space-y-2">
                       <Label>Nom de l'entreprise</Label>
@@ -159,7 +222,7 @@ export default function EntrepreneurDashboard() {
                   </div>
                 </DialogContent>
               </Dialog>
-            </CardContent>
+            </div>
           </Card>
         </div>
       </div>
@@ -179,34 +242,24 @@ export default function EntrepreneurDashboard() {
             <span className="text-xs text-muted-foreground hidden md:inline">|</span>
             <span className="text-sm font-medium hidden md:inline">{enterprise.name}</span>
           </div>
-
           <div className="flex items-center gap-3">
-            {/* Progress indicator */}
             <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
               <span>{completedCount}/{MODULE_CONFIG.length} modules</span>
               <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${avgProgress}%` }}
-                />
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${avgProgress}%` }} />
               </div>
             </div>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                      {initials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">{initials}</AvatarFallback>
                   </Avatar>
                   <span className="hidden sm:inline text-sm">{profile?.full_name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem className="gap-2">
-                  <User className="h-4 w-4" /> Profil
-                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2"><User className="h-4 w-4" /> Profil</DropdownMenuItem>
                 <DropdownMenuItem className="gap-2 text-destructive" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4" /> Déconnexion
                 </DropdownMenuItem>
@@ -216,38 +269,66 @@ export default function EntrepreneurDashboard() {
         </div>
       </header>
 
-      {/* Main content: 3-column layout */}
+      {/* Main content */}
       <div className="flex-1 container py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ minHeight: 'calc(100vh - 120px)' }}>
-
           {/* LEFT: Upload & Documents */}
           <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <Upload className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-display font-semibold uppercase tracking-wide text-muted-foreground">
-                Documents
-              </h2>
+              <h2 className="text-sm font-display font-semibold uppercase tracking-wide text-muted-foreground">Documents</h2>
             </div>
 
-            {/* Upload zones */}
-            {['BMC / SIC (DOCX)', 'Inputs Financiers (XLSX)'].map((label, i) => (
-              <div
-                key={label}
-                className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary/40 transition-colors cursor-pointer group"
-              >
-                <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
-                <p className="text-xs font-medium">{label}</p>
-                <p className="text-xs text-muted-foreground mt-1">Glissez ou cliquez</p>
+            {/* Upload zone */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".docx,.xlsx,.xls,.pdf,.csv,.txt"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/40 transition-colors cursor-pointer group"
+            >
+              {uploading ? (
+                <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin text-primary" />
+              ) : (
+                <FileUp className="h-6 w-6 mx-auto mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
+              )}
+              <p className="text-xs font-medium">BMC, SIC (DOCX) / Inputs (XLSX)</p>
+              <p className="text-xs text-muted-foreground mt-1">Cliquez ou glissez vos fichiers</p>
+            </div>
+
+            {/* Uploaded files list */}
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Fichiers uploadés :</p>
+                {uploadedFiles.map(f => (
+                  <div key={f} className="flex items-center gap-2 text-xs p-2 rounded bg-muted/50">
+                    <CheckCircle2 className="h-3 w-3 text-success flex-shrink-0" />
+                    <span className="truncate">{f}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
 
             {/* Generate button */}
-            <Button className="w-full gap-2 mt-4" size="lg">
-              <Sparkles className="h-4 w-4" />
-              Générer tous les livrables
+            <Button
+              className="w-full gap-2 mt-4"
+              size="lg"
+              onClick={handleGenerate}
+              disabled={generating}
+            >
+              {generating ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Génération en cours...</>
+              ) : (
+                <><Sparkles className="h-4 w-4" /> Générer tous les livrables</>
+              )}
             </Button>
             <p className="text-xs text-muted-foreground text-center">
-              IA analyse vos documents et génère 10+ livrables
+              L'IA analyse vos documents et génère 8+ livrables
             </p>
           </div>
 
@@ -259,38 +340,43 @@ export default function EntrepreneurDashboard() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-white/60 text-xs uppercase tracking-wider">Score Global</p>
-                    <p className="text-4xl font-display font-bold">—</p>
+                    <p className="text-4xl font-display font-bold">{globalScore > 0 ? globalScore : '—'}</p>
                     <p className="text-white/60 text-sm">Investment Readiness</p>
                   </div>
                   <div className="text-right space-y-1">
-                    {['BMC', 'SIC', 'Framework'].map(dim => (
-                      <div key={dim} className="flex items-center gap-2 text-xs">
-                        <span className="text-white/50 w-16 text-right">{dim}</span>
-                        <div className="w-16 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div className="h-full rounded-full bg-white/40" style={{ width: '0%' }} />
+                    {['BMC', 'SIC', 'Framework'].map(dim => {
+                      const typeMap: Record<string, string> = { BMC: 'bmc_analysis', SIC: 'sic_analysis', Framework: 'framework_data' };
+                      const deliv = getDeliverable(typeMap[dim]);
+                      const score = deliv?.score || 0;
+                      return (
+                        <div key={dim} className="flex items-center gap-2 text-xs">
+                          <span className="text-white/50 w-16 text-right">{dim}</span>
+                          <div className="w-16 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                            <div className="h-full rounded-full bg-white/60 transition-all" style={{ width: `${score}%` }} />
+                          </div>
+                          <span className="text-white/40 w-6">{score > 0 ? score : '—'}</span>
                         </div>
-                        <span className="text-white/40 w-6">—</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
-                <p className="text-white/50 text-xs">
-                  Uploadez vos documents pour obtenir votre score d'Investment Readiness
-                </p>
+                {generating && (
+                  <div className="flex items-center gap-2 text-white/70 text-xs">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Analyse IA en cours...
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* 8 Module cards in grid */}
+            {/* 8 Module cards */}
             <div>
-              <h2 className="text-sm font-display font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                8 Modules
-              </h2>
+              <h2 className="text-sm font-display font-semibold uppercase tracking-wide text-muted-foreground mb-3">8 Modules</h2>
               <div className="grid grid-cols-2 gap-3">
                 {MODULE_CONFIG.map(mod => {
                   const data = getModuleData(mod.code);
                   const Icon = mod.icon;
                   const isAuto = mod.category === 'automatic';
-
                   return (
                     <div
                       key={mod.code}
@@ -302,22 +388,14 @@ export default function EntrepreneurDashboard() {
                           <Icon className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex items-center gap-1">
-                          {isAuto && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-info/10 text-info font-medium">IA</span>
-                          )}
-                          {data.status === 'completed' && (
-                            <CheckCircle2 className="h-4 w-4 text-success" />
-                          )}
-                          {data.status === 'in_progress' && (
-                            <Clock className="h-3.5 w-3.5 text-warning" />
-                          )}
+                          {isAuto && <span className="text-[10px] px-1.5 py-0.5 rounded bg-info/10 text-info font-medium">IA</span>}
+                          {data.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-success" />}
+                          {data.status === 'in_progress' && <Clock className="h-3.5 w-3.5 text-warning" />}
                         </div>
                       </div>
                       <p className="text-xs font-medium leading-tight">{mod.title}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{mod.description}</p>
-                      {data.progress > 0 && (
-                        <Progress value={data.progress} className="h-1 mt-2" />
-                      )}
+                      {data.progress > 0 && <Progress value={data.progress} className="h-1 mt-2" />}
                     </div>
                   );
                 })}
@@ -329,37 +407,36 @@ export default function EntrepreneurDashboard() {
           <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <Download className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-display font-semibold uppercase tracking-wide text-muted-foreground">
-                Livrables
-              </h2>
+              <h2 className="text-sm font-display font-semibold uppercase tracking-wide text-muted-foreground">Livrables</h2>
             </div>
 
-            {[
-              { label: 'BMC Analysé', ext: '.docx', icon: '📄', color: 'text-info' },
-              { label: 'SIC Analysé', ext: '.docx', icon: '📄', color: 'text-info' },
-              { label: 'Inputs HTML', ext: '.html', icon: '🌐', color: 'text-primary' },
-              { label: 'Framework Excel', ext: '.xlsx', icon: '📊', color: 'text-success' },
-              { label: 'Diagnostic Expert', ext: '.html', icon: '🌐', color: 'text-primary' },
-              { label: 'Plan OVO', ext: '.xlsx', icon: '📊', color: 'text-success' },
-              { label: 'Business Plan', ext: '.docx', icon: '📄', color: 'text-info' },
-              { label: 'Due Diligence ODD', ext: '.xlsx', icon: '📊', color: 'text-success' },
-            ].map(deliv => (
-              <div
-                key={deliv.label}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{deliv.icon}</span>
-                  <div>
-                    <p className="text-xs font-medium">{deliv.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{deliv.ext}</p>
+            {DELIVERABLE_CONFIG.map(dc => {
+              const deliv = getDeliverable(dc.type);
+              const isReady = !!deliv;
+              return (
+                <div
+                  key={dc.type}
+                  className={`flex items-center justify-between p-3 rounded-lg border bg-card transition-colors ${
+                    isReady ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{dc.icon}</span>
+                    <div>
+                      <p className="text-xs font-medium">{dc.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{dc.ext}</p>
+                    </div>
                   </div>
+                  {isReady ? (
+                    <Badge variant="default" className="text-[10px] bg-success/10 text-success border-success/20">
+                      {deliv.score ? `${deliv.score}/100` : 'Prêt'}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px]">En attente</Badge>
+                  )}
                 </div>
-                <Badge variant="outline" className="text-[10px]">
-                  En attente
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
