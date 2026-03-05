@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SelectRole from "./pages/SelectRole";
 import Dashboard from "./pages/Dashboard";
+import BmcModule from "./pages/modules/BmcModule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
