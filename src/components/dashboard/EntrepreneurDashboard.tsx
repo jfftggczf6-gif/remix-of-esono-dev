@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import BmcViewer from './BmcViewer';
+import DeliverableViewer from './DeliverableViewer';
 
 const MODULE_CONFIG = [
   { code: 'bmc' as const, title: 'Business Model Canvas', description: 'Analysez votre modèle économique', icon: LayoutGrid, category: 'hybrid' as const, step: 1 },
