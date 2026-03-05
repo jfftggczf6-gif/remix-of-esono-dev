@@ -11,7 +11,7 @@ interface AuthContextType {
   role: AppRole | null;
   profile: { full_name: string | null; email: string | null; avatar_url: string | null } | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, selectedRole?: AppRole) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setRole: (role: AppRole) => Promise<void>;
