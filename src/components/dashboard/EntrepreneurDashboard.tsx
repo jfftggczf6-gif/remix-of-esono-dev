@@ -148,7 +148,12 @@ export default function EntrepreneurDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
 
-      const functionName = `generate-${moduleCode}`;
+      const fnMap: Record<string, string> = {
+        bmc: 'generate-bmc', sic: 'generate-sic', inputs: 'generate-inputs',
+        framework: 'generate-framework', diagnostic: 'generate-diagnostic',
+        plan_ovo: 'generate-plan-ovo', business_plan: 'generate-business-plan', odd: 'generate-odd',
+      };
+      const functionName = fnMap[moduleCode] || `generate-${moduleCode}`;
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
         {
