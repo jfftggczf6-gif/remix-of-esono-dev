@@ -113,9 +113,31 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // ── Auth: vérifier le JWT ──────────────────────────────────────────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ success: false, error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      });
+    }
+    const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const anonClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: authUser }, error: authErr } = await anonClient.auth.getUser();
+    if (authErr || !authUser) {
+      return new Response(JSON.stringify({ success: false, error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      });
+    }
+
     const data: EntrepreneurData = await req.json();
 
-    console.log(`[generate-ovo-plan] START — user: ${data.user_id}, company: ${data.company}`);
+    // ── Validation: sécuriser products/services ───────────────────────
+    if (!Array.isArray(data.products)) data.products = [];
+    if (!Array.isArray(data.services)) data.services = [];
+
+    console.log(`[generate-ovo-plan] START — user: ${authUser.id}, company: ${data.company}`);
 
     // ── Étape 1 : Appel Claude API ─────────────────────────────────────
     console.log("[generate-ovo-plan] Calling Claude API...");

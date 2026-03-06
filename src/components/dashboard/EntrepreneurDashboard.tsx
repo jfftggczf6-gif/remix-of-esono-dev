@@ -113,11 +113,11 @@ export default function EntrepreneurDashboard() {
   const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
   const PIPELINE = [
-    { name: "Diagnostic", fn: "generate-diagnostic", type: "diagnostic_data" },
     { name: "BMC", fn: "generate-bmc", type: "bmc_analysis" },
     { name: "SIC", fn: "generate-sic", type: "sic_analysis" },
     { name: "Inputs", fn: "generate-inputs", type: "inputs_data" },
     { name: "Framework", fn: "generate-framework", type: "framework_data" },
+    { name: "Diagnostic", fn: "generate-diagnostic", type: "diagnostic_data" },
     { name: "Plan OVO", fn: "generate-plan-ovo", type: "plan_ovo" },
     { name: "Business Plan", fn: "generate-business-plan", type: "business_plan" },
     { name: "ODD", fn: "generate-odd", type: "odd_analysis" },
@@ -253,8 +253,9 @@ export default function EntrepreneurDashboard() {
   const getDeliverable = (type: string) => deliverables.find((d: any) => d.type === type);
 
   const completedCount = modules.filter((m: any) => m.status === 'completed').length;
-  const globalScore = deliverables.length > 0
-    ? Math.round(deliverables.reduce((sum: number, d: any) => sum + (d.score || 0), 0) / deliverables.filter((d: any) => d.score).length || 0)
+  const scoredDeliverables = deliverables.filter((d: any) => d.score != null);
+  const globalScore = scoredDeliverables.length > 0
+    ? Math.round(scoredDeliverables.reduce((sum: number, d: any) => sum + (d.score || 0), 0) / scoredDeliverables.length)
     : 0;
 
   const maturityLabel = globalScore >= 80 ? 'Excellent' : globalScore >= 60 ? 'Très bien' : globalScore >= 40 ? 'Moyen' : globalScore > 0 ? 'À améliorer' : '—';
@@ -442,9 +443,6 @@ export default function EntrepreneurDashboard() {
           <span className="text-sm text-foreground">
             {profile?.full_name} · <span className="text-muted-foreground">{profile?.email}</span>
           </span>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate('/formations')}>
-            <BookOpen className="h-4 w-4" /> Formations
-          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={handleSignOut}>
             <LogOut className="h-4 w-4" /> Déconnexion
           </Button>
