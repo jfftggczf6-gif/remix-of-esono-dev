@@ -31,8 +31,8 @@ interface EntrepreneurData {
   country: string;
   sector: string;
   business_model: string;
-  products: Array<{ name: string; description: string; price?: number }>;
-  services: Array<{ name: string; description: string; price?: number }>;
+  products: Array<{ name: string; description: string; price?: number; deduit_du_bmc?: boolean }>;
+  services: Array<{ name: string; description: string; price?: number; deduit_du_bmc?: boolean }>;
   current_year: number;
   employees?: number;
   existing_revenue?: number;
@@ -40,6 +40,10 @@ interface EntrepreneurData {
   loan_needed?: number;
   bmc_data?: Record<string, unknown>;
   sic_data?: Record<string, unknown>;
+  inputs_data?: Record<string, unknown>;
+  framework_data?: Record<string, unknown>;
+  plan_ovo_data?: Record<string, unknown>;
+  diagnostic_data?: Record<string, unknown>;
 }
 
 interface CellWrite {

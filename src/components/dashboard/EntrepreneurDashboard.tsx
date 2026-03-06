@@ -270,26 +270,110 @@ export default function EntrepreneurDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
 
-      // Gather existing deliverable data for payload enrichment
-      const bmcDeliv = deliverables.find((d: any) => d.type === 'bmc_analysis');
-      const inputsDeliv = deliverables.find((d: any) => d.type === 'inputs_data');
-      const bmcData = (bmcDeliv?.data && typeof bmcDeliv.data === 'object') ? bmcDeliv.data as Record<string, any> : {};
-      const inputsData = (inputsDeliv?.data && typeof inputsDeliv.data === 'object') ? inputsDeliv.data as Record<string, any> : {};
+      // Gather ALL existing deliverable data
+      const getDelivData = (type: string): Record<string, any> => {
+        const d = deliverables.find((d: any) => d.type === type);
+        return (d?.data && typeof d.data === 'object') ? d.data as Record<string, any> : {};
+      };
+
+      const bmcData = getDelivData('bmc_analysis');
+      const inputsData = getDelivData('inputs_data');
+      const frameworkData = getDelivData('framework_data');
+      const sicData = getDelivData('sic_analysis');
+      const planOvoData = getDelivData('plan_ovo');
+      const diagnosticData = getDelivData('diagnostic_data');
+
+      // ── Extract products/services via priority cascade ──
+      const extractItems = (type: 'products' | 'services'): Array<{ name: string; description: string; price?: number; deduit_du_bmc?: boolean }> => {
+        // 1. Previous plan_ovo generation
+        if (Array.isArray(planOvoData?.[type]) && planOvoData[type].length > 0) {
+          return planOvoData[type].map((p: any) => ({ name: p.name || p.nom || '', description: p.description || '', price: p.price || p.prix || undefined }));
+        }
+
+        // 2. Explicit products/services from BMC or inputs
+        for (const src of [bmcData, inputsData]) {
+          const arr = src?.[type] || src?.[type === 'products' ? 'produits' : 'services'];
+          if (Array.isArray(arr) && arr.length > 0) {
+            return arr.map((p: any) => typeof p === 'string' ? { name: p, description: '' } : { name: p.name || p.nom || p.label || '', description: p.description || '', price: p.price || p.prix || undefined });
+          }
+        }
+
+        // 3. BMC canvas: flux_revenus, proposition_valeur
+        const canvas = bmcData?.canvas || {};
+        const items: Array<{ name: string; description: string; price?: number; deduit_du_bmc?: boolean }> = [];
+
+        if (canvas.flux_revenus) {
+          const fr = canvas.flux_revenus;
+          if (fr.produit_principal) items.push({ name: fr.produit_principal, description: 'Produit principal (BMC)', deduit_du_bmc: true });
+          if (fr.sources_revenus) {
+            const sources = Array.isArray(fr.sources_revenus) ? fr.sources_revenus : [fr.sources_revenus];
+            sources.forEach((s: any) => items.push({ name: typeof s === 'string' ? s : s.name || s.label || JSON.stringify(s), description: 'Source de revenus (BMC)', deduit_du_bmc: true }));
+          }
+        }
+        if (canvas.proposition_valeur) {
+          const pv = canvas.proposition_valeur;
+          if (pv.produits && Array.isArray(pv.produits)) {
+            pv.produits.forEach((p: any) => items.push({ name: typeof p === 'string' ? p : p.name || p.label || '', description: pv.enonce || 'Proposition de valeur (BMC)', deduit_du_bmc: true }));
+          }
+          if (items.length === 0 && pv.enonce) {
+            items.push({ name: pv.enonce.substring(0, 80), description: 'Proposition de valeur (BMC)', deduit_du_bmc: true });
+          }
+        }
+        if (items.length > 0) return items;
+
+        // 4. Fallback: structure_couts, partenaires_cles
+        if (canvas.structure_couts?.postes && Array.isArray(canvas.structure_couts.postes)) {
+          canvas.structure_couts.postes.forEach((p: any) => {
+            const name = typeof p === 'string' ? p : p.libelle || p.label || p.name || '';
+            if (name) items.push({ name, description: 'Déduit de la structure des coûts (BMC)', deduit_du_bmc: true });
+          });
+        }
+        if (canvas.partenaires_cles?.items && Array.isArray(canvas.partenaires_cles.items)) {
+          canvas.partenaires_cles.items.forEach((p: any) => {
+            const name = typeof p === 'string' ? p : p.name || p.label || '';
+            if (name) items.push({ name, description: 'Déduit des partenaires clés (BMC)', deduit_du_bmc: true });
+          });
+        }
+        if (items.length > 0) return items;
+
+        // 5. Last resort: activites_cles → treat as products/services
+        if (canvas.activites_cles?.items && Array.isArray(canvas.activites_cles.items)) {
+          return canvas.activites_cles.items.map((a: any) => ({
+            name: typeof a === 'string' ? a : a.name || a.label || '',
+            description: 'Activité clé transformée en produit/service (BMC)',
+            deduit_du_bmc: true,
+          })).filter((i: any) => i.name);
+        }
+
+        return [];
+      };
+
+      const products = extractItems('products');
+      const services = extractItems('services');
+
+      // Extract financial KPIs
+      const cr = inputsData?.compte_resultat || {};
+      const existingRevenue = cr.chiffre_affaires || cr.ca || inputsData?.revenue || inputsData?.chiffre_affaires || 0;
 
       const payload = {
         user_id: user?.id,
         company: enterprise.name,
         country: enterprise.country || "IVORY COAST",
         sector: enterprise.sector || "",
-        business_model: bmcData?.business_model || bmcData?.proposition_valeur || "",
+        business_model: bmcData?.canvas?.proposition_valeur?.enonce || bmcData?.business_model || bmcData?.proposition_valeur || "",
         current_year: new Date().getFullYear(),
         employees: enterprise.employees_count || 0,
-        existing_revenue: inputsData?.revenue || inputsData?.chiffre_affaires || 0,
+        existing_revenue: existingRevenue,
         startup_costs: inputsData?.startup_costs || inputsData?.couts_demarrage || 0,
         loan_needed: inputsData?.loan_needed || inputsData?.besoin_financement || 0,
-        products: Array.isArray(bmcData?.products) ? bmcData.products : Array.isArray(bmcData?.produits) ? bmcData.produits : [],
-        services: Array.isArray(bmcData?.services) ? bmcData.services : [],
+        products,
+        services,
         bmc_data: bmcData,
+        inputs_data: inputsData,
+        framework_data: frameworkData,
+        sic_data: sicData,
+        plan_ovo_data: planOvoData,
+        diagnostic_data: diagnosticData,
       };
 
       const response = await fetch(
