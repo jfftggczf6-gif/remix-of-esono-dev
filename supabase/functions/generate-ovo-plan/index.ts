@@ -141,11 +141,22 @@ Deno.serve(async (req: Request) => {
     if (!Array.isArray(data.products)) data.products = [];
     if (!Array.isArray(data.services)) data.services = [];
 
-    console.log(`[generate-ovo-plan] START — user: ${authUser.id}, company: ${data.company}`);
+    console.log(`[generate-ovo-plan] START — user: ${authUser.id}, company: ${data.company}, products: ${data.products.length}, services: ${data.services.length}`);
+    console.log(`[generate-ovo-plan] Extra data: inputs=${!!data.inputs_data}, framework=${!!data.framework_data}, sic=${!!data.sic_data}, diagnostic=${!!data.diagnostic_data}, prev_plan=${!!data.plan_ovo_data}`);
 
     // ── Étape 1 : Appel Claude API ─────────────────────────────────────
     console.log("[generate-ovo-plan] Calling Claude API...");
     const financialJson = await callClaudeAPI(data);
+
+    // ── Validation post-IA : vérifier products/services ────────────────
+    const aiProducts = Array.isArray(financialJson.products) ? financialJson.products.filter((p: any) => p.active !== false) : [];
+    const aiServices = Array.isArray(financialJson.services) ? financialJson.services.filter((s: any) => s.active !== false) : [];
+    console.log(`[generate-ovo-plan] AI returned ${aiProducts.length} active products, ${aiServices.length} active services`);
+
+    if (aiProducts.length === 0 && aiServices.length === 0) {
+      console.error("[generate-ovo-plan] VALIDATION FAILED: AI returned 0 products AND 0 services");
+      throw new Error("L'IA n'a généré aucun produit ni service. Veuillez vérifier que les données BMC/inputs contiennent des informations sur vos activités.");
+    }
 
     // ── Étape 2 : Télécharger le template ─────────────────────────────
     console.log("[generate-ovo-plan] Downloading template...");
