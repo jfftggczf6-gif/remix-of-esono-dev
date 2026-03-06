@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable } from "../_shared/helpers.ts";
+import { normalizeDiagnostic } from "../_shared/normalizers.ts";
 
 const SYSTEM_PROMPT = `Tu es un consultant expert en diagnostic d'entreprises africaines. Tu réalises des diagnostics stratégiques complets combinant analyses qualitatives et quantitatives.
 IMPORTANT: Réponds UNIQUEMENT en JSON valide.`;
