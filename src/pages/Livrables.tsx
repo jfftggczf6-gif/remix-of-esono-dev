@@ -13,12 +13,12 @@ import {
 } from 'lucide-react';
 
 const DELIVERABLES = [
-  { type: 'bmc_analysis', label: 'BMC Analysé', module: 'Business Model Canvas', icon: LayoutGrid, format: '.html' },
-  { type: 'sic_analysis', label: 'SIC Analysé', module: 'Social Impact Canvas', icon: Globe, format: '.html' },
+  { type: 'bmc_analysis', label: 'Business Model Canvas', module: 'Business Model Canvas', icon: LayoutGrid, format: '.html' },
+  { type: 'sic_analysis', label: 'Social Impact Canvas', module: 'Social Impact Canvas', icon: Globe, format: '.html' },
   { type: 'inputs_data', label: 'Données Financières', module: 'Inputs Financiers', icon: FileSpreadsheet, format: '.html' },
-  { type: 'framework_data', label: 'Framework Financier', module: 'Framework Analyse', icon: BarChart3, format: '.html' },
+  { type: 'framework_data', label: 'Plan Financier Intermédiaire', module: 'Plan Financier Intermédiaire', icon: BarChart3, format: '.html' },
   { type: 'diagnostic_data', label: 'Diagnostic Expert', module: 'Diagnostic', icon: Stethoscope, format: '.html' },
-  { type: 'plan_ovo', label: 'Plan Financier OVO', module: 'Plan OVO', icon: ListChecks, format: '.html' },
+  { type: 'plan_ovo', label: 'Plan Financier Final', module: 'Plan Financier Final', icon: ListChecks, format: '.html' },
   { type: 'business_plan', label: 'Business Plan', module: 'Business Plan', icon: FileText, format: '.html' },
   { type: 'odd_analysis', label: 'Due Diligence ODD', module: 'ODD', icon: Target, format: '.html' },
 ];

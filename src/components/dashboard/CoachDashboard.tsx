@@ -17,9 +17,9 @@ const MODULE_CONFIG = [
   { code: 'bmc' as const, title: 'Business Model Canvas', icon: LayoutGrid },
   { code: 'sic' as const, title: 'Social Impact Canvas', icon: Globe },
   { code: 'inputs' as const, title: 'Données Financières', icon: FileSpreadsheet },
-  { code: 'framework' as const, title: 'Framework Analyse', icon: BarChart3 },
+  { code: 'framework' as const, title: 'Plan Financier Intermédiaire', icon: BarChart3 },
   { code: 'diagnostic' as const, title: 'Diagnostic Expert', icon: Stethoscope },
-  { code: 'plan_ovo' as const, title: 'Plan Financier OVO', icon: ListChecks },
+  { code: 'plan_ovo' as const, title: 'Plan Financier Final', icon: ListChecks },
   { code: 'business_plan' as const, title: 'Business Plan', icon: FileText },
   { code: 'odd' as const, title: 'Due Diligence ODD', icon: Target },
 ];
