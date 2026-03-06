@@ -329,11 +329,11 @@ ENTREPRISE :
 - Employés actuels : ${data.employees || 0}
 - CA actuel estimé : ${data.existing_revenue || 0} FCFA
 
-PRODUITS (${data.products.length}) :
-${data.products.map((p, i) => `  ${i+1}. ${p.name} — ${p.description}${p.price ? ` — Prix indicatif: ${p.price} FCFA` : ""}`).join("\n")}
+PRODUITS (${(data.products || []).length}) :
+${(data.products || []).map((p, i) => `  ${i+1}. ${p.name} — ${p.description}${p.price ? ` — Prix indicatif: ${p.price} FCFA` : ""}`).join("\n")}
 
-SERVICES (${data.services.length}) :
-${data.services.map((s, i) => `  ${i+1}. ${s.name} — ${s.description}${s.price ? ` — Prix indicatif: ${s.price} FCFA` : ""}`).join("\n")}
+SERVICES (${(data.services || []).length}) :
+${(data.services || []).map((s, i) => `  ${i+1}. ${s.name} — ${s.description}${s.price ? ` — Prix indicatif: ${s.price} FCFA` : ""}`).join("\n")}
 
 BESOINS FINANCIERS :
 - Investissements démarrage : ${data.startup_costs || 0} FCFA

@@ -286,8 +286,8 @@ export default function EntrepreneurDashboard() {
         existing_revenue: inputsData?.revenue || inputsData?.chiffre_affaires || 0,
         startup_costs: inputsData?.startup_costs || inputsData?.couts_demarrage || 0,
         loan_needed: inputsData?.loan_needed || inputsData?.besoin_financement || 0,
-        products: bmcData?.products || bmcData?.produits || [],
-        services: bmcData?.services || [],
+        products: Array.isArray(bmcData?.products) ? bmcData.products : Array.isArray(bmcData?.produits) ? bmcData.produits : [],
+        services: Array.isArray(bmcData?.services) ? bmcData.services : [],
         bmc_data: bmcData,
       };
 
