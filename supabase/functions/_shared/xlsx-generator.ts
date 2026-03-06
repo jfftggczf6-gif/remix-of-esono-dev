@@ -212,6 +212,7 @@ export function buildFrameworkXlsx(data: any): SheetData[] {
   const sheets: SheetData[] = [];
   const ratios = data.ratios || {};
   
+  // Ratios par catégorie
   for (const [cat, group] of Object.entries(ratios) as [string, any][]) {
     sheets.push({
       name: cat.substring(0, 31),
@@ -222,6 +223,69 @@ export function buildFrameworkXlsx(data: any): SheetData[] {
         v?.benchmark || v?.seuil || '—',
         v?.verdict || '',
       ]),
+    });
+  }
+
+  // Ratios historiques
+  if (data.ratios_historiques?.length) {
+    sheets.push({
+      name: 'Ratios Historiques',
+      headers: ['Ratio', 'N-2', 'N-1', 'N', 'Benchmark'],
+      rows: data.ratios_historiques.map((r: any) => [r.ratio, r.n_moins_2 || '', r.n_moins_1 || '', r.n || '', r.benchmark || '']),
+    });
+  }
+
+  // Trésorerie & BFR
+  if (data.tresorerie_bfr?.composantes?.length) {
+    sheets.push({
+      name: 'Trésorerie BFR',
+      headers: ['Indicateur', 'Valeur', 'Benchmark'],
+      rows: data.tresorerie_bfr.composantes.map((c: any) => [c.indicateur, c.valeur || '', c.benchmark || '']),
+    });
+  }
+
+  // Analyse marge
+  if (data.analyse_marge?.activites?.length) {
+    sheets.push({
+      name: 'Analyse Marge',
+      headers: ['Activité', 'CA (FCFA)', 'Marge Brute', 'Marge %', 'Classification'],
+      rows: data.analyse_marge.activites.map((a: any) => [a.nom, Number(a.ca) || 0, Number(a.marge_brute) || 0, a.marge_pct || '', a.classification || '']),
+    });
+  }
+
+  // Projection 5 ans
+  if (data.projection_5ans?.lignes?.length) {
+    sheets.push({
+      name: 'Projection 5 Ans',
+      headers: ['Poste', 'Année 1', 'Année 2', 'Année 3', 'Année 4', 'Année 5', 'CAGR'],
+      rows: data.projection_5ans.lignes.map((l: any) => [l.poste, Number(l.an1) || 0, Number(l.an2) || 0, Number(l.an3) || 0, Number(l.an4) || 0, Number(l.an5) || 0, l.cagr || '']),
+    });
+  }
+
+  // Scénarios
+  if (data.scenarios?.tableau?.length) {
+    sheets.push({
+      name: 'Scénarios',
+      headers: ['Indicateur', 'Prudent', 'Central', 'Ambitieux'],
+      rows: data.scenarios.tableau.map((r: any) => [r.indicateur, r.prudent || '', r.central || '', r.ambitieux || '']),
+    });
+  }
+
+  // Plan d'action
+  if (data.plan_action?.length) {
+    sheets.push({
+      name: 'Plan Action',
+      headers: ['Horizon', 'Action', 'Coût', 'Impact'],
+      rows: data.plan_action.map((a: any) => [a.horizon || '', a.action || '', a.cout || '', a.impact || '']),
+    });
+  }
+
+  // Risques
+  if (data.risques_cles?.length) {
+    sheets.push({
+      name: 'Risques',
+      headers: ['Risque', 'Sévérité'],
+      rows: data.risques_cles.map((r: any) => [r.risque || '', r.severite || '']),
     });
   }
   
