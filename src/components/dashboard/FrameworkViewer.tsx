@@ -35,7 +35,7 @@ export default function FrameworkViewer({ data }: FrameworkViewerProps) {
         <CardContent className="py-5">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2 className="text-xl font-display font-bold">Framework Analyse Financière</h2>
+              <h2 className="text-xl font-display font-bold">Plan Financier Intermédiaire</h2>
               {data.capacite_investissement && <p className="mt-1.5 text-sm opacity-80">{data.capacite_investissement}</p>}
               {data.periode && <Badge className="mt-2 bg-white/20 text-primary-foreground border-0 text-[10px]">{data.periode} • Fiabilité: {data.fiabilite || 'N/A'}</Badge>}
             </div>
