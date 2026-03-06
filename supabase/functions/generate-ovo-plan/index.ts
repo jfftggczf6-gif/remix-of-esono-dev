@@ -369,7 +369,7 @@ ${data.bmc_data ? `BUSINESS MODEL CANVAS :\n${JSON.stringify(data.bmc_data, null
 
 INSTRUCTIONS :
 Génère le JSON OVOFinancialPlanInput COMPLET avec :
-1. Exactement ${Math.min(data.products.length, 8)} produits actifs UNIQUEMENT (pas de slots inactifs/vides)
+1. Exactement ${Math.min(data.products.length, 5)} produits actifs UNIQUEMENT (pas de slots inactifs/vides)
 2. Exactement ${Math.min(data.services.length, 5)} services actifs UNIQUEMENT (pas de slots inactifs/vides)
 3. Au minimum 1 catégorie de staff (STAFF_CAT01)
 4. CAPEX réaliste pour les immobilisations nécessaires
