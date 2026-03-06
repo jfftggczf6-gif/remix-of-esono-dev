@@ -160,6 +160,21 @@ Génère un Social Impact Canvas COMPLET en JSON avec EXACTEMENT cette structure
     "conflit_rentabilite": "faible|moyen|fort",
     "commentaire": "..."
   },
+  "swot": {
+    "forces": ["force 1", "force 2"],
+    "faiblesses": ["faiblesse 1"],
+    "opportunites": ["opportunité 1"],
+    "menaces": ["menace 1"]
+  },
+  "parties_prenantes": [
+    { "nom": "Bénéficiaires", "role": "...", "implication": "Élevé|Moyen|Faible" }
+  ],
+  "odd_detail": [
+    { "numero": 2, "nom": "Faim zéro", "couleur": "#DDA63A", "alignement": "fort", "contribution": "contribution concrète..." }
+  ],
+  "evolution_score": [
+    { "critere": "Problème & Vision", "score_actuel": 80, "score_apres": 90, "action": "action clé..." }
+  ],
   "niveau_maturite": "idee|test_pilote|deploye|mesure|scale"
 }`;
 
