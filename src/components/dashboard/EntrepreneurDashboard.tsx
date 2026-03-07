@@ -462,14 +462,7 @@ export default function EntrepreneurDashboard() {
     const requestId = crypto.randomUUID();
     const startedAt = new Date().toISOString();
     try {
-      let session: any = null;
-      const { data: { session: s1 }, error: sessionErr } = await supabase.auth.getSession();
-      session = s1;
-      if (!session || sessionErr) {
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        if (!refreshData.session) throw new Error("Non authentifié — veuillez vous reconnecter");
-        session = refreshData.session;
-      }
+      const token = await getValidAccessToken();
 
       // Gather ALL existing deliverable data
       const getDelivData = (type: string): Record<string, any> => {
