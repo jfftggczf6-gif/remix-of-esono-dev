@@ -1758,8 +1758,8 @@ function applyWritesToXml(xml: string, writes: CellWrite[]): string {
       (cellMatch: string, ref: string, _cellAttrs: string, cellContent: string | undefined) => {
         const cw = rowWrites.get(ref);
         if (!cw) return cellMatch;
-        // Skip formula cells (only in regular cells with content)
-        if (cellContent && cellContent.includes("<f")) {
+        // Skip formula cells UNLESS forceWrite is set
+        if (cellContent && cellContent.includes("<f") && !cw.forceWrite) {
           formulaSkipCount++;
           applied.add(ref);
           return cellMatch;
