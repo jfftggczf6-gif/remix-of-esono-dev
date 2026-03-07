@@ -190,6 +190,9 @@ Deno.serve(async (req: Request) => {
     // Bug #4: Normalize range data (shift r3/r2 → r1 if only one range used)
     normalizeRangeData(financialJson);
 
+    // Post-expansion validation: fill any remaining zero-volume gaps
+    validateAndFillVolumes(financialJson);
+
     // Bug #7: Sort products/services by slot for consistent ordering
     if (Array.isArray(financialJson.products)) {
       financialJson.products.sort((a: any, b: any) => (a.slot || 0) - (b.slot || 0));
@@ -551,6 +554,54 @@ function buildUserPrompt(data: EntrepreneurData): string {
   const bmcFlux = bmc.canvas?.flux_revenus || {};
   const prixMoyen = bmcFlux.prix_moyen || bmcFlux.prix_unitaire || 0;
   const volumeAnnuel = bmcFlux.volume_annuel || bmcFlux.volume_estime || 0;
+  const bmcSourcesRevenus = bmcFlux.sources_revenus || bmcFlux.sources || [];
+  const bmcModelePricing = bmcFlux.modele_pricing || bmcFlux.modele || '';
+  const bmcProduitPrincipal = bmcFlux.produit_principal || bmcFlux.produit || '';
+
+  // ── BMC detailed revenue streams ──
+  let bmcRevenueBlock = "";
+  if (bmcFlux && Object.keys(bmcFlux).length > 0) {
+    const parts = [];
+    if (bmcProduitPrincipal) parts.push(`  Produit principal: ${bmcProduitPrincipal}`);
+    if (bmcModelePricing) parts.push(`  Modèle pricing: ${bmcModelePricing}`);
+    if (prixMoyen > 0) parts.push(`  Prix moyen: ${prixMoyen.toLocaleString('fr-FR')} FCFA`);
+    if (volumeAnnuel > 0) parts.push(`  Volume annuel estimé: ${volumeAnnuel.toLocaleString('fr-FR')}`);
+    if (Array.isArray(bmcSourcesRevenus) && bmcSourcesRevenus.length > 0) {
+      parts.push(`  Sources de revenus: ${bmcSourcesRevenus.map((s: any) => typeof s === 'string' ? s : s.nom || s.name || JSON.stringify(s)).join(', ')}`);
+    }
+    if (parts.length > 0) {
+      bmcRevenueBlock = `\nFLUX DE REVENUS (BMC — utiliser pour déduire prix de vente et volumes) :\n${parts.join('\n')}`;
+    }
+  }
+
+  // ── Inputs financiers détaillés ──
+  let inputsDetailBlock = "";
+  if (cr && Object.keys(cr).length > 0) {
+    const lines = [];
+    if (cr.chiffre_affaires || cr.ca) lines.push(`  Chiffre d'affaires: ${(cr.chiffre_affaires || cr.ca || 0).toLocaleString('fr-FR')} FCFA`);
+    if (cr.achats_matieres || cr.achats) lines.push(`  Achats matières: ${(cr.achats_matieres || cr.achats || 0).toLocaleString('fr-FR')} FCFA`);
+    if (cr.charges_personnel || cr.salaires) lines.push(`  Charges personnel: ${(cr.charges_personnel || cr.salaires || 0).toLocaleString('fr-FR')} FCFA`);
+    if (cr.charges_externes) lines.push(`  Charges externes: ${(cr.charges_externes || 0).toLocaleString('fr-FR')} FCFA`);
+    if (cr.dotations_amortissements) lines.push(`  Dotations amortissements: ${(cr.dotations_amortissements || 0).toLocaleString('fr-FR')} FCFA`);
+    if (cr.resultat_exploitation) lines.push(`  Résultat exploitation: ${(cr.resultat_exploitation || 0).toLocaleString('fr-FR')} FCFA`);
+    if (cr.resultat_net) lines.push(`  Résultat net: ${(cr.resultat_net || 0).toLocaleString('fr-FR')} FCFA`);
+    if (lines.length > 0) {
+      inputsDetailBlock = `\nCOMPTE DE RÉSULTAT DÉTAILLÉ (Inputs financiers — données réelles à respecter) :\n${lines.join('\n')}`;
+    }
+  }
+  // Bilan résumé from inputs
+  const bilan = inp.bilan || inp.balance_sheet || {};
+  let bilanBlock = "";
+  if (bilan && Object.keys(bilan).length > 0) {
+    const parts = [];
+    if (bilan.total_actif) parts.push(`  Total actif: ${bilan.total_actif.toLocaleString('fr-FR')} FCFA`);
+    if (bilan.capitaux_propres) parts.push(`  Capitaux propres: ${bilan.capitaux_propres.toLocaleString('fr-FR')} FCFA`);
+    if (bilan.dettes) parts.push(`  Dettes: ${bilan.dettes.toLocaleString('fr-FR')} FCFA`);
+    if (bilan.tresorerie) parts.push(`  Trésorerie: ${bilan.tresorerie.toLocaleString('fr-FR')} FCFA`);
+    if (parts.length > 0) {
+      bilanBlock = `\nBILAN RÉSUMÉ (Inputs) :\n${parts.join('\n')}`;
+    }
+  }
 
   let revenueByProductBlock = "";
   if (margeActivites.length > 0) {
@@ -748,7 +799,10 @@ ${productsList}
 
 SERVICES (${(data.services || []).length}) :
 ${servicesList}
+${bmcRevenueBlock}
 ${revenueByProductBlock}
+${inputsDetailBlock}
+${bilanBlock}
 ${historicalRevenueBlock}
 ${cogsBlock}
 ${opexBlock}
@@ -772,6 +826,12 @@ ${serviceInstructions}
 4. CAPEX réaliste pour les immobilisations nécessaires
 5. Scénario : TYPICAL_CASE
 6. CHAQUE produit/service actif DOIT avoir volume_cy > 0
+
+CONTRAINTE CRITIQUE VOLUMES :
+- CHAQUE produit/service actif DOIT avoir des volumes > 0 pour les 8 années (YEAR-2 à YEAR6).
+- Ne JAMAIS laisser les volumes à zéro après l'année courante.
+- Utilise le growth_rate pour projeter les volumes sur TOUTES les années futures.
+- Si l'entreprise est récente, YEAR-2 et YEAR-1 peuvent être zéro, mais CURRENT YEAR et YEAR2-YEAR6 DOIVENT avoir des volumes positifs.
 
 CONTRAINTES DE COHÉRENCE :
 - Les revenus historiques ci-dessus sont des DONNÉES RÉELLES — volume_cy × price_cy DOIT correspondre au CA
@@ -874,12 +934,62 @@ function expandCondensedData(json: Record<string, any>): void {
   console.log(`[expand] Products: ${(json.products||[]).filter((p:any)=>p.per_year?.length).length} expanded, Staff: ${(json.staff||[]).filter((s:any)=>s.per_year?.length).length} expanded`);
 }
 
+/**
+ * Post-expansion validation: scan all active products/services and ensure
+ * no future year has zero volumes when CURRENT YEAR has positive volumes.
+ */
+// deno-lint-ignore no-explicit-any
+function validateAndFillVolumes(json: Record<string, any>): void {
+  const validate = (items: any[], label: string) => {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      if (!item?.active || !item.per_year || !Array.isArray(item.per_year)) continue;
+      const g = item.growth_rate || 0.15;
+      item.per_year = repairPerYearVolumes(item.per_year, g);
+    }
+  };
+  validate(json.products || [], "Product");
+  validate(json.services || [], "Service");
+}
+
 // deno-lint-ignore no-explicit-any
 function expandProductOrService(p: any): any {
-  // Skip if already in full per_year format (backward compatibility)
-  if (p.per_year && Array.isArray(p.per_year) && p.per_year.length >= 4) return p;
-
   const yearLabels = ["YEAR-2","YEAR-1","CURRENT YEAR","YEAR2","YEAR3","YEAR4","YEAR5","YEAR6"];
+
+  // If already has full 8-entry per_year, keep but validate volumes
+  if (p.per_year && Array.isArray(p.per_year) && p.per_year.length >= 8) {
+    // Still validate: if future years have zero volumes, fill them
+    return { ...p, per_year: repairPerYearVolumes(p.per_year, p.growth_rate || 0.15) };
+  }
+
+  // If partial per_year (4-7 entries from truncated AI), extrapolate missing years
+  if (p.per_year && Array.isArray(p.per_year) && p.per_year.length >= 4 && p.per_year.length < 8) {
+    console.log(`[expand] Product "${p.name}": partial per_year (${p.per_year.length}/8), extrapolating...`);
+    const existing = p.per_year;
+    const lastEntry = existing[existing.length - 1];
+    const g = p.growth_rate || 0.15;
+    const pg = p.price_growth || 0.03;
+    
+    while (existing.length < 8) {
+      const idx = existing.length;
+      const prevEntry = existing[existing.length - 1];
+      const totalVol = (prevEntry.volume_h1 || 0) + (prevEntry.volume_h2 || 0);
+      const newVol = Math.round(totalVol * (1 + g));
+      const newEntry = { ...prevEntry };
+      newEntry.year = yearLabels[idx];
+      newEntry.volume_h1 = Math.round(newVol * 0.45);
+      newEntry.volume_h2 = Math.round(newVol * 0.55);
+      // Grow prices
+      for (const k of ['unit_price_r1', 'unit_price_r2', 'unit_price_r3']) {
+        if (newEntry[k]) newEntry[k] = Math.round(newEntry[k] * (1 + pg) / 1000) * 1000;
+      }
+      for (const k of ['cogs_r1', 'cogs_r2', 'cogs_r3']) {
+        if (newEntry[k]) newEntry[k] = Math.round(newEntry[k] * (1 + pg) / 1000) * 1000;
+      }
+      existing.push(newEntry);
+    }
+    return { ...p, per_year: repairPerYearVolumes(existing, g) };
+  }
 
   if (!p.active) {
     return { ...p, per_year: yearLabels.map(y => ({
@@ -935,6 +1045,41 @@ function expandProductOrService(p: any): any {
   });
 
   return { ...p, per_year };
+}
+
+/**
+ * Repair per_year volumes: if active product has zero volumes in future years
+ * (YEAR2-YEAR6) while CURRENT YEAR has volumes, extrapolate using growth_rate.
+ */
+// deno-lint-ignore no-explicit-any
+function repairPerYearVolumes(perYear: any[], growthRate: number): any[] {
+  if (!perYear || perYear.length < 3) return perYear;
+  
+  // Find CURRENT YEAR entry (index 2)
+  const cyEntry = perYear.find((e: any) => e.year === "CURRENT YEAR") || perYear[2];
+  const cyVolume = (cyEntry?.volume_h1 || 0) + (cyEntry?.volume_h2 || 0);
+  if (cyVolume === 0) return perYear; // No base volume to extrapolate from
+  
+  const g = growthRate || 0.15;
+  let lastKnownVolume = cyVolume;
+  
+  // Check YEAR2 through YEAR6 (indices 3-7)
+  for (let i = 3; i < perYear.length && i < 8; i++) {
+    const entry = perYear[i];
+    const vol = (entry.volume_h1 || 0) + (entry.volume_h2 || 0);
+    if (vol > 0) {
+      lastKnownVolume = vol;
+    } else {
+      // Zero volume in future year — extrapolate
+      const newVol = Math.round(lastKnownVolume * (1 + g));
+      entry.volume_h1 = Math.round(newVol * 0.45);
+      entry.volume_h2 = Math.round(newVol * 0.55);
+      lastKnownVolume = newVol;
+      console.warn(`[repairVolumes] Fixed zero volume at ${entry.year}: h1=${entry.volume_h1}, h2=${entry.volume_h2}`);
+    }
+  }
+  
+  return perYear;
 }
 
 // deno-lint-ignore no-explicit-any
