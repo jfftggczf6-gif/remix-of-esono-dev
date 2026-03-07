@@ -63,7 +63,7 @@ export default function Index() {
             Préparez votre PME à <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(215,60%,55%)] to-[hsl(152,56%,45%)]">l'investissement</span>
           </h1>
           <p className="text-base md:text-lg text-white/50 mt-5 max-w-xl leading-relaxed">
-            8 modules séquentiels — du Business Model Canvas au dossier investisseur complet.
+            7 modules séquentiels — du Business Model Canvas au dossier investisseur complet.
             IA + coaching humain pour les PME africaines.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
