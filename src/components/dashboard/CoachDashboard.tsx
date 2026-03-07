@@ -96,7 +96,17 @@ type DetailTab = 'parcours' | 'mirror' | 'livrables';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CoachDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, session: authSession } = useAuth();
+
+  /** Robust access token retrieval: context → getSession → refreshSession → redirect */
+  const getValidAccessToken = async (): Promise<string> => {
+    if (authSession?.access_token) return authSession.access_token;
+    const { data: { session: s } } = await supabase.auth.getSession();
+    if (s?.access_token) return s.access_token;
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+    if (refreshed?.access_token) return refreshed.access_token;
+    throw new Error("Session expirée — veuillez vous reconnecter");
+  };
 
   const [view, setView] = useState<View>('list');
   const [selectedEnt, setSelectedEnt] = useState<any>(null);
