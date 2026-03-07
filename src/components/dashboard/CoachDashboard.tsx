@@ -460,6 +460,139 @@ export default function CoachDashboard() {
     }
   };
 
+  // ─── Download Coach (mirror) ────────────────────────────────────────────
+
+  const handleDownloadCoach = async (type: string, format: string, enterpriseId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterpriseId}&format=${format}`;
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (!response.ok) throw new Error('Erreur de téléchargement');
+      const blob = await response.blob();
+      const ext = format === 'xlsx' ? '.xlsx' : format === 'json' ? '.json' : format === 'docx' ? '.docx' : '.html';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${selectedEnt?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'export'}_${type}${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success('Fichier téléchargé !');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleGenerateModuleCoach = async (moduleCode: string, enterpriseId: string) => {
+    if (!user) return;
+    setGeneratingModuleCoach(moduleCode);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+      const fnMap: Record<string, string> = {
+        bmc: 'generate-bmc', sic: 'generate-sic', inputs: 'generate-inputs',
+        framework: 'generate-framework', diagnostic: 'generate-diagnostic',
+        plan_ovo: 'generate-plan-ovo', business_plan: 'generate-business-plan', odd: 'generate-odd',
+      };
+      const fn = fnMap[moduleCode] || `generate-${moduleCode}`;
+      const timeoutMs = moduleCode === 'business_plan' ? 180000 : 120000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fn}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ enterprise_id: enterpriseId }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Erreur'); }
+      const result = await response.json();
+      await supabase.from('deliverables')
+        .update({ generated_by: 'coach_mirror', visibility: 'shared', coach_id: user.id, shared_at: new Date().toISOString() } as any)
+        .eq('enterprise_id', enterpriseId)
+        .eq('type', DELIV_MAP[moduleCode] as any);
+      toast.success(`${moduleCode.toUpperCase()} généré ! Score: ${result.score || '—'}/100`);
+      setSelectedModule(moduleCode);
+      await fetchData();
+    } catch (err: any) {
+      if (err.name === 'AbortError') toast.error('La génération a pris trop de temps. Réessayez.');
+      else toast.error(err.message || 'Erreur de génération');
+    } finally {
+      setGeneratingModuleCoach(null);
+    }
+  };
+
+  const handleDownloadBpWordCoach = async (url: string, entName: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (!response.ok) throw new Error('Erreur de téléchargement');
+      const blob = await response.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${entName.replace(/[^a-zA-Z0-9]/g, '_')}_BusinessPlan.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success('Business Plan Word téléchargé !');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDownloadOvoCoach = async (enterpriseId: string, entDelivs: any[]) => {
+    try {
+      const ovoExcel = entDelivs.find((d: any) => d.type === 'plan_ovo_excel');
+      const fileName = (ovoExcel?.data as any)?.file_name;
+      if (!fileName) { toast.error('Fichier OVO Excel introuvable'); return; }
+      const { data: signedData, error: signedErr } = await supabase.storage
+        .from('ovo-outputs')
+        .createSignedUrl(fileName, 3600);
+      if (signedErr || !signedData?.signedUrl) { toast.error('Erreur de téléchargement'); return; }
+      const response = await fetch(signedData.signedUrl);
+      if (!response.ok) throw new Error('Erreur');
+      const blob = await response.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success('Fichier téléchargé !');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDownloadOddExcelCoach = async (entDelivs: any[]) => {
+    try {
+      const oddExcel = entDelivs.find((d: any) => d.type === 'odd_excel');
+      const fileName = (oddExcel?.data as any)?.file_name;
+      if (!fileName) { toast.error('Fichier ODD Excel introuvable'); return; }
+      const { data: signedData, error: signedErr } = await supabase.storage
+        .from('ovo-outputs')
+        .createSignedUrl(fileName, 3600);
+      if (signedErr || !signedData?.signedUrl) { toast.error('Erreur de téléchargement'); return; }
+      const response = await fetch(signedData.signedUrl);
+      if (!response.ok) throw new Error('Erreur');
+      const blob = await response.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success('Fichier téléchargé !');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   // ─── Download Report ──────────────────────────────────────────────────────
 
   const handleDownloadReport = (ent: any) => {
