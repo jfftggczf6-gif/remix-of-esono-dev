@@ -675,10 +675,9 @@ export default function EntrepreneurDashboard() {
   const handleDownload = async (type: string, format: string) => {
     if (!enterprise) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      const token = await getValidAccessToken();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}`;
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Erreur'); }
       const blob = await response.blob();
       const ext = format === 'csv' ? '.csv' : format === 'json' ? '.json' : format === 'xlsx' ? '.xlsx' : '.html';
