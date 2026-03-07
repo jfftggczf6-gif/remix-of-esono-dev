@@ -800,7 +800,10 @@ ${productsList}
 
 SERVICES (${(data.services || []).length}) :
 ${servicesList}
+${bmcRevenueBlock}
 ${revenueByProductBlock}
+${inputsDetailBlock}
+${bilanBlock}
 ${historicalRevenueBlock}
 ${cogsBlock}
 ${opexBlock}
@@ -824,6 +827,12 @@ ${serviceInstructions}
 4. CAPEX réaliste pour les immobilisations nécessaires
 5. Scénario : TYPICAL_CASE
 6. CHAQUE produit/service actif DOIT avoir volume_cy > 0
+
+CONTRAINTE CRITIQUE VOLUMES :
+- CHAQUE produit/service actif DOIT avoir des volumes > 0 pour les 8 années (YEAR-2 à YEAR6).
+- Ne JAMAIS laisser les volumes à zéro après l'année courante.
+- Utilise le growth_rate pour projeter les volumes sur TOUTES les années futures.
+- Si l'entreprise est récente, YEAR-2 et YEAR-1 peuvent être zéro, mais CURRENT YEAR et YEAR2-YEAR6 DOIVENT avoir des volumes positifs.
 
 CONTRAINTES DE COHÉRENCE :
 - Les revenus historiques ci-dessus sont des DONNÉES RÉELLES — volume_cy × price_cy DOIT correspondre au CA
