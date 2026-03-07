@@ -204,7 +204,7 @@ export async function fillOddExcelTemplate(
     .download("ODD_template.xlsm");
 
   if (error || !fileData) {
-    throw new Error(`Template ODD_template.xlsx introuvable: ${error?.message ?? "absent"}`);
+    throw new Error(`Template ODD_template.xlsm introuvable: ${error?.message ?? "absent"}`);
   }
 
   const buffer = await fileData.arrayBuffer();

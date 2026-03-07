@@ -194,7 +194,7 @@ serve(async (req) => {
         type: "odd_excel",
         data: {
           generated_at: new Date().toISOString(),
-          template: "ODD_template.xlsx",
+          template: "ODD_template.xlsm",
           size_bytes: xlsxBytes.byteLength,
           file_name: fileName,
         },
