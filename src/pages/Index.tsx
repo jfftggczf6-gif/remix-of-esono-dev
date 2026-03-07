@@ -11,12 +11,11 @@ import { Button } from '@/components/ui/button';
 const MODULES = [
   { step: 1, code: 'bmc', title: 'Business Model Canvas', desc: '9 blocs — Analysez votre modèle économique', icon: LayoutGrid, category: 'hybrid', deliverables: ['Excel BMC', 'HTML Diagnostic'] },
   { step: 2, code: 'sic', title: 'Social Impact Canvas', desc: '5 sections, 14 questions, ODD, SMART', icon: Globe, category: 'hybrid', deliverables: ['Excel SIC', 'HTML Diagnostic'] },
-  { step: 3, code: 'inputs', title: 'Données Financières', desc: 'Historiques, RH, CAPEX, hypothèses', icon: FileSpreadsheet, category: 'hybrid', deliverables: ['Excel Inputs', 'Rapport validation'] },
-  { step: 4, code: 'framework', title: 'Plan Financier Intermédiaire', desc: 'Modélisation financière 5 ans, ratios', icon: BarChart3, category: 'automatic', deliverables: ['Excel Framework (8 feuilles)'] },
-  { step: 5, code: 'diagnostic', title: 'Diagnostic Expert', desc: 'Score crédibilité /100, risques, plan action', icon: Stethoscope, category: 'automatic', deliverables: ['HTML Diagnostic Expert'] },
-  { step: 6, code: 'plan_ovo', title: 'Plan Financier Final', desc: 'Projections 3 scénarios sur 5 ans', icon: ListChecks, category: 'automatic', deliverables: ['Plan Financier Final'] },
-  { step: 7, code: 'business_plan', title: 'Business Plan', desc: 'Document complet max 20 pages', icon: FileText, category: 'automatic', deliverables: ['Business Plan (.docx)'] },
-  { step: 8, code: 'odd', title: 'Due Diligence ODD', desc: 'Évaluation investment readiness', icon: Target, category: 'automatic', deliverables: ['ODD Template'] },
+  { step: 3, code: 'framework', title: 'Plan Financier Intermédiaire', desc: 'Modélisation financière 5 ans, ratios', icon: BarChart3, category: 'automatic', deliverables: ['Excel Framework (8 feuilles)'] },
+  { step: 4, code: 'diagnostic', title: 'Diagnostic Expert', desc: 'Score crédibilité /100, risques, plan action', icon: Stethoscope, category: 'automatic', deliverables: ['HTML Diagnostic Expert'] },
+  { step: 5, code: 'plan_ovo', title: 'Plan Financier Final', desc: 'Projections 3 scénarios sur 5 ans', icon: ListChecks, category: 'automatic', deliverables: ['Plan Financier Final'] },
+  { step: 6, code: 'business_plan', title: 'Business Plan', desc: 'Document complet max 20 pages', icon: FileText, category: 'automatic', deliverables: ['Business Plan (.docx)'] },
+  { step: 7, code: 'odd', title: 'Due Diligence ODD', desc: 'Évaluation investment readiness', icon: Target, category: 'automatic', deliverables: ['ODD Template'] },
 ];
 
 export default function Index() {
@@ -64,7 +63,7 @@ export default function Index() {
             Préparez votre PME à <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(215,60%,55%)] to-[hsl(152,56%,45%)]">l'investissement</span>
           </h1>
           <p className="text-base md:text-lg text-white/50 mt-5 max-w-xl leading-relaxed">
-            8 modules séquentiels — du Business Model Canvas au dossier investisseur complet.
+            7 modules séquentiels — du Business Model Canvas au dossier investisseur complet.
             IA + coaching humain pour les PME africaines.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
@@ -128,9 +127,9 @@ export default function Index() {
       <section className="container py-16">
         <div className="text-center mb-12">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Architecture</p>
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">8 Modules Séquentiels</h2>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">7 Modules Séquentiels</h2>
           <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
-            Les modules 1-3 sont hybrides (micro-learning + IA + coaching). Les modules 4-8 sont générés automatiquement par l'IA.
+            Les modules 1-2 sont hybrides (micro-learning + IA + coaching). Les modules 3-7 sont générés automatiquement par l'IA.
           </p>
         </div>
 
@@ -140,7 +139,7 @@ export default function Index() {
             <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
             </div>
-            <h3 className="text-sm font-display font-bold uppercase tracking-wide text-muted-foreground">Modules Hybrides (1-3)</h3>
+            <h3 className="text-sm font-display font-bold uppercase tracking-wide text-muted-foreground">Modules Hybrides (1-2)</h3>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Micro-learning + IA + Coaching</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -156,7 +155,7 @@ export default function Index() {
             <div className="h-6 w-6 rounded bg-info/10 flex items-center justify-center">
               <Sparkles className="h-3.5 w-3.5 text-info" />
             </div>
-            <h3 className="text-sm font-display font-bold uppercase tracking-wide text-muted-foreground">Modules Automatiques (4-8)</h3>
+            <h3 className="text-sm font-display font-bold uppercase tracking-wide text-muted-foreground">Modules Automatiques (3-7)</h3>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-info/10 text-info font-medium">Traitement IA</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -183,7 +182,7 @@ export default function Index() {
               title="Espace Entrepreneur"
               desc="Uploadez vos documents, complétez les 8 modules et générez votre dossier investisseur complet."
               features={[
-                'Business Model Canvas, SIC, Inputs financiers',
+                'Business Model Canvas, Social Impact Canvas',
                 'Génération IA : Framework, Diagnostic, OVO, BP, ODD',
                 '+10 livrables téléchargeables (Excel, HTML)',
               ]}
@@ -213,7 +212,7 @@ export default function Index() {
         <div className="container py-10">
           <div className="flex flex-wrap justify-center gap-12 text-center">
             {[
-              { value: '8', unit: 'modules', label: 'Parcours séquentiel' },
+              { value: '7', unit: 'modules', label: 'Parcours séquentiel' },
               { value: 'TVA 18%', unit: '', label: 'IS 25% • Charges 25%' },
               { value: 'XOF', unit: 'FCFA', label: 'Devise par défaut' },
               { value: 'IA', unit: '+ Coach', label: 'Double validation' },

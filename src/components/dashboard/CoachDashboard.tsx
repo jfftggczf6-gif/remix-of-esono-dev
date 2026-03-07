@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Building2, CheckCircle2, Clock, ChevronRight, LayoutGrid, Globe, FileSpreadsheet, BarChart3, Stethoscope, ListChecks, FileText, Target, Download, Sparkles, Loader2, X } from 'lucide-react';
+import { Users, Building2, CheckCircle2, Clock, ChevronRight, LayoutGrid, Globe, BarChart3, Stethoscope, ListChecks, FileText, Target, Download, Sparkles, Loader2, X } from 'lucide-react';
 import BmcViewer from './BmcViewer';
 import DeliverableViewer from './DeliverableViewer';
 import { toast } from 'sonner';
@@ -16,7 +16,6 @@ import { toast } from 'sonner';
 const MODULE_CONFIG = [
   { code: 'bmc' as const, title: 'Business Model Canvas', icon: LayoutGrid },
   { code: 'sic' as const, title: 'Social Impact Canvas', icon: Globe },
-  { code: 'inputs' as const, title: 'Données Financières', icon: FileSpreadsheet },
   { code: 'framework' as const, title: 'Plan Financier Intermédiaire', icon: BarChart3 },
   { code: 'diagnostic' as const, title: 'Diagnostic Expert', icon: Stethoscope },
   { code: 'plan_ovo' as const, title: 'Plan Financier Final', icon: ListChecks },
@@ -25,7 +24,7 @@ const MODULE_CONFIG = [
 ];
 
 const DELIV_MAP: Record<string, string> = {
-  bmc: 'bmc_analysis', sic: 'sic_analysis', inputs: 'inputs_data',
+  bmc: 'bmc_analysis', sic: 'sic_analysis',
   framework: 'framework_data', diagnostic: 'diagnostic_data',
   plan_ovo: 'plan_ovo', business_plan: 'business_plan', odd: 'odd_analysis',
 };
