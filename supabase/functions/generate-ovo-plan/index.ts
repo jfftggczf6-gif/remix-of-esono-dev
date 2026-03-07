@@ -1457,29 +1457,29 @@ function buildCellWrites(json: Record<string, any>): CellWrite[] {
 
       if (!s.active) {
         ["L","M","N","P","Q","R","S","T","U","W","X","Y","Z","AA","AB","AE","AF","AG","AH"]
-          .forEach(col => w("RevenueData", row, col, 0, "number"));
+          .forEach(col => w("RevenueData", row, col, 0, "number", true));
         return;
       }
 
-      w("RevenueData", row, "L", yr.unit_price_r1 || 0, "number");
-      w("RevenueData", row, "M", yr.unit_price_r2 || 0, "number");
-      w("RevenueData", row, "N", yr.unit_price_r3 || 0, "number");
-      w("RevenueData", row, "P", yr.mix_r1 ?? 1.0, "number");
-      w("RevenueData", row, "Q", yr.mix_r2 || 0,   "number");
-      w("RevenueData", row, "R", yr.mix_r3 || 0,   "number");
-      w("RevenueData", row, "S", yr.cogs_r1 || 0,  "number");
-      w("RevenueData", row, "T", yr.cogs_r2 || 0,  "number");
-      w("RevenueData", row, "U", yr.cogs_r3 || 0,  "number");
-      w("RevenueData", row, "W", yr.mix_r1_ch1 ?? 0, "number");
-      w("RevenueData", row, "X", yr.mix_r2_ch1 || 0, "number");
-      w("RevenueData", row, "Y", yr.mix_r3_ch1 || 0, "number");
-      w("RevenueData", row, "Z", yr.mix_r1_ch2 ?? 1.0, "number");
-      w("RevenueData", row, "AA", yr.mix_r2_ch2 || 0, "number");
-      w("RevenueData", row, "AB", yr.mix_r3_ch2 || 0, "number");
-      w("RevenueData", row, "AE", Math.round(yr.volume_h1 || 0), "number");
-      w("RevenueData", row, "AF", Math.round(yr.volume_h2 || 0), "number");
-      w("RevenueData", row, "AG", Math.round(yr.volume_q3 || 0), "number");
-      w("RevenueData", row, "AH", Math.round(yr.volume_q4 || 0), "number");
+      w("RevenueData", row, "L", yr.unit_price_r1 || 0, "number", true);
+      w("RevenueData", row, "M", yr.unit_price_r2 || 0, "number", true);
+      w("RevenueData", row, "N", yr.unit_price_r3 || 0, "number", true);
+      w("RevenueData", row, "P", yr.mix_r1 ?? 1.0, "number", true);
+      w("RevenueData", row, "Q", yr.mix_r2 || 0,   "number", true);
+      w("RevenueData", row, "R", yr.mix_r3 || 0,   "number", true);
+      w("RevenueData", row, "S", yr.cogs_r1 || 0,  "number", true);
+      w("RevenueData", row, "T", yr.cogs_r2 || 0,  "number", true);
+      w("RevenueData", row, "U", yr.cogs_r3 || 0,  "number", true);
+      w("RevenueData", row, "W", yr.mix_r1_ch1 ?? 0, "number", true);
+      w("RevenueData", row, "X", yr.mix_r2_ch1 || 0, "number", true);
+      w("RevenueData", row, "Y", yr.mix_r3_ch1 || 0, "number", true);
+      w("RevenueData", row, "Z", yr.mix_r1_ch2 ?? 1.0, "number", true);
+      w("RevenueData", row, "AA", yr.mix_r2_ch2 || 0, "number", true);
+      w("RevenueData", row, "AB", yr.mix_r3_ch2 || 0, "number", true);
+      w("RevenueData", row, "AE", Math.round(yr.volume_h1 || 0), "number", true);
+      w("RevenueData", row, "AF", Math.round(yr.volume_h2 || 0), "number", true);
+      w("RevenueData", row, "AG", Math.round(yr.volume_q3 || 0), "number", true);
+      w("RevenueData", row, "AH", Math.round(yr.volume_q4 || 0), "number", true);
     });
   });
 
