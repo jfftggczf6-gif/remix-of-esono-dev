@@ -804,7 +804,47 @@ export default function EntrepreneurDashboard() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex-none h-12 bg-[hsl(222,47%,15%)] flex items-center px-6 gap-6">
+      {/* ===== EXTRACT ENTERPRISE INFO DIALOG ===== */}
+      <Dialog open={showExtractDialog} onOpenChange={setShowExtractDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Informations détectées</DialogTitle>
+            <DialogDescription>
+              D'après vos documents, nous avons identifié les informations suivantes :
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            {extractedInfo?.name && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                <span className="text-sm text-muted-foreground">Nom</span>
+                <span className="text-sm font-semibold">{extractedInfo.name}</span>
+              </div>
+            )}
+            {extractedInfo?.country && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                <span className="text-sm text-muted-foreground">Pays</span>
+                <span className="text-sm font-semibold">{extractedInfo.country}</span>
+              </div>
+            )}
+            {extractedInfo?.sector && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                <span className="text-sm text-muted-foreground">Secteur</span>
+                <span className="text-sm font-semibold">{extractedInfo.sector}</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => { setShowExtractDialog(false); setExtractedInfo(null); }}>
+              Non merci
+            </Button>
+            <Button onClick={handleConfirmExtraction} disabled={saving}>
+              {saving ? 'Mise à jour...' : 'Oui, mettre à jour'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">Investment Readiness</span>
         <span className="text-2xl font-display font-bold text-white">{globalScore > 0 ? `${globalScore}/100` : '—/100'}</span>
         <div className="w-40 h-2 rounded-full bg-white/10 overflow-hidden">
