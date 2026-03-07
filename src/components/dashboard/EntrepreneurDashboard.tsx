@@ -971,6 +971,81 @@ export default function EntrepreneurDashboard() {
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
+            {/* Download bar for Diagnostic module */}
+            {selectedModule === 'diagnostic' && selectedDeliv && (
+              <div className="mx-6 mt-4 mb-2 rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                      <Stethoscope className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-orange-900">Diagnostic Expert Global</p>
+                      <p className="text-xs text-orange-600">Analyse complète de l'entreprise avec SWOT et recommandations</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDownload('diagnostic_data', 'html')}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition-colors shadow-sm"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Rapport HTML
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Download bar for BMC module */}
+            {selectedModule === 'bmc' && selectedDeliv && (
+              <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <LayoutGrid className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-900">Business Model Canvas</p>
+                      <p className="text-xs text-emerald-600">Canvas complet avec analyse des 9 blocs</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDownload('bmc_analysis', 'html')}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Rapport HTML
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Download bar for SIC module */}
+            {selectedModule === 'sic' && selectedDeliv && (
+              <div className="mx-6 mt-4 mb-2 rounded-xl border border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-teal-100 flex items-center justify-center">
+                      <Globe className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-teal-900">Social Impact Canvas</p>
+                      <p className="text-xs text-teal-600">Analyse d'impact social avec scoring par dimension</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDownload('sic_analysis', 'html')}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Rapport HTML
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Green download bar for Framework module */}
             {selectedModule === 'framework' && selectedDeliv && (
               <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
