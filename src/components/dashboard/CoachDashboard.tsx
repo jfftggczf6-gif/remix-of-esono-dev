@@ -96,7 +96,17 @@ type DetailTab = 'parcours' | 'mirror' | 'livrables';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CoachDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, session: authSession } = useAuth();
+
+  /** Robust access token retrieval: context → getSession → refreshSession → redirect */
+  const getValidAccessToken = async (): Promise<string> => {
+    if (authSession?.access_token) return authSession.access_token;
+    const { data: { session: s } } = await supabase.auth.getSession();
+    if (s?.access_token) return s.access_token;
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+    if (refreshed?.access_token) return refreshed.access_token;
+    throw new Error("Session expirée — veuillez vous reconnecter");
+  };
 
   const [view, setView] = useState<View>('list');
   const [selectedEnt, setSelectedEnt] = useState<any>(null);
@@ -321,8 +331,8 @@ export default function CoachDashboard() {
 
     let completed = 0;
     const errors: string[] = [];
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error('Non authentifié'); setGenerating(false); return; }
+    let token: string;
+    try { token = await getValidAccessToken(); } catch { toast.error('Non authentifié'); setGenerating(false); return; }
 
     const stepsToRun = PIPELINE.filter(step => {
       const hasBmc = entUploads.some((u: any) => u.category === 'bmc');
@@ -346,7 +356,7 @@ export default function CoachDashboard() {
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${step.fn}`,
             {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
               body: JSON.stringify({ enterprise_id: enterpriseId }),
             }
           );
@@ -374,6 +384,16 @@ export default function CoachDashboard() {
       toast.success(`${completed} livrable(s) générés — 🔒 privés par défaut`);
       if (errors.length > 0) toast.warning(`${errors.length} module(s) en erreur`);
       await fetchData();
+
+      // Auto-trigger OVO Excel generation after pipeline
+      if (completed > 0) {
+        try {
+          toast.info('Génération automatique du Plan Financier Excel...');
+          await handleGenerateOvoPlanCoach(enterpriseId);
+        } catch (ovoErr: any) {
+          console.warn('[Coach Pipeline] OVO Excel auto-generation failed:', ovoErr.message);
+        }
+      }
     } finally {
       setGenerating(false);
       setGenerationProgress(null);
@@ -393,8 +413,8 @@ export default function CoachDashboard() {
     }
 
     let completed = 0;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error('Non authentifié'); setGeneratingMirror(false); return; }
+    let token: string;
+    try { token = await getValidAccessToken(); } catch { toast.error('Non authentifié'); setGeneratingMirror(false); return; }
 
     try {
       for (let i = 0; i < PIPELINE.length; i++) {
@@ -405,7 +425,7 @@ export default function CoachDashboard() {
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${step.fn}`,
             {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
               body: JSON.stringify({ enterprise_id: enterpriseId }),
             }
           );
@@ -420,6 +440,16 @@ export default function CoachDashboard() {
       }
       toast.success(`${completed} livrable(s) — visibles par l'entrepreneur`);
       await fetchData();
+
+      // Auto-trigger OVO Excel generation
+      if (completed > 0) {
+        try {
+          toast.info('Génération automatique du Plan Financier Excel...');
+          await handleGenerateOvoPlanCoach(enterpriseId);
+        } catch (ovoErr: any) {
+          console.warn('[Mirror] OVO Excel auto-generation failed:', ovoErr.message);
+        }
+      }
     } finally {
       setGeneratingMirror(false);
       setGenerationProgress(null);
@@ -464,10 +494,9 @@ export default function CoachDashboard() {
 
   const handleDownloadCoach = async (type: string, format: string, enterpriseId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      const token = await getValidAccessToken();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterpriseId}&format=${format}`;
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Erreur de téléchargement');
       const blob = await response.blob();
       const ext = format === 'xlsx' ? '.xlsx' : format === 'json' ? '.json' : format === 'docx' ? '.docx' : '.html';
@@ -488,8 +517,7 @@ export default function CoachDashboard() {
     if (!user) return;
     setGeneratingModuleCoach(moduleCode);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      const token = await getValidAccessToken();
       const fnMap: Record<string, string> = {
         bmc: 'generate-bmc', sic: 'generate-sic', inputs: 'generate-inputs',
         framework: 'generate-framework', diagnostic: 'generate-diagnostic',
@@ -501,7 +529,7 @@ export default function CoachDashboard() {
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fn}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ enterprise_id: enterpriseId }),
         signal: controller.signal,
       });
@@ -523,11 +551,33 @@ export default function CoachDashboard() {
     }
   };
 
-  const handleDownloadBpWordCoach = async (url: string, entName: string) => {
+  const handleDownloadBpWordCoach = async (fileUrl: string, entName: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      // Extract file path from the URL for signed URL generation
+      const bpMatch = fileUrl.match(/bp-outputs\/(.+)$/);
+      if (bpMatch) {
+        const filePath = bpMatch[1].split('?')[0];
+        const { data: signedData, error: signedErr } = await supabase.storage
+          .from('bp-outputs')
+          .createSignedUrl(filePath, 3600);
+        if (!signedErr && signedData?.signedUrl) {
+          const response = await fetch(signedData.signedUrl);
+          if (!response.ok) throw new Error('Erreur de téléchargement');
+          const blob = await response.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `${entName.replace(/[^a-zA-Z0-9]/g, '_')}_BusinessPlan.docx`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+          toast.success('Business Plan Word téléchargé !');
+          return;
+        }
+      }
+      // Fallback: direct fetch with auth
+      const token = await getValidAccessToken();
+      const response = await fetch(fileUrl, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Erreur de téléchargement');
       const blob = await response.blob();
       const a = document.createElement('a');
@@ -593,7 +643,72 @@ export default function CoachDashboard() {
     }
   };
 
-  // ─── Download Report ──────────────────────────────────────────────────────
+  // ─── Generate OVO Excel Plan (coach version) ────────────────────────────
+  const handleGenerateOvoPlanCoach = async (enterpriseId: string) => {
+    try {
+      const token = await getValidAccessToken();
+      
+      // Gather deliverable data for this enterprise
+      const entDelivs = deliverablesMap[enterpriseId] || [];
+      const getDelivData = (type: string): Record<string, any> => {
+        const d = entDelivs.find((d: any) => d.type === type);
+        return (d?.data && typeof d.data === 'object') ? d.data as Record<string, any> : {};
+      };
+
+      const ent = enterprises.find((e: any) => e.id === enterpriseId);
+      const planOvoData = getDelivData('plan_ovo');
+      const bmcData = getDelivData('bmc_analysis');
+      const inputsData = getDelivData('inputs_data');
+      const frameworkData = getDelivData('framework_data');
+      const sicData = getDelivData('sic_analysis');
+      const diagnosticData = getDelivData('diagnostic_data');
+
+      const requestId = crypto.randomUUID();
+
+      const payload = {
+        user_id: user?.id,
+        enterprise_id: enterpriseId,
+        request_id: requestId,
+        company: ent?.name || '',
+        country: ent?.country || "IVORY COAST",
+        sector: ent?.sector || "",
+        business_model: bmcData?.canvas?.proposition_valeur?.enonce || '',
+        current_year: new Date().getFullYear(),
+        employees: ent?.employees_count || 0,
+        existing_revenue: inputsData?.compte_resultat?.chiffre_affaires || 0,
+        products: planOvoData?.products || [],
+        services: planOvoData?.services || [],
+        bmc_data: bmcData,
+        inputs_data: inputsData,
+        framework_data: frameworkData,
+        sic_data: sicData,
+        plan_ovo_data: planOvoData,
+        diagnostic_data: diagnosticData,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ovo-plan`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Erreur' }));
+        throw new Error(err.error || 'Génération OVO Excel échouée');
+      }
+
+      const result = await response.json();
+      toast.success('Plan Financier Excel généré !');
+      await fetchData();
+      return result;
+    } catch (err: any) {
+      console.warn('[Coach] OVO Excel generation failed:', err.message);
+      throw err;
+    }
+  };
 
   const handleDownloadReport = (ent: any) => {
     const delivs = deliverablesMap[ent.id] || [];
@@ -750,6 +865,22 @@ export default function CoachDashboard() {
         title={ent.name}
         subtitle={`${ent.sector || 'Secteur non défini'} • ${ent.country || ''}`}
       >
+        {/* Generation overlay */}
+        {(generating || generatingMirror) && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl text-center max-w-sm">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+              <p className="font-bold text-lg">Génération en cours…</p>
+              {generationProgress && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {generationProgress.name} ({generationProgress.current}/{generationProgress.total})
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-3">Veuillez patienter, ne quittez pas cette page</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -980,6 +1111,35 @@ export default function CoachDashboard() {
                             onClick={() => { setSelectedModule(mod.code); setDetailTab('livrables'); }}>
                             <Eye className="h-3 w-3 mr-1" /> Voir
                           </Button>
+                          {/* Download buttons per format */}
+                          <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
+                            onClick={() => handleDownloadCoach(DELIV_MAP[mod.code], 'html', ent.id)}>
+                            <Download className="h-3 w-3" /> HTML
+                          </Button>
+                          {mod.code === 'framework' && (
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
+                              onClick={() => handleDownloadCoach('framework_data', 'xlsx', ent.id)}>
+                              <Download className="h-3 w-3" /> XLSX
+                            </Button>
+                          )}
+                          {mod.code === 'plan_ovo' && entDelivs.find((x: any) => x.type === 'plan_ovo_excel') && (
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
+                              onClick={() => handleDownloadOvoCoach(ent.id, entDelivs)}>
+                              <Download className="h-3 w-3" /> XLSM
+                            </Button>
+                          )}
+                          {mod.code === 'business_plan' && d.data?._meta?.download_url && (
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
+                              onClick={() => handleDownloadBpWordCoach(d.data._meta.download_url, ent.name)}>
+                              <Download className="h-3 w-3" /> DOCX
+                            </Button>
+                          )}
+                          {mod.code === 'odd' && entDelivs.find((x: any) => x.type === 'odd_excel') && (
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
+                              onClick={() => handleDownloadOddExcelCoach(entDelivs)}>
+                              <Download className="h-3 w-3" /> XLSM
+                            </Button>
+                          )}
                           {!isShared && (
                             <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 text-purple-600 border-purple-200"
                               disabled={sharingId === d.id}
@@ -1299,6 +1459,43 @@ export default function CoachDashboard() {
                 );
               })}
             </div>
+
+            {/* Contextual download bar for selected module in Livrables tab */}
+            {selectedDeliv && (
+              <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/30">
+                <span className="text-sm font-medium">{MODULE_CONFIG.find(m => m.code === selectedModule)?.title}</span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1"
+                    onClick={() => handleDownloadCoach(DELIV_MAP[selectedModule], 'html', ent.id)}>
+                    <Download className="h-3 w-3" /> HTML
+                  </Button>
+                  {selectedModule === 'framework' && (
+                    <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1"
+                      onClick={() => handleDownloadCoach('framework_data', 'xlsx', ent.id)}>
+                      <Download className="h-3 w-3" /> XLSX
+                    </Button>
+                  )}
+                  {selectedModule === 'plan_ovo' && entDelivs.find((x: any) => x.type === 'plan_ovo_excel') && (
+                    <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1"
+                      onClick={() => handleDownloadOvoCoach(ent.id, entDelivs)}>
+                      <Download className="h-3 w-3" /> XLSM
+                    </Button>
+                  )}
+                  {selectedModule === 'business_plan' && selectedDeliv?.data?._meta?.download_url && (
+                    <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1"
+                      onClick={() => handleDownloadBpWordCoach(selectedDeliv.data._meta.download_url, ent.name)}>
+                      <Download className="h-3 w-3" /> DOCX
+                    </Button>
+                  )}
+                  {selectedModule === 'odd' && entDelivs.find((x: any) => x.type === 'odd_excel') && (
+                    <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1"
+                      onClick={() => handleDownloadOddExcelCoach(entDelivs)}>
+                      <Download className="h-3 w-3" /> XLSM
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {renderDeliverableContent(selectedDeliv) || (
               <Card>
