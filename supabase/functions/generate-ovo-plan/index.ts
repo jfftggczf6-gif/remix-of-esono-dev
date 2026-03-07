@@ -323,6 +323,7 @@ async function callClaudeAPI(data: EntrepreneurData): Promise<Record<string, unk
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
+        signal: AbortSignal.timeout(90000), // fail-fast après 90s
         headers: {
           "Content-Type": "application/json",
           "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
@@ -330,7 +331,7 @@ async function callClaudeAPI(data: EntrepreneurData): Promise<Record<string, unk
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 32768,
+          max_tokens: 16384, // 16K suffisant pour le JSON financier
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt }],
         }),
