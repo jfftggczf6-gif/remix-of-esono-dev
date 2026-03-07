@@ -244,6 +244,12 @@ export async function callAI(systemPrompt: string, userPrompt: string) {
   }
 
   const aiResult = await aiResponse.json();
+
+  // Detect truncation
+  if (aiResult.stop_reason === "max_tokens") {
+    console.warn("AI response truncated (max_tokens reached)");
+  }
+
   const content = aiResult.content?.[0]?.text || "";
 
   try {

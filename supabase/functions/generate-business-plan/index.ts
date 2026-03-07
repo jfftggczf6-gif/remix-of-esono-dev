@@ -4,30 +4,26 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Headi
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ── SYSTEM PROMPT ──────────────────────────────────────────────────────
-const BP_SYSTEM_PROMPT = `Tu es un consultant senior en business plan avec 20+ ans d'expérience auprès de PME africaines (Afrique de l'Ouest). Tu rédiges des business plans professionnels pour OVO (Organisation de financement impact). 
+const BP_SYSTEM_PROMPT = `Tu es un consultant senior en business plan avec 20+ ans d'expérience auprès de PME africaines. Tu rédiges des business plans professionnels pour OVO.
+Tu génères UNIQUEMENT du JSON structuré. Pas de markdown, pas de texte autour. Rédige en français. Sois précis, factuel, stratégique. JAMAIS de contenu générique.`;
 
-Tu génères UNIQUEMENT du JSON structuré. Pas de markdown, pas de texte autour.
-Le JSON doit respecter exactement le schema fourni.
-Rédige en français. Sois précis, factuel, stratégique. Niveau McKinsey.
-JAMAIS de contenu générique — chaque phrase doit être spécifique à cette entreprise.`;
-
-// ── JSON SCHEMA ────────────────────────────────────────────────────────
-const BP_JSON_SCHEMA = `{
+// ── SPLIT SCHEMAS ──────────────────────────────────────────────────────
+const SCHEMA_PART1 = `{
   "company_name": "string",
-  "tagline": "string — une phrase percutante décrivant l'entreprise",
+  "tagline": "string — une phrase percutante",
   "founder": "string",
   "location": "string",
   "email": "string",
   "website": "string ou N/A",
-  "date_creation": "string (année)",
+  "date_creation": "string",
   "numero_entreprise": "string ou À compléter",
   "compte_bancaire": "string ou À compléter",
-  "resume_gestion": "string — 3-4 paragraphes: contexte entreprise, traction actuelle, projet d'investissement, retour attendu. 400-500 mots.",
-  "historique": "string — chronologie narrative depuis création",
-  "vision": "string — 2-3 phrases aspirationnelles, horizon 10 ans",
+  "resume_gestion": "string — 3-4 paragraphes, 400-500 mots",
+  "historique": "string — chronologie narrative",
+  "vision": "string — 2-3 phrases, horizon 10 ans",
   "mission": "string — 2-3 phrases",
-  "valeurs": ["string × 3-5 valeurs — format: NOM — explication courte"],
-  "description_generale": "string — localisation, forme juridique, processus, innovation, distribution",
+  "valeurs": ["string × 3-5 — format: NOM — explication"],
+  "description_generale": "string — localisation, forme juridique, processus, innovation",
   "avenir": "string — projets CT/LT, objectifs SMART",
   "swot": {
     "forces": ["string × 4-6"],
@@ -42,7 +38,10 @@ const BP_JSON_SCHEMA = `{
   "modele_activites_ressources": "string",
   "marche_potentiel": "string — TAM/SAM/SOM",
   "competitivite": "string",
-  "tendances_marche": "string",
+  "tendances_marche": "string"
+}`;
+
+const SCHEMA_PART2 = `{
   "marketing_5p": {
     "produit": "string",
     "place": "string",
@@ -70,8 +69,8 @@ const BP_JSON_SCHEMA = `{
   "score": 0-100
 }`;
 
-// ── BUILD USER PROMPT ──────────────────────────────────────────────────
-function buildBpPrompt(ctx: any): string {
+// ── BUILD USER PROMPTS ─────────────────────────────────────────────────
+function buildContextBlock(ctx: any): string {
   const ent = ctx.enterprise;
   const dm = ctx.deliverableMap;
   const bmc = dm["bmc_analysis"] || {};
@@ -81,9 +80,7 @@ function buildBpPrompt(ctx: any): string {
   const diag = dm["diagnostic_data"] || {};
   const plan = dm["plan_ovo"] || {};
 
-  return `Génère le business plan OVO complet pour cette entreprise.
-
-ENTREPRISE :
+  return `ENTREPRISE :
 - Nom : ${ent.name || "N/A"}
 - Pays : ${ent.country || "Côte d'Ivoire"}
 - Secteur : ${ent.sector || "N/A"}
@@ -92,37 +89,41 @@ ENTREPRISE :
 - Forme juridique : ${ent.legal_form || "N/A"}
 - Date création : ${ent.creation_date || "N/A"}
 
-BUSINESS MODEL CANVAS :
-${JSON.stringify(bmc, null, 2).substring(0, 2000)}
+BMC : ${JSON.stringify(bmc).substring(0, 1000)}
 
-DONNÉES FINANCIÈRES :
-${JSON.stringify(inp, null, 2).substring(0, 1500)}
+FINANCIER : ${JSON.stringify(inp).substring(0, 800)}
 
-FRAMEWORK ANALYSE :
-${JSON.stringify(fw, null, 2).substring(0, 1500)}
+FRAMEWORK : ${JSON.stringify(fw).substring(0, 800)}
 
-SOCIAL IMPACT CANVAS :
-${JSON.stringify(sic, null, 2).substring(0, 800)}
+SIC : ${JSON.stringify(sic).substring(0, 500)}
 
-DIAGNOSTIC :
-${JSON.stringify(diag, null, 2).substring(0, 800)}
+DIAGNOSTIC : ${JSON.stringify(diag).substring(0, 500)}
 
-PLAN FINANCIER OVO :
-${plan ? JSON.stringify(plan, null, 2).substring(0, 1500) : "Non disponible"}
+PLAN OVO : ${plan ? JSON.stringify(plan).substring(0, 800) : "Non disponible"}
 
-${ctx.documentContent ? `DOCUMENTS UPLOADÉS:\n${ctx.documentContent.substring(0, 3000)}` : ""}
+${ctx.documentContent ? `DOCUMENTS:\n${ctx.documentContent.substring(0, 2000)}` : ""}`;
+}
 
-CONTRAINTES :
-1. Toutes les valeurs doivent être cohérentes entre elles
-2. Les chiffres du tableau financier doivent correspondre au plan OVO si disponible
-3. Le résumé de gestion doit tenir sur ~1 page (400-500 mots)
-4. Chaque section doit être substantielle (pas de réponses en 1 ligne)
-5. Les listes (valeurs, SWOT) doivent avoir le nombre d'items demandé
-6. Utilise des chiffres précis (FCFA, %, ratios) — pas de vagues
+function buildPromptPart1(ctx: any): string {
+  return `Génère les sections 1-8 du business plan OVO (présentation + opérations) pour cette entreprise.
 
-RETOURNE UNIQUEMENT LE JSON. Pas d'explication, pas de markdown.
+${buildContextBlock(ctx)}
 
-${BP_JSON_SCHEMA}`;
+CONTRAINTES : Chaque section doit être substantielle. Utilise des chiffres précis (FCFA, %). RETOURNE UNIQUEMENT LE JSON.
+
+${SCHEMA_PART1}`;
+}
+
+function buildPromptPart2(ctx: any, part1Summary: string): string {
+  return `Génère les sections 9-14 du business plan OVO (marketing, équipe, projet, impact, financier, attentes OVO).
+
+${buildContextBlock(ctx)}
+
+SECTIONS DÉJÀ GÉNÉRÉES (résumé) : ${part1Summary}
+
+CONTRAINTES : Cohérence avec les sections précédentes. Chiffres financiers précis en FCFA. RETOURNE UNIQUEMENT LE JSON.
+
+${SCHEMA_PART2}`;
 }
 
 // ── WORD GENERATION ────────────────────────────────────────────────────
@@ -476,14 +477,25 @@ serve(async (req) => {
 
     console.log("[BP] Generating Business Plan for:", ent.name);
 
-    // Call AI with OVO-format schema
-    const bpJson = await callAI(BP_SYSTEM_PROMPT, buildBpPrompt(ctx));
+    // PART 1: Sections 1-8
+    console.log("[BP] AI Call 1/2: Sections 1-8...");
+    const part1 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart1(ctx));
+    console.log("[BP] Part 1 OK, keys:", Object.keys(part1).length);
 
-    // Ensure score
-    bpJson.score = bpJson.score || 50;
+    // Build summary of part1 for context in part2
+    const part1Summary = `Entreprise: ${part1.company_name}, SWOT: ${(part1.swot?.forces || []).length} forces, Marché: ${(part1.marche_potentiel || "").substring(0, 100)}`;
+
+    // PART 2: Sections 9-14
+    console.log("[BP] AI Call 2/2: Sections 9-14...");
+    const part2 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart2(ctx, part1Summary));
+    console.log("[BP] Part 2 OK, keys:", Object.keys(part2).length);
+
+    // Merge
+    const bpJson = { ...part1, ...part2 };
+    bpJson.score = bpJson.score || part1.score || 50;
     bpJson.company_name = bpJson.company_name || ent.name;
 
-    console.log("[BP] AI response OK, generating Word document...");
+    console.log("[BP] Merged, generating Word document...");
 
     // Generate Word document
     const docxBytes = await generateWordDoc(bpJson);
@@ -509,14 +521,12 @@ serve(async (req) => {
       throw new Error("Erreur d'upload du fichier Word: " + uploadError.message);
     }
 
-    // Get signed URL
     const { data: signedData } = await supabaseAdmin.storage
       .from("bp-outputs")
-      .createSignedUrl(fileName, 7200); // 2 hours
+      .createSignedUrl(fileName, 7200);
 
     const downloadUrl = signedData?.signedUrl || "";
 
-    // Save deliverable with BP JSON + file info
     const deliverableData = {
       ...bpJson,
       _meta: {

@@ -228,21 +228,33 @@ export default function EntrepreneurDashboard() {
         plan_ovo: 'generate-plan-ovo', business_plan: 'generate-business-plan', odd: 'generate-odd',
       };
       const functionName = fnMap[moduleCode] || `generate-${moduleCode}`;
+      
+      // Longer timeout for business_plan (split AI calls)
+      const timeoutMs = moduleCode === 'business_plan' ? 180000 : 120000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
           body: JSON.stringify({ enterprise_id: enterprise.id }),
+          signal: controller.signal,
         }
       );
+      clearTimeout(timeoutId);
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Erreur'); }
       const result = await response.json();
       toast.success(`${moduleCode.toUpperCase()} généré ! Score: ${result.score}/100`);
       setSelectedModule(moduleCode);
       await fetchData();
     } catch (err: any) {
-      toast.error(err.message || 'Erreur de génération');
+      if (err.name === 'AbortError') {
+        toast.error('La génération a pris trop de temps. Réessayez.');
+      } else {
+        toast.error(err.message || 'Erreur de génération');
+      }
     } finally {
       setGeneratingModule(null);
     }
