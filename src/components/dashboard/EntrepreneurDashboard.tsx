@@ -325,7 +325,7 @@ export default function EntrepreneurDashboard() {
     }
   };
 
-
+  const getModuleData = (code: string) => {
     const mod = modules.find((m: any) => m.module === code);
     return { status: (mod?.status || 'not_started') as 'not_started' | 'in_progress' | 'completed', progress: mod?.progress || 0 };
   };
