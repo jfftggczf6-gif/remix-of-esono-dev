@@ -196,12 +196,25 @@ Deno.serve(async (req: Request) => {
     // ── Étape 2 : Télécharger le template ─────────────────────────────
     console.log("[generate-ovo-plan] Downloading template...");
 
-    const { data: templateBlob, error: dlError } = await supabase.storage
+    let templateBlob: Blob | null = null;
+    let dlError: any = null;
+
+    // Bug #6: Try primary template, then fallback path
+    ({ data: templateBlob, error: dlError } = await supabase.storage
       .from(TEMPLATE_BUCKET)
-      .download(TEMPLATE_FILE);
+      .download(TEMPLATE_FILE));
 
     if (dlError || !templateBlob) {
-      throw new Error(`Template download failed: ${dlError?.message}`);
+      console.warn(`[generate-ovo-plan] Primary template not found: ${dlError?.message}. Trying fallback...`);
+      // Try without path prefix
+      const fallbackName = TEMPLATE_FILE.split("/").pop() || TEMPLATE_FILE;
+      ({ data: templateBlob, error: dlError } = await supabase.storage
+        .from(TEMPLATE_BUCKET)
+        .download(fallbackName));
+    }
+
+    if (dlError || !templateBlob) {
+      throw new Error(`Template download failed: ${dlError?.message}. Veuillez uploader le template '${TEMPLATE_FILE}' dans le bucket '${TEMPLATE_BUCKET}'.`);
     }
 
     const templateBuffer = await templateBlob.arrayBuffer();
