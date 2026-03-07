@@ -43,7 +43,25 @@ const DELIVERABLE_CONFIG = [
 ];
 
 export default function EntrepreneurDashboard() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, session: authSession, signOut } = useAuth();
+
+  /** Robust access token retrieval: context → getSession → refreshSession → redirect */
+  const getValidAccessToken = async (): Promise<string> => {
+    // 1. Try auth context session first (most reliable in-memory source)
+    if (authSession?.access_token) return authSession.access_token;
+
+    // 2. Try Supabase getSession
+    const { data: { session: s } } = await supabase.auth.getSession();
+    if (s?.access_token) return s.access_token;
+
+    // 3. Force refresh
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+    if (refreshed?.access_token) return refreshed.access_token;
+
+    // 4. All failed — redirect to login
+    navigate('/login');
+    throw new Error("Session expirée — redirection vers la connexion");
+  };
   const navigate = useNavigate();
   const [enterprise, setEnterprise] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
@@ -129,13 +147,12 @@ export default function EntrepreneurDashboard() {
   const extractEnterpriseInfo = async (enterpriseId: string) => {
     try {
       setExtracting(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const token = await getValidAccessToken();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-enterprise-info`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ enterprise_id: enterpriseId }),
         }
       );
@@ -227,8 +244,7 @@ export default function EntrepreneurDashboard() {
     const errors: string[] = [];
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      const token = await getValidAccessToken();
 
       for (let i = 0; i < PIPELINE.length; i++) {
         const step = PIPELINE[i];
@@ -247,7 +263,7 @@ export default function EntrepreneurDashboard() {
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${step.fn}`,
             {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
               body: JSON.stringify({ enterprise_id: enterprise.id }),
             }
           );
@@ -287,8 +303,7 @@ export default function EntrepreneurDashboard() {
     if (!enterprise) return;
     setGeneratingModule(moduleCode);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      const token = await getValidAccessToken();
       const fnMap: Record<string, string> = {
         bmc: 'generate-bmc', sic: 'generate-sic', inputs: 'generate-inputs',
         framework: 'generate-framework', diagnostic: 'generate-diagnostic',
@@ -305,7 +320,7 @@ export default function EntrepreneurDashboard() {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ enterprise_id: enterprise.id }),
           signal: controller.signal,
         }
@@ -447,14 +462,7 @@ export default function EntrepreneurDashboard() {
     const requestId = crypto.randomUUID();
     const startedAt = new Date().toISOString();
     try {
-      let session: any = null;
-      const { data: { session: s1 }, error: sessionErr } = await supabase.auth.getSession();
-      session = s1;
-      if (!session || sessionErr) {
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        if (!refreshData.session) throw new Error("Non authentifié — veuillez vous reconnecter");
-        session = refreshData.session;
-      }
+      const token = await getValidAccessToken();
 
       // Gather ALL existing deliverable data
       const getDelivData = (type: string): Record<string, any> => {
@@ -594,7 +602,7 @@ export default function EntrepreneurDashboard() {
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ovo-plan`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload),
           }
         );
@@ -641,9 +649,9 @@ export default function EntrepreneurDashboard() {
 
   const handleDownloadOvoFile = async (url: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = await getValidAccessToken();
       const response = await fetch(url, {
-        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Erreur de téléchargement');
       const blob = await response.blob();
@@ -667,10 +675,9 @@ export default function EntrepreneurDashboard() {
   const handleDownload = async (type: string, format: string) => {
     if (!enterprise) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      const token = await getValidAccessToken();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}`;
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Erreur'); }
       const blob = await response.blob();
       const ext = format === 'csv' ? '.csv' : format === 'json' ? '.json' : format === 'xlsx' ? '.xlsx' : '.html';
@@ -689,9 +696,9 @@ export default function EntrepreneurDashboard() {
 
   const handleDownloadBpWord = async (url: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = await getValidAccessToken();
       const response = await fetch(url, {
-        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Erreur de téléchargement');
       const blob = await response.blob();
