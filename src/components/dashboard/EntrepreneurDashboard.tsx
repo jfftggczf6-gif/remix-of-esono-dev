@@ -706,7 +706,13 @@ export default function EntrepreneurDashboard() {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* ===== TOP HEADER ===== */}
       <header className="flex-none h-14 border-b border-border bg-card flex items-center px-6 z-50">
-        <span className="font-display font-bold text-lg tracking-tight mr-auto">ESONO</span>
+        <span className="font-display font-bold text-lg tracking-tight">ESONO</span>
+        <span className="mx-3 text-muted-foreground">·</span>
+        <span className="text-sm font-medium text-foreground">{enterprise.name}</span>
+        <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={openEditDialog}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <div className="mr-auto" />
         <div className="flex items-center gap-4">
           <span className="text-sm text-foreground">
             {profile?.full_name} · <span className="text-muted-foreground">{profile?.email}</span>
