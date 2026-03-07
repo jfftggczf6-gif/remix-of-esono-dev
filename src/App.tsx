@@ -38,6 +38,9 @@ const App = () => (
             <Route path="/livrables" element={
               <ProtectedRoute><Livrables /></ProtectedRoute>
             } />
+            <Route path="/templates" element={
+              <ProtectedRoute><Templates /></ProtectedRoute>
+            } />
             <Route path="/module/bmc" element={
               <ProtectedRoute><BmcModule /></ProtectedRoute>
             } />
