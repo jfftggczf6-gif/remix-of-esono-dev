@@ -210,9 +210,19 @@ export async function fillOddExcelTemplate(
   const buffer = await fileData.arrayBuffer();
   const zip = await JSZip.loadAsync(buffer);
 
-  // Preserve VBA binary before any modifications
-  const vbaFile = zip.file("xl/vbaProject.bin");
-  const vbaBytes = vbaFile ? await vbaFile.async("uint8array") : null;
+  // Preserve ALL VBA-related binaries before any modifications
+  const vbaEntries: Array<{ path: string; bytes: Uint8Array }> = [];
+  const vbaPromises: Array<Promise<void>> = [];
+  zip.forEach((relativePath, file) => {
+    if (relativePath.includes("vbaProject") || relativePath.startsWith("xl/vba")) {
+      vbaPromises.push(
+        file.async("uint8array").then((bytes) => {
+          vbaEntries.push({ path: relativePath, bytes });
+        })
+      );
+    }
+  });
+  await Promise.all(vbaPromises);
 
   const sharedStrings = await loadSharedStrings(zip);
   console.log(`[odd-excel] ${sharedStrings.length} shared strings chargées`);
@@ -277,12 +287,13 @@ export async function fillOddExcelTemplate(
     console.warn("[odd-excel] Feuille INDICATEURS non trouvée, ignorée");
   }
 
-  // Re-inject VBA without compression to preserve macro integrity
-  if (vbaBytes) {
-    zip.file("xl/vbaProject.bin", vbaBytes, { compression: "STORE" });
-    console.log(`[odd-excel] VBA project preserved (${vbaBytes.byteLength} bytes, STORE)`);
+  // Re-inject ALL VBA binaries with STORE to preserve macro integrity
+  for (const entry of vbaEntries) {
+    zip.file(entry.path, entry.bytes, { compression: "STORE" });
+    console.log(`[odd-excel] VBA preserved: ${entry.path} (${entry.bytes.byteLength} bytes, STORE)`);
   }
 
   console.log(`[odd-excel] ✅ Template rempli pour "${enterpriseName}"`);
-  return await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+  // No global compression — let per-file STORE settings take effect for VBA
+  return await zip.generateAsync({ type: "uint8array" });
 }
