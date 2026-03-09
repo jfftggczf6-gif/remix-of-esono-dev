@@ -169,9 +169,12 @@ serve(async (req) => {
       bmc: ctx.deliverableMap["bmc_analysis"] || {},
     };
 
+    // RAG: enrichir avec benchmarks et fiscal
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "bailleurs"]);
+
     const rawData = await callAI(SYSTEM_PROMPT, buildUserPrompt(
       ent.name, ent.sector || "", ctx.documentContent, allData
-    ));
+    ) + ragContext);
     
     // Normalize: fix years, ensure consistency, fill gaps
     let data = normalizePlanOvo(rawData);

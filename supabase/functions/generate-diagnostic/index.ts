@@ -260,9 +260,12 @@ serve(async (req) => {
       source: "Données BCEAO / OHADA / secteur privé UEMOA 2024"
     };
 
+    // RAG: enrichir avec données de la base de connaissances
+    const ragContext = await buildRAGContext(ctx.supabase, pays, secteur, ["benchmarks", "fiscal", "bailleurs", "reglementation"]);
+
     const rawData = await callAI(
       SYSTEM_PROMPT,
-      buildUserPrompt(ent.name, secteur, pays, ctx.documentContent, livrables, kbContext)
+      buildUserPrompt(ent.name, secteur, pays, ctx.documentContent, livrables, kbContext) + ragContext
     );
 
     const data = normalizeDiagnostic(rawData);

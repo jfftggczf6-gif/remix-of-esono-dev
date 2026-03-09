@@ -111,9 +111,12 @@ serve(async (req) => {
     const ctx = await verifyAndGetContext(req);
     const ent = ctx.enterprise;
 
+    // RAG: enrichir avec benchmarks sectoriels
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "secteurs"]);
+
     const bmcData = await callAI(BMC_SYSTEM_PROMPT, BMC_USER_PROMPT(
       ent.name, ent.sector || "", ent.country || "", ent.city || "", ctx.documentContent
-    ));
+    ) + ragContext);
 
     // Normalize score key
     if (bmcData.score_global && !bmcData.score) bmcData.score = bmcData.score_global;

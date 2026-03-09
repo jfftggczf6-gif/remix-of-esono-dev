@@ -177,10 +177,16 @@ serve(async (req) => {
     const ctx = await verifyAndGetContext(req);
     const ent = ctx.enterprise;
     const bmcData = ctx.deliverableMap["bmc_analysis"] || {};
+    const fiscalParams = getFiscalParams(ent.country || "Côte d'Ivoire");
 
-    const rawData = await callAI(SYSTEM_PROMPT, userPrompt(
+    // RAG: enrichir avec benchmarks et données fiscales
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "bailleurs"]);
+
+    const enrichedPrompt = userPrompt(
       ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData
-    ));
+    ) + ragContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
+
+    const rawData = await callAI(SYSTEM_PROMPT, enrichedPrompt, 16384, OPUS_MODEL);
     const data = normalizeInputs(rawData);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", data, "inputs");

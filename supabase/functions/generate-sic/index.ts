@@ -185,9 +185,12 @@ serve(async (req) => {
     const ent = ctx.enterprise;
     const bmcData = ctx.deliverableMap["bmc_analysis"] || ctx.moduleMap["bmc"] || {};
 
+    // RAG: enrichir avec données ODD et impact social
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs", "secteurs"]);
+
     const rawData = await callAI(SYSTEM_PROMPT, userPrompt(
       ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData
-    ));
+    ) + ragContext);
 
     // Ensure score field is set for saveDeliverable
     rawData.score = rawData.score_global || rawData.score || 0;

@@ -123,47 +123,19 @@ serve(async (req) => {
       );
     }
 
-    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
+    // RAG: enrichir avec données ODD
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs"]);
+
     const userPrompt = buildUserPrompt(
       ent.name,
       ent.sector || "PME",
       ent.country || "Côte d'Ivoire",
       bmcData,
       sicData
-    );
+    ) + ragContext;
 
-    console.log("[generate-odd] Calling Claude API (max_tokens: 16384)...");
-    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      signal: AbortSignal.timeout(120000),
-      headers: {
-        "x-api-key": anthropicApiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 16384,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      throw new Error(`Claude API error: ${aiResponse.status}`);
-    }
-
-    const aiResult = await aiResponse.json();
-    const rawText = aiResult.content
-      .filter((b: { type: string }) => b.type === "text")
-      .map((b: { text: string }) => b.text)
-      .join("")
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    const rawData = JSON.parse(rawText);
+    console.log("[generate-odd] Calling Claude API via callAI (max_tokens: 16384)...");
+    const rawData = await callAI(SYSTEM_PROMPT, userPrompt, 16384);
     const data = normalizeOdd(rawData);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "odd_analysis", data, "odd");
