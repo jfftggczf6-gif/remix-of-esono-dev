@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
-  verifyAndGetContext, callAI, saveDeliverable
+  verifyAndGetContext, callAI, saveDeliverable, buildRAGContext
 } from "../_shared/helpers.ts";
 import { normalizeDiagnostic } from "../_shared/normalizers.ts";
 
