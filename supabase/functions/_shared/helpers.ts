@@ -379,3 +379,48 @@ export const FISCAL_PARAMS: Record<string, {
 export function getFiscalParams(country: string) {
   return FISCAL_PARAMS[country] || FISCAL_PARAMS["Côte d'Ivoire"];
 }
+
+// ===== RAG: BUILD KNOWLEDGE CONTEXT =====
+export async function buildRAGContext(
+  supabase: any,
+  country: string,
+  sector: string,
+  categories: string[]
+): Promise<string> {
+  try {
+    let query = supabase
+      .from("knowledge_base")
+      .select("title, content, category, source")
+      .in("category", categories)
+      .limit(30);
+
+    // Get entries matching country OR global (null country)
+    const { data: entries } = await query;
+    if (!entries || entries.length === 0) return "";
+
+    // Filter: prefer country-specific, then global, then sector-specific
+    const countryLower = (country || "").toLowerCase();
+    const sectorLower = (sector || "").toLowerCase();
+    
+    const relevant = entries.filter((e: any) => {
+      const matchCountry = !e.country || e.country.toLowerCase().includes(countryLower) || countryLower.includes((e.country || "").toLowerCase());
+      const matchSector = !e.sector || e.sector.toLowerCase().includes(sectorLower) || sectorLower.includes((e.sector || "").toLowerCase());
+      return matchCountry || matchSector;
+    });
+
+    const selected = relevant.length > 0 ? relevant : entries.slice(0, 15);
+
+    let ragText = "\n\n══════ BASE DE CONNAISSANCES (RAG) ══════\n";
+    for (const entry of selected.slice(0, 20)) {
+      ragText += `\n--- ${entry.category.toUpperCase()}: ${entry.title} ---\n`;
+      ragText += entry.content.substring(0, 2000) + "\n";
+      if (entry.source) ragText += `(Source: ${entry.source})\n`;
+    }
+    ragText += "══════════════════════════════════════════\n";
+
+    return ragText;
+  } catch (e) {
+    console.warn("buildRAGContext error (non-blocking):", e);
+    return "";
+  }
+}
