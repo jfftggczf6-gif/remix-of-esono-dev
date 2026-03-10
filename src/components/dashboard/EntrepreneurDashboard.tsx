@@ -944,9 +944,15 @@ export default function EntrepreneurDashboard() {
                 <p className="text-sm font-semibold">BMC & Impact Social</p>
                 {docFiles.length > 0 ? (
                   docFiles.map(f => (
-                    <div key={f.name} className="flex items-center gap-1.5 mt-1">
+                    <div key={f.name} className="flex items-center gap-1.5 mt-1 group/file">
                       <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--success))] flex-none" />
-                      <span className="text-xs text-[hsl(var(--success))] truncate font-medium">{f.name}</span>
+                      <span className="text-xs text-[hsl(var(--success))] truncate font-medium flex-1">{f.name}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }}
+                        className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     </div>
                   ))
                 ) : (
