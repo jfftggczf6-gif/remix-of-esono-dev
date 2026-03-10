@@ -333,7 +333,7 @@ export default function EntrepreneurDashboard() {
           supabase.from('score_history').insert({
             enterprise_id: enterprise.id,
             score: avgScore,
-            scores_detail: Object.fromEntries(PIPELINE.map((s, i) => [s.name, scores[i] || 0]).filter(([, v]) => v > 0)),
+            scores_detail: Object.fromEntries(PIPELINE.map((s, i) => [s.name, scores[i] || 0]).filter(([, v]) => Number(v) > 0)),
           }),
         ]);
       }
