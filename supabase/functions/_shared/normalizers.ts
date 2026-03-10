@@ -495,8 +495,8 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
   const overwrite = (series: any, ligne: any) => {
     if (!ligne || !series) return;
     for (let i = 0; i < 5; i++) {
-      const val = toNumber(ligne[AN_KEYS[i]], undefined as any);
-      if (val !== undefined && !isNaN(val)) {
+      const val = toNumber(ligne[AN_KEYS[i]], NaN);
+      if (!isNaN(val)) {
         series[PROJ_KEYS[i]] = val;
       }
     }
