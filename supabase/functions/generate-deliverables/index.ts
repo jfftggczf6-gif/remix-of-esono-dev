@@ -59,7 +59,14 @@ serve(async (req) => {
 
     const richTypes = new Set(
       (existingDeliverables || [])
-        .filter((d: any) => d.data && typeof d.data === "object" && (d.data.canvas || d.data.theorie_changement || d.data.compte_resultat || d.data.ratios || d.data.diagnostic_par_dimension || d.data.scenarios || d.data.resume_executif || d.data.checklist))
+        .filter((d: any) => {
+          if (!d.data || typeof d.data !== "object") return false;
+          // For inputs_data, require chiffre_affaires > 0 to be considered "rich"
+          if (d.type === "inputs_data") {
+            return d.data.compte_resultat && toNumber(d.data.compte_resultat.chiffre_affaires) > 0;
+          }
+          return (d.data.canvas || d.data.theorie_changement || d.data.compte_resultat || d.data.ratios || d.data.diagnostic_par_dimension || d.data.scenarios || d.data.resume_executif || d.data.checklist);
+        })
         .map((d: any) => d.type)
     );
 

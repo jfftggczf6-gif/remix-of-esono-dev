@@ -516,17 +516,13 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
   overwrite(data.net_profit, rnLine);
   overwrite(data.cashflow, cfLine);
 
-  // If no cashflow line from Framework, derive cashflow from net_profit + estimated amortizations
+  // If no cashflow line from Framework, derive cashflow = EBITDA × (1 - taux_IS/100)
   if (!cfLine && data.net_profit && data.cashflow) {
-    // Estimate amortization as ~15% of CAPEX or difference between EBITDA and net_profit (simplified)
+    const { tauxIS } = getFiscalParams(country);
     for (const yk of PROJ_KEYS) {
       const ebitda = data.ebitda[yk] || 0;
-      const netProfit = data.net_profit[yk] || 0;
-      // cashflow ≈ net_profit + (ebitda - net_profit) * 0.5 (rough: half of depreciation+tax gap goes back to cash)
-      // More accurate: cashflow ≈ EBITDA - taxes, where taxes ≈ EBITDA - net_profit - depreciation
-      // Simplified: cashflow ≈ net_profit + depreciation ≈ net_profit + (ebitda - net_profit) * 0.4
-      const depreciation = (ebitda - netProfit) * 0.4;
-      data.cashflow[yk] = Math.round(netProfit + (depreciation > 0 ? depreciation : 0));
+      // cashflow ≈ EBITDA × (1 - IS%) — approximation simplifiée sans amortissements
+      data.cashflow[yk] = Math.round(ebitda * (1 - tauxIS / 100));
     }
   }
 

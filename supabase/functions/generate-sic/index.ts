@@ -188,16 +188,16 @@ serve(async (req) => {
     // RAG: enrichir avec données ODD et impact social
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs", "secteurs"]);
 
-    const rawData = await callAI(SYSTEM_PROMPT, userPrompt(
+    const rawAiData = await callAI(SYSTEM_PROMPT, userPrompt(
       ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData
     ) + ragContext);
 
-    // Ensure score field is set for saveDeliverable
-    rawData.score = rawData.score_global || rawData.score || 0;
+    // Normalize AI response
+    const sicData = normalizeSic(rawAiData);
 
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "sic_analysis", rawData, "sic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "sic_analysis", sicData, "sic");
 
-    return jsonResponse({ success: true, data: rawData, score: rawData.score_global || rawData.score });
+    return jsonResponse({ success: true, data: sicData, score: sicData.score_global || sicData.score });
   } catch (e: any) {
     console.error("generate-sic error:", e);
     return errorResponse(e.message || "Erreur inconnue", e.status || 500);

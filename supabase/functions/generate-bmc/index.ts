@@ -115,12 +115,12 @@ serve(async (req) => {
     // RAG: enrichir avec benchmarks sectoriels
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "secteurs"]);
 
-    const bmcData = await callAI(BMC_SYSTEM_PROMPT, BMC_USER_PROMPT(
+    const rawBmcData = await callAI(BMC_SYSTEM_PROMPT, BMC_USER_PROMPT(
       ent.name, ent.sector || "", ent.country || "", ent.city || "", ctx.documentContent
     ) + ragContext);
 
-    // Normalize score key
-    if (bmcData.score_global && !bmcData.score) bmcData.score = bmcData.score_global;
+    // Normalize AI response
+    const bmcData = normalizeBmc(rawBmcData);
 
     // Save both bmc_analysis and bmc_html
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "bmc_analysis", bmcData, "bmc");
