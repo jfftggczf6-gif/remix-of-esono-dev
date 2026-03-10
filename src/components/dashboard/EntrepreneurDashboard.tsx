@@ -568,7 +568,7 @@ export default function EntrepreneurDashboard() {
               description: 'Activité clé transformée en produit/service (BMC)',
               deduit_du_bmc: true,
             };
-          }).filter((i) => i.name);
+          }).filter((i: any) => i.name);
         }
 
         return [];
