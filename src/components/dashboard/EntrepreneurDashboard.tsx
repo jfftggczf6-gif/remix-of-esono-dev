@@ -225,6 +225,19 @@ export default function EntrepreneurDashboard() {
     }
   };
 
+  const handleDeleteFile = async (fileName: string) => {
+    if (!enterprise) return;
+    if (!confirm(`Supprimer "${fileName}" ?`)) return;
+    try {
+      const { error } = await supabase.storage.from('documents').remove([`${enterprise.id}/${fileName}`]);
+      if (error) throw error;
+      toast.success('Fichier supprimé');
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur de suppression');
+    }
+  };
+
   const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
   const PIPELINE = [
