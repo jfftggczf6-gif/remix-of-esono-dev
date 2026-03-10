@@ -195,6 +195,9 @@ Deno.serve(async (req: Request) => {
     // Post-expansion validation: fill any remaining zero-volume gaps
     validateAndFillVolumes(financialJson);
 
+    // Scale volumes to align Excel revenues with Framework/plan_ovo targets
+    scaleToFrameworkTargets(financialJson, data.framework_data, data.plan_ovo_data);
+
     // Bug #7: Sort products/services by slot for consistent ordering
     if (Array.isArray(financialJson.products)) {
       financialJson.products.sort((a: any, b: any) => (a.slot || 0) - (b.slot || 0));
