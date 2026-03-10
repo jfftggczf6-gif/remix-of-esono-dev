@@ -68,6 +68,8 @@ export default function EntrepreneurDashboard() {
   const [enterprise, setEnterprise] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [deliverables, setDeliverables] = useState<any[]>([]);
+  const [scoreHistory, setScoreHistory] = useState<any[]>([]);
+  const [showScoreChart, setShowScoreChart] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
