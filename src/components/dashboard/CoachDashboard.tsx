@@ -1444,9 +1444,9 @@ export default function CoachDashboard() {
                       <Download className="h-3 w-3" /> XLSM
                     </Button>
                   )}
-                  {selectedModule === 'business_plan' && selectedDeliv?.data?._meta?.download_url && (
+                  {selectedModule === 'business_plan' && (selectedDeliv?.data as any)?._meta?.download_url && (
                     <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1"
-                      onClick={() => handleDownloadBpWordCoach(selectedDeliv.data._meta.download_url, ent.name)}>
+                      onClick={() => handleDownloadBpWordCoach((selectedDeliv?.data as any)._meta.download_url, ent.name)}>
                       <Download className="h-3 w-3" /> DOCX
                     </Button>
                   )}

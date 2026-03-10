@@ -181,7 +181,7 @@ export default function PlanOvoViewer({ data }: { data: any }) {
   const fmtMetric = (v: number | null, suffix = '') => v == null ? '—' : `${v.toFixed(1)}${suffix}`;
 
   // Chart data
-  const chartData = YEAR_KEYS.map((k, i) => ({
+  const chartData = YEAR_KEYS.map((_k, i) => ({
     name: labels[i],
     Revenue: revSeries[i],
     EBITDA: ebitdaSeries[i],

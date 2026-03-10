@@ -1232,7 +1232,7 @@ export default function EntrepreneurDashboard() {
                       <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-semibold">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération en cours… (30-90 secondes)
                       </div>
-                    ) : selectedDeliv?.data?._meta?.download_url ? (
+                    ) : (selectedDeliv?.data as any)?._meta?.download_url ? (
                       <>
                         <button
                           onClick={() => handleDownloadBpWord()}
