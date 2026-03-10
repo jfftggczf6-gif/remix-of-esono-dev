@@ -57,6 +57,7 @@ serve(async (req) => {
       .select("type, data")
       .eq("enterprise_id", enterprise_id);
 
+    const toNumber = (v: any) => { const n = typeof v === 'string' ? parseFloat(v.replace(/[^0-9.-]/g, '')) : Number(v); return isNaN(n) ? 0 : n; };
     const richTypes = new Set(
       (existingDeliverables || [])
         .filter((d: any) => {
