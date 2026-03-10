@@ -410,8 +410,34 @@ export function normalizePlanOvo(raw: any): any {
  * Overwrites Plan OVO projection years (year2-year6) with exact Framework values
  * and recalculates all derived fields deterministically.
  */
-export function enforceFrameworkConstraints(data: any, frameworkData: any): any {
+export function enforceFrameworkConstraints(data: any, frameworkData: any, inputsData?: any): any {
   if (!data || !frameworkData?.projection_5ans?.lignes) return data;
+
+  // ── Anchor current_year on real Inputs data (not AI-hallucinated) ──
+  if (inputsData?.compte_resultat) {
+    const cr = inputsData.compte_resultat;
+    if (cr.chiffre_affaires && cr.chiffre_affaires > 0) {
+      data.revenue.current_year = toNumber(cr.chiffre_affaires);
+    }
+    if (cr.resultat_net && cr.resultat_net !== 0) {
+      data.net_profit.current_year = toNumber(cr.resultat_net);
+    }
+    // Derive EBITDA from inputs if available
+    const ebitdaFromInputs = toNumber(cr.resultat_exploitation) + toNumber(cr.dotations_amortissements);
+    if (ebitdaFromInputs > 0) {
+      data.ebitda.current_year = ebitdaFromInputs;
+    }
+    // Recalculate gross_profit & cogs for current_year
+    if (cr.chiffre_affaires > 0 && cr.achats_matieres !== undefined) {
+      data.cogs.current_year = toNumber(cr.achats_matieres);
+      data.gross_profit.current_year = toNumber(cr.chiffre_affaires) - toNumber(cr.achats_matieres);
+      data.gross_margin_pct.current_year = data.revenue.current_year > 0
+        ? (data.gross_profit.current_year / data.revenue.current_year) * 100 : 0;
+    }
+    if (data.revenue.current_year > 0) {
+      data.ebitda_margin_pct.current_year = (data.ebitda.current_year / data.revenue.current_year) * 100;
+    }
+  }
 
   const lignes = frameworkData.projection_5ans.lignes;
   if (!Array.isArray(lignes) || lignes.length === 0) return data;
@@ -501,17 +527,17 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any): any 
     }
     data.investment_metrics.tri = Math.round(irr * 10000) / 10000;
 
-    // CAGR Revenue
-    const revCY = data.revenue.current_year || data.revenue.year2;
+    // CAGR Revenue — use current_year (anchored on Inputs) as base
+    const revCY = data.revenue.current_year;
     const revY6 = data.revenue.year6;
-    if (revCY > 0 && revY6 > 0) {
+    if (revCY > 0 && revY6 > 0 && revY6 !== revCY) {
       data.investment_metrics.cagr_revenue = Math.round((Math.pow(revY6 / revCY, 1 / 5) - 1) * 10000) / 10000;
     }
 
     // CAGR EBITDA
-    const ebCY = data.ebitda.current_year || data.ebitda.year2;
+    const ebCY = data.ebitda.current_year;
     const ebY6 = data.ebitda.year6;
-    if (ebCY > 0 && ebY6 > 0) {
+    if (ebCY > 0 && ebY6 > 0 && ebY6 !== ebCY) {
       data.investment_metrics.cagr_ebitda = Math.round((Math.pow(ebY6 / ebCY, 1 / 5) - 1) * 10000) / 10000;
     }
 
@@ -524,13 +550,51 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any): any 
     // Payback
     if (initialInv > 0) {
       let cumCf = 0;
+      data.investment_metrics.payback_years = 5; // default
       for (let i = 0; i < 5; i++) {
         cumCf += data.cashflow[PROJ_KEYS[i]];
         if (cumCf >= initialInv) {
-          data.investment_metrics.payback_years = i + 1;
+          // Fractional payback: year + remaining / cf_that_year
+          const prevCum = cumCf - data.cashflow[PROJ_KEYS[i]];
+          const remaining = initialInv - prevCum;
+          const cfYear = data.cashflow[PROJ_KEYS[i]];
+          data.investment_metrics.payback_years = cfYear > 0
+            ? Math.round((i + remaining / cfYear) * 10) / 10
+            : i + 1;
           break;
         }
       }
+    }
+
+    // ── Post-calculation validation guards ──
+    // Guard: CAGR too low but revenue grew significantly
+    if (data.investment_metrics.cagr_revenue < 0.01 && revY6 > revCY * 1.5) {
+      data.investment_metrics.cagr_revenue = Math.round((Math.pow(revY6 / revCY, 1 / 5) - 1) * 10000) / 10000;
+    }
+    if (data.investment_metrics.cagr_ebitda < 0.01 && ebY6 > ebCY * 1.5) {
+      data.investment_metrics.cagr_ebitda = Math.round((Math.pow(ebY6 / ebCY, 1 / 5) - 1) * 10000) / 10000;
+    }
+    // Guard: TRI negative but VAN positive → retry Newton-Raphson with different seed
+    if (data.investment_metrics.tri <= 0 && data.investment_metrics.van > 0) {
+      let irrRetry = 0.25;
+      for (let iter = 0; iter < 100; iter++) {
+        let npvR = -initialInv;
+        let dnpvR = 0;
+        for (let i = 0; i < 5; i++) {
+          const cf = data.cashflow[PROJ_KEYS[i]];
+          npvR += cf / Math.pow(1 + irrRetry, i + 1);
+          dnpvR -= (i + 1) * cf / Math.pow(1 + irrRetry, i + 2);
+        }
+        if (Math.abs(dnpvR) < 1e-10) break;
+        irrRetry = irrRetry - npvR / dnpvR;
+        if (irrRetry < -0.99) { irrRetry = 0; break; }
+        if (Math.abs(npvR) < 1000) break;
+      }
+      if (irrRetry > 0) data.investment_metrics.tri = Math.round(irrRetry * 10000) / 10000;
+    }
+    // Guard: payback 0 but funding needed
+    if (data.investment_metrics.payback_years === 0 && initialInv > 0) {
+      data.investment_metrics.payback_years = 5;
     }
   }
 
