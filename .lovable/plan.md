@@ -1,14 +1,27 @@
 
 
-## Réponse
+# Audit du Rapport Coach — Problèmes identifiés
 
-Lovable offre deux options pour tester des modifications sans affecter le projet principal :
+## Problème critique : `config.toml` manquant
 
-1. **Remix (clone)** : Créer une copie complète du projet. Allez dans **Settings → Remix this project**. Cela crée un nouveau projet identique où vous pouvez tester librement.
+Le fichier `supabase/config.toml` ne contient **aucune entrée** pour `generate-coach-report`. Sans `verify_jwt = false`, la fonction rejettera toutes les requêtes avec une erreur 401 (le système signing-keys ne fonctionne pas avec le JWT verification par défaut).
 
-2. **Branches GitHub** (expérimental) : Si votre projet est connecté à GitHub, vous pouvez activer le switching de branches dans **Account Settings → Labs → GitHub Branch Switching**. Cela vous permet de travailler sur une branche séparée.
+## Problème mineur : import inutilisé
 
-Je ne peux pas créer de remix ou de branche directement pour vous — ces actions se font depuis l'interface Lovable.
+`callAI` est importé dans `generate-coach-report/index.ts` (ligne 3) mais jamais utilisé — la fonction appelle l'API Anthropic directement. Cet import inutilisé peut provoquer une erreur de déploiement si `callAI` a des dépendances qui ne se résolvent pas.
 
-**Recommandation** : Le remix est le plus simple et le plus fiable pour tester des modifications en isolation.
+## Ce qui fonctionne correctement
+
+- **Frontend** (`CoachDashboard.tsx` lignes 677-718) : appel async correct, gestion du token, loader, téléchargement blob HTML — tout est bon.
+- **Auth côté backend** : vérification du coach via `enterprises.coach_id` — correct.
+- **Données** : récupération de tous les livrables + modules + profil coach — complet.
+- **Prompt IA** : bien structuré, 12 sections, style CSS print-friendly — professionnel.
+- **Nettoyage HTML** : suppression des wrappers markdown, vérification `<!DOCTYPE` — bon.
+
+## Corrections à apporter
+
+| Fichier | Correction |
+|---|---|
+| `supabase/config.toml` | Ajouter `[functions.generate-coach-report]` avec `verify_jwt = false` |
+| `supabase/functions/generate-coach-report/index.ts` | Retirer l'import inutilisé `callAI` (ligne 3) |
 
