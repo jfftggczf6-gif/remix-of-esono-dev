@@ -444,9 +444,7 @@ async function callClaudeAPI(data: EntrepreneurData, supabase?: any, enterpriseI
 // CONSTRUCTION DU PROMPT SYSTÈME
 // ─────────────────────────────────────────────────────────────────────
 
-// Use centralized fiscal params from helpers.ts
-import { getFiscalParamsForPrompt } from "../_shared/helpers.ts";
-
+// getFiscalParamsForPrompt imported at top of file
 function buildSystemPrompt(country: string): string {
   const fp = getFiscalParamsForPrompt(country);
   const isRegimeInfo = fp.seuil_pme !== 'N/A'
