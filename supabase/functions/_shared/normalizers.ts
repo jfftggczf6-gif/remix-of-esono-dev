@@ -602,10 +602,10 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
     // ── Post-calculation validation guards ──
     // Guard: CAGR too low but revenue grew significantly
     if (data.investment_metrics.cagr_revenue < 0.01 && revY6 > revCY * 1.5) {
-      data.investment_metrics.cagr_revenue = Math.round((Math.pow(revY6 / revCY, 1 / 5) - 1) * 10000) / 10000;
+      data.investment_metrics.cagr_revenue = Math.round((Math.pow(revY6 / revCY, 1 / 6) - 1) * 10000) / 10000;
     }
     if (data.investment_metrics.cagr_ebitda < 0.01 && ebY6 > ebCY * 1.5) {
-      data.investment_metrics.cagr_ebitda = Math.round((Math.pow(ebY6 / ebCY, 1 / 5) - 1) * 10000) / 10000;
+      data.investment_metrics.cagr_ebitda = Math.round((Math.pow(ebY6 / ebCY, 1 / 6) - 1) * 10000) / 10000;
     }
     // Guard: TRI negative but VAN positive → retry Newton-Raphson with different seed
     if (data.investment_metrics.tri <= 0 && data.investment_metrics.van > 0) {
