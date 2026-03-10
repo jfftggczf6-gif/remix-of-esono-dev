@@ -410,8 +410,34 @@ export function normalizePlanOvo(raw: any): any {
  * Overwrites Plan OVO projection years (year2-year6) with exact Framework values
  * and recalculates all derived fields deterministically.
  */
-export function enforceFrameworkConstraints(data: any, frameworkData: any): any {
+export function enforceFrameworkConstraints(data: any, frameworkData: any, inputsData?: any): any {
   if (!data || !frameworkData?.projection_5ans?.lignes) return data;
+
+  // ── Anchor current_year on real Inputs data (not AI-hallucinated) ──
+  if (inputsData?.compte_resultat) {
+    const cr = inputsData.compte_resultat;
+    if (cr.chiffre_affaires && cr.chiffre_affaires > 0) {
+      data.revenue.current_year = toNumber(cr.chiffre_affaires);
+    }
+    if (cr.resultat_net && cr.resultat_net !== 0) {
+      data.net_profit.current_year = toNumber(cr.resultat_net);
+    }
+    // Derive EBITDA from inputs if available
+    const ebitdaFromInputs = toNumber(cr.resultat_exploitation) + toNumber(cr.dotations_amortissements);
+    if (ebitdaFromInputs > 0) {
+      data.ebitda.current_year = ebitdaFromInputs;
+    }
+    // Recalculate gross_profit & cogs for current_year
+    if (cr.chiffre_affaires > 0 && cr.achats_matieres !== undefined) {
+      data.cogs.current_year = toNumber(cr.achats_matieres);
+      data.gross_profit.current_year = toNumber(cr.chiffre_affaires) - toNumber(cr.achats_matieres);
+      data.gross_margin_pct.current_year = data.revenue.current_year > 0
+        ? (data.gross_profit.current_year / data.revenue.current_year) * 100 : 0;
+    }
+    if (data.revenue.current_year > 0) {
+      data.ebitda_margin_pct.current_year = (data.ebitda.current_year / data.revenue.current_year) * 100;
+    }
+  }
 
   const lignes = frameworkData.projection_5ans.lignes;
   if (!Array.isArray(lignes) || lignes.length === 0) return data;
