@@ -599,7 +599,7 @@ export default function PlanOvoViewer({ data }: { data: any }) {
                     {s.ebitda_year5 != null && <div><span className="text-muted-foreground">EBITDA An 5:</span> <span className="font-semibold">{fmt(s.ebitda_year5)}</span></div>}
                     {s.net_profit_year5 != null && <div><span className="text-muted-foreground">Résultat An 5:</span> <span className="font-semibold">{fmt(s.net_profit_year5)}</span></div>}
                     {s.van != null && <div><span className="text-muted-foreground">VAN:</span> <span className="font-semibold">{fmt(s.van)}</span></div>}
-                    {s.tri != null && <div><span className="text-muted-foreground">TRI:</span> <span className="font-semibold">{pct(s.tri)}</span></div>}
+                    {s.tri != null && <div><span className="text-muted-foreground">TRI:</span> <span className="font-semibold">{pct(Number(s.tri) * 100)}</span></div>}
                   </div>
                   {s.projections?.length > 0 && (
                     <div className="mt-2 overflow-x-auto">
@@ -665,7 +665,7 @@ export default function PlanOvoViewer({ data }: { data: any }) {
                     <TableRow className="bg-muted/20">
                       <TableCell className="text-xs font-semibold">TRI</TableCell>
                       {(['optimiste', 'realiste', 'pessimiste'] as const).map(k => (
-                        <TableCell key={k} className="text-xs text-right font-semibold">{data.scenarios[k]?.tri != null ? pct(data.scenarios[k].tri) : '—'}</TableCell>
+                        <TableCell key={k} className="text-xs text-right font-semibold">{data.scenarios[k]?.tri != null ? pct(Number(data.scenarios[k].tri) * 100) : '—'}</TableCell>
                       ))}
                     </TableRow>
                   </TableBody>
