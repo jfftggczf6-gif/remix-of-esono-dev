@@ -297,15 +297,17 @@ Deno.serve(async (req: Request) => {
     } catch (innerErr) {
       // ── Track status in deliverables (failed) ─────────────────────────
       if (enterpriseId) {
-        await supabase.from("deliverables").upsert(
-          {
-            enterprise_id: enterpriseId,
-            type: "plan_ovo_excel",
-            ai_generated: true,
-            data: { status: "failed", request_id: requestId, error: String(innerErr), failed_at: new Date().toISOString() },
-          },
-          { onConflict: "enterprise_id,type" }
-        ).catch(() => {}); // best-effort
+        try {
+          await supabase.from("deliverables").upsert(
+            {
+              enterprise_id: enterpriseId,
+              type: "plan_ovo_excel",
+              ai_generated: true,
+              data: { status: "failed", request_id: requestId, error: String(innerErr), failed_at: new Date().toISOString() },
+            },
+            { onConflict: "enterprise_id,type" }
+          );
+        } catch (_) { /* best-effort */ }
       }
       throw innerErr; // re-throw to outer catch
     }
