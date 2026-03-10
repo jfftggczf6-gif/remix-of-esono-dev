@@ -603,8 +603,8 @@ export default function EntrepreneurDashboard() {
       }
 
       // Extract financial KPIs
-      const cr = inputsData?.compte_resultat || {};
-      const existingRevenue = cr.chiffre_affaires || cr.ca || inputsData?.revenue || inputsData?.chiffre_affaires || 0;
+      const cr: any = inputsData?.compte_resultat || {};
+      const existingRevenue = cr.chiffre_affaires || cr.ca || (inputsData as any)?.revenue || (inputsData as any)?.chiffre_affaires || 0;
 
       const payload = {
         user_id: user?.id,
