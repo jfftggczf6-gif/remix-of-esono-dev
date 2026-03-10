@@ -1,15 +1,32 @@
 
 
-# Supprimer les livrables du compte "eco brin"
+# Corriger le calcul du score global + relancer BP
 
-## Contexte
-L'entreprise "eco brin" (`58a59982-b425-449d-85b7-26a22c4f8023`) a 9 livrables. L'autre compte "eco brin" (`7f2dc4a3`) n'en a aucun.
+## Problème
+Le pipeline `generate-deliverables` ne calcule le score global qu'à partir des résultats retournés par les étapes exécutées. Quand des étapes sont skippées (livrables existants), leurs scores ne sont pas comptabilisés, ce qui donne un `score_ir = 0`.
 
-## Actions (migration SQL)
+## Corrections
 
-1. **Supprimer tous les livrables** de l'entreprise `58a59982-b425-449d-85b7-26a22c4f8023`
-2. **Supprimer l'historique de scores** associé dans `score_history`
-3. **Remettre `score_ir` à 0** sur l'entreprise
+### 1. Fix `generate-deliverables/index.ts`
+Après la boucle du pipeline, si des étapes ont été skippées, récupérer les scores des livrables existants en base pour les inclure dans le calcul du score global.
 
-Une seule migration SQL suffit.
+```text
+Pipeline loop terminée
+  ↓
+Charger les scores des livrables existants (SELECT type, score FROM deliverables WHERE enterprise_id = ?)
+  ↓
+Fusionner : scores des étapes exécutées + scores des livrables skippés
+  ↓
+Calculer global_score = moyenne de tous les scores
+  ↓
+UPDATE enterprises SET score_ir + INSERT score_history
+```
+
+Concrètement : après la boucle `for`, ajouter une query pour récupérer tous les scores existants et les utiliser dans le calcul global au lieu de se baser uniquement sur `results`.
+
+### 2. Fix parsing BP (optionnel)
+Le Business Plan a échoué car la réponse IA était tronquée. Ce n'est pas un bug de code — c'est un aléa IA. Une relance devrait fonctionner.
+
+### 3. Mise à jour immédiate du score
+Après le fix du code, on pourra aussi manuellement mettre à jour le `score_ir` d'ECOBRIC avec la moyenne des scores existants (≈83).
 
