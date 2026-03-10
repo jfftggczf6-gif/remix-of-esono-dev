@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { toast } from 'sonner';
 import {
   Plus, Building2, Upload, Sparkles, Download,
   LogOut, User, Clock, CheckCircle2, Loader2, X, FileUp,
-  BookOpen, Lock, FolderPlus, Pencil, Trash2
+  BookOpen, Lock, FolderPlus, Pencil, Trash2, TrendingUp
 } from 'lucide-react';
 import BmcViewer from './BmcViewer';
 import SicViewer from './SicViewer';
@@ -32,6 +33,8 @@ export default function EntrepreneurDashboard() {
   const [enterprise, setEnterprise] = useState<Enterprise | null>(null);
   const [modules, setModules] = useState<EnterpriseModule[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [scoreHistory, setScoreHistory] = useState<Record<string, unknown>[]>([]);
+  const [showScoreChart, setShowScoreChart] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -69,13 +72,15 @@ export default function EntrepreneurDashboard() {
 
     if (ent) {
       setEnterprise(ent);
-      const [modsRes, delivRes, filesRes] = await Promise.all([
+      const [modsRes, delivRes, filesRes, histRes] = await Promise.all([
         supabase.from('enterprise_modules').select('*').eq('enterprise_id', ent.id),
         supabase.from('deliverables').select('*').eq('enterprise_id', ent.id),
         supabase.storage.from('documents').list(ent.id),
+        supabase.from('score_history').select('*').eq('enterprise_id', ent.id).order('created_at', { ascending: true }),
       ]);
       setModules(modsRes.data || []);
       setDeliverables(delivRes.data || []);
+      setScoreHistory(histRes.data || []);
       setUploadedFiles((filesRes.data || []).map((f) => ({ name: f.name, size: (f.metadata as { size?: number } | null)?.size || 0 })));
     }
     setInitialLoading(false);
@@ -273,6 +278,19 @@ export default function EntrepreneurDashboard() {
       }
 
       const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      
+      // Save score history & update enterprise score_ir
+      if (avgScore > 0 && enterprise) {
+        await Promise.all([
+          supabase.from('enterprises').update({ score_ir: avgScore }).eq('id', enterprise.id),
+          supabase.from('score_history').insert({
+            enterprise_id: enterprise.id,
+            score: avgScore,
+            scores_detail: Object.fromEntries(PIPELINE.map((s, i) => [s.name, scores[i] || 0]).filter(([, v]) => Number(v) > 0)),
+          }),
+        ]);
+      }
+
       toast.success(`${completed} livrables générés ! Score: ${avgScore}/100`);
       if (errors.length > 0) {
         toast.warning(`${errors.length} module(s) en erreur`);
@@ -886,16 +904,48 @@ export default function EntrepreneurDashboard() {
       </Dialog>
 
 
-      <div className="flex-none h-12 bg-[hsl(222,47%,15%)] flex items-center px-6 gap-6">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">Investment Readiness</span>
-        <span className="text-2xl font-display font-bold text-white">{globalScore > 0 ? `${globalScore}/100` : '—/100'}</span>
-        <div className="w-40 h-2 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full rounded-full bg-[hsl(var(--success))] transition-all duration-500" style={{ width: `${globalScore}%` }} />
+      <div className="flex-none bg-[hsl(222,47%,15%)]">
+        <div className="h-12 flex items-center px-6 gap-6">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">Investment Readiness</span>
+          <span className="text-2xl font-display font-bold text-white">{globalScore > 0 ? `${globalScore}/100` : '—/100'}</span>
+          <div className="w-40 h-2 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full bg-[hsl(var(--success))] transition-all duration-500" style={{ width: `${globalScore}%` }} />
+          </div>
+          <div className="flex items-center gap-2 text-white/60 text-xs">
+            <span>🏁 v{deliverablesCount}</span>
+            <span className="px-2 py-0.5 rounded bg-white/10 text-white/80 text-[10px] font-medium">🏆 {maturityLabel}</span>
+          </div>
+          {scoreHistory.length > 1 && (
+            <button
+              onClick={() => setShowScoreChart(!showScoreChart)}
+              className="ml-auto flex items-center gap-1.5 text-white/60 hover:text-white text-xs transition-colors"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              {showScoreChart ? 'Masquer' : 'Progression'}
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-2 text-white/60 text-xs">
-          <span>🏁 v{deliverablesCount}</span>
-          <span className="px-2 py-0.5 rounded bg-white/10 text-white/80 text-[10px] font-medium">🏆 {maturityLabel}</span>
-        </div>
+        {showScoreChart && scoreHistory.length > 1 && (
+          <div className="px-6 pb-4">
+            <div className="bg-white/5 rounded-lg p-3" style={{ height: 120 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={scoreHistory.map((h: any, i: number) => ({
+                  label: `Gen ${i + 1}`,
+                  score: h.score,
+                  date: new Date(h.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+                }))}>
+                  <XAxis dataKey="date" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'hsl(222,47%,20%)', border: 'none', borderRadius: 8, color: 'white', fontSize: 12 }}
+                    labelStyle={{ color: 'rgba(255,255,255,0.7)' }}
+                  />
+                  <Line type="monotone" dataKey="score" stroke="hsl(var(--success))" strokeWidth={2} dot={{ fill: 'hsl(var(--success))', r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ===== MAIN AREA (sources left + content center) ===== */}
