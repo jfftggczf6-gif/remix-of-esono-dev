@@ -19,7 +19,7 @@ export interface PipelineResult {
  */
 export async function runPipelineFromClient(
   enterpriseId: string,
-  token: string,
+  initialToken: string,
   options: {
     force?: boolean;
     onProgress?: (progress: PipelineProgress) => void;
@@ -28,6 +28,15 @@ export async function runPipelineFromClient(
 ): Promise<PipelineResult> {
   const { force = false, onProgress, onStepComplete } = options;
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+  /** Always use a fresh token to avoid mid-pipeline expiry */
+  const getFreshToken = async (): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) return session.access_token;
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+    if (refreshed?.access_token) return refreshed.access_token;
+    return initialToken; // fallback
+  };
 
   // Fetch existing deliverables to know what to skip
   let richTypes = new Set<string>();
