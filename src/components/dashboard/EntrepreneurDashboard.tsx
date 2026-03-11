@@ -1242,40 +1242,10 @@ export default function EntrepreneurDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {deliverables.find((d: any) => d.type === 'odd_excel')?.file_url ? (
+                    {deliverables.find((d: any) => d.type === 'odd_excel') ? (
                       <>
                         <button
-                          onClick={async () => {
-                            const oddExcel = deliverables.find((d: any) => d.type === 'odd_excel');
-                            const fileName = (oddExcel?.data as any)?.file_name;
-
-                            if (!fileName) {
-                              toast.error('Fichier ODD Excel introuvable');
-                              return;
-                            }
-
-                            const { data: signedData, error: signedErr } = await supabase.storage
-                              .from('ovo-outputs')
-                              .createSignedUrl(fileName, 3600);
-
-                            if (!signedErr && signedData?.signedUrl) {
-                              const response = await fetch(signedData.signedUrl);
-                              if (!response.ok) throw new Error('Erreur de téléchargement');
-                              const blob = await response.blob();
-                              const downloadName = `${enterprise?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'entreprise'}_ODD.xlsx`;
-                              const a = document.createElement('a');
-                              a.href = URL.createObjectURL(blob);
-                              a.download = downloadName;
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
-                              URL.revokeObjectURL(a.href);
-                              toast.success('Fichier téléchargé !');
-                              return;
-                            }
-
-                            await handleDownload('odd_analysis', 'xlsx');
-                          }}
+                          onClick={() => handleDownload('odd_analysis', 'xlsx')}
                           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
                         >
                           <Download className="h-3.5 w-3.5" /> ODD Excel (.xlsx)
