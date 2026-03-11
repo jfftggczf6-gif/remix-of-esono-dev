@@ -112,28 +112,28 @@ Phase: ${ent.phase || "identite"}
 ${JSON.stringify(moduleStatuses, null, 2)}
 
 === BMC (Business Model Canvas) ===
-${summarize(delivMap["bmc_analysis"], 4000)}
+${summarize(delivMap["bmc_analysis"], 2000)}
 
 === SIC (Social Impact Canvas) ===
-${summarize(delivMap["sic_analysis"], 4000)}
+${summarize(delivMap["sic_analysis"], 2000)}
 
 === INPUTS (Données financières historiques) ===
-${summarize(delivMap["inputs_data"], 4000)}
+${summarize(delivMap["inputs_data"], 2000)}
 
 === FRAMEWORK (Analyse financière) ===
-${summarize(delivMap["framework_data"], 5000)}
+${summarize(delivMap["framework_data"], 2500)}
 
 === DIAGNOSTIC ===
-${summarize(delivMap["diagnostic_data"], 4000)}
+${summarize(delivMap["diagnostic_data"], 2000)}
 
 === PLAN OVO (Projections financières 5 ans) ===
-${summarize(delivMap["plan_ovo"], 5000)}
+${summarize(delivMap["plan_ovo"], 2500)}
 
 === BUSINESS PLAN ===
-${summarize(delivMap["business_plan"], 5000)}
+${summarize(delivMap["business_plan"], 2500)}
 
 === ODD (Objectifs de Développement Durable) ===
-${summarize(delivMap["odd_analysis"], 3000)}
+${summarize(delivMap["odd_analysis"], 1500)}
 `;
 
     const coachName = coachProfile?.full_name || coachProfile?.email || "Coach";
