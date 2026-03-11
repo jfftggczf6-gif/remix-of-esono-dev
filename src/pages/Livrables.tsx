@@ -46,7 +46,34 @@ export default function Livrables() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}&token=${session.access_token}`;
+      const ts = Date.now();
+
+      // For ODD xlsx, use fetch with validation instead of window.open
+      if (type === 'odd_analysis' && format === 'xlsx') {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}&_ts=${ts}`;
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: 'no-store',
+        });
+        if (!response.ok) throw new Error('Erreur de téléchargement');
+        const contentDisp = response.headers.get('content-disposition') || '';
+        if (contentDisp.includes('.xlsm') || contentDisp.toLowerCase().includes('ovo')) {
+          throw new Error('Fichier ODD incorrect reçu. Veuillez régénérer le module ODD.');
+        }
+        const blob = await response.blob();
+        const safeName = enterprise.name.replace(/[^a-zA-Z0-9]/g, '_');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${safeName}_ODD_${ts}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        toast.success('Fichier téléchargé !');
+        return;
+      }
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}&token=${session.access_token}&_ts=${ts}`;
       window.open(url, '_blank');
       toast.success('Téléchargement lancé !');
     } catch (err: any) {

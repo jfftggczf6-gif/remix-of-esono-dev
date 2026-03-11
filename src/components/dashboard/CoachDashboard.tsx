@@ -558,11 +558,23 @@ export default function CoachDashboard() {
       const ent = enterprises.find((e) => e.id === enterpriseId) || selectedEnt;
       if (!enterpriseId) { toast.error('Entreprise introuvable'); return; }
       const token = await getValidAccessToken(authSession);
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=odd_analysis&enterprise_id=${enterpriseId}&format=xlsx`;
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const ts = Date.now();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=odd_analysis&enterprise_id=${enterpriseId}&format=xlsx&_ts=${ts}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
       if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error((err as any).error || 'Erreur de téléchargement'); }
+
+      // Validate response — reject if contaminated with OVO content
+      const contentDisp = response.headers.get('content-disposition') || '';
+      if (contentDisp.includes('.xlsm') || contentDisp.toLowerCase().includes('ovo')) {
+        throw new Error('Fichier ODD incorrect reçu (contamination OVO). Veuillez régénérer le module ODD.');
+      }
+
       const blob = await response.blob();
-      const downloadName = `${ent?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'entreprise'}_ODD.xlsx`;
+      const safeName = ent?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'entreprise';
+      const downloadName = `${safeName}_ODD_${ts}.xlsx`;
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = downloadName;

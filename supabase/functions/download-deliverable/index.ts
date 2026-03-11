@@ -1447,8 +1447,21 @@ serve(async (req) => {
         }
       }
 
-      // ODD: Servir le .xlsm pré-généré depuis ovo-outputs
+      // ODD: Servir le .xlsx pré-généré depuis ovo-outputs
       if (deliverableType === "odd_analysis") {
+        const oddMime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        const oddFileName = `${safeName}_ODD.xlsx`;
+        const oddHeaders = {
+          ...corsHeaders,
+          "Content-Type": oddMime,
+          "Content-Disposition": `attachment; filename="${oddFileName}"`,
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        };
+
+        console.log(`[download-odd] Requested: type=${deliverableType}, format=xlsx, enterprise=${enterpriseId}`);
+
         // Try fetching pre-built odd_excel deliverable
         const { data: oddExcel } = await supabase
           .from("deliverables")
@@ -1457,39 +1470,45 @@ serve(async (req) => {
           .eq("type", "odd_excel")
           .maybeSingle();
 
-        const fileName = (oddExcel?.data as any)?.file_name;
+        const storedFileName = (oddExcel?.data as any)?.file_name;
+        console.log(`[download-odd] DB file_name: ${storedFileName}`);
 
-        if (fileName) {
+        // Reject contaminated file names (OVO/xlsm leaks)
+        const isContaminated = storedFileName && (
+          storedFileName.includes(".xlsm") ||
+          storedFileName.toLowerCase().includes("planfinancier") ||
+          storedFileName.toLowerCase().includes("_ovo_")
+        );
+
+        if (storedFileName && !isContaminated) {
           const { data: fileBlob, error: dlErr } = await supabase.storage
             .from("ovo-outputs")
-            .download(fileName);
+            .download(storedFileName);
 
           if (!dlErr && fileBlob) {
             const bytes = new Uint8Array(await fileBlob.arrayBuffer());
-            return new Response(bytes, {
-              headers: {
-                ...corsHeaders,
-              "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "Content-Disposition": `attachment; filename="${safeName}_ODD.xlsx"`,
-              },
-            });
+            // Verify ZIP signature (PK header)
+            if (bytes.length > 4 && bytes[0] === 0x50 && bytes[1] === 0x4B) {
+              console.log(`[download-odd] ✅ Serving pre-built: ${storedFileName} (${bytes.byteLength} bytes) as ${oddFileName}`);
+              return new Response(bytes, { headers: oddHeaders });
+            }
+            console.warn(`[download-odd] File ${storedFileName} has invalid ZIP signature, regenerating`);
+          } else {
+            console.warn("[download-odd] Storage download failed:", dlErr?.message);
           }
-          console.warn("[download] ODD Excel download failed:", dlErr?.message);
+        } else if (isContaminated) {
+          console.warn(`[download-odd] ⚠️ Contaminated file_name rejected: ${storedFileName}`);
         }
 
         // Fallback: generate on-the-fly
         try {
+          console.log("[download-odd] Generating ODD Excel on-the-fly...");
           const { fillOddExcelTemplate } = await import("../_shared/odd-excel-template.ts");
           const xlsxBytes = await fillOddExcelTemplate(deliv.data, ent.name, supabase);
-          return new Response(xlsxBytes, {
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-              "Content-Disposition": `attachment; filename="${safeName}_ODD.xlsx"`,
-            },
-          });
+          console.log(`[download-odd] ✅ Generated on-the-fly (${xlsxBytes.byteLength} bytes) as ${oddFileName}`);
+          return new Response(xlsxBytes, { headers: oddHeaders });
         } catch (oddErr) {
-          console.warn("[download] ODD template filling failed:", oddErr);
+          console.warn("[download-odd] Template filling failed:", oddErr);
         }
       }
 

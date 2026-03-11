@@ -677,15 +677,29 @@ export default function EntrepreneurDashboard() {
     if (!enterprise) return;
     try {
       const token = await getValidAccessToken(authSession, navigate);
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}`;
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const ts = Date.now();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=${format}&_ts=${ts}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Erreur'); }
+
+      // Validate response for ODD downloads — reject if contaminated with OVO content
+      if (type === 'odd_analysis' && format === 'xlsx') {
+        const contentDisp = response.headers.get('content-disposition') || '';
+        if (contentDisp.includes('.xlsm') || contentDisp.toLowerCase().includes('ovo')) {
+          throw new Error('Fichier ODD incorrect reçu (contamination OVO). Veuillez régénérer le module ODD.');
+        }
+      }
+
       const blob = await response.blob();
       const ext = format === 'csv' ? '.csv' : format === 'json' ? '.json' : format === 'xlsx' ? (type === 'plan_ovo' ? '.xlsm' : '.xlsx') : '.html';
       const label = type === 'odd_analysis' && format === 'xlsx' ? 'ODD' : type;
+      const safeName = enterprise.name.replace(/[^a-zA-Z0-9]/g, '_');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `${enterprise.name.replace(/[^a-zA-Z0-9]/g, '_')}_${label}${ext}`;
+      a.download = `${safeName}_${label}${ext}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
