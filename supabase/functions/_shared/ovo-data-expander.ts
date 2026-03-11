@@ -119,6 +119,47 @@ export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData
       delete yr.volume_h2;
     }
   }
+
+  // ── Post-scaling verification loop (max 2 passes) ──
+  for (let pass = 0; pass < 2; pass++) {
+    let needsRepass = false;
+    for (const yearLabel of yearLabels) {
+      const target = targets[yearLabel];
+      if (!target || target <= 0) continue;
+
+      let revenueActual = 0;
+      for (const item of allItems) {
+        if (!item.per_year || !Array.isArray(item.per_year)) continue;
+        const yr = item.per_year.find((y: any) => y.year === yearLabel);
+        if (!yr) continue;
+        const price = yr.unit_price_r1 || yr.unit_price_r2 || yr.unit_price_r3 || 0;
+        const totalVol = (yr.volume_q1 || 0) + (yr.volume_q2 || 0) + (yr.volume_q3 || 0) + (yr.volume_q4 || 0);
+        revenueActual += totalVol * price;
+      }
+
+      if (revenueActual <= 0) continue;
+      const ecart = Math.abs(revenueActual - target) / target;
+      if (ecart <= 0.03) continue;
+
+      needsRepass = true;
+      const correctionRatio = target / revenueActual;
+      console.log(`[scaleVerify] Pass ${pass + 1}, ${yearLabel}: actual=${Math.round(revenueActual)}, target=${target}, correction=${correctionRatio.toFixed(4)}, ecart=${(ecart * 100).toFixed(1)}%`);
+
+      for (const item of allItems) {
+        if (!item.per_year || !Array.isArray(item.per_year)) continue;
+        const yr = item.per_year.find((y: any) => y.year === yearLabel);
+        if (!yr) continue;
+        yr.volume_q1 = Math.round((yr.volume_q1 || 0) * correctionRatio);
+        yr.volume_q2 = Math.round((yr.volume_q2 || 0) * correctionRatio);
+        yr.volume_q3 = Math.round((yr.volume_q3 || 0) * correctionRatio);
+        yr.volume_q4 = Math.round((yr.volume_q4 || 0) * correctionRatio);
+      }
+    }
+    if (!needsRepass) {
+      console.log(`[scaleVerify] Pass ${pass + 1}: all years within 3% tolerance`);
+      break;
+    }
+  }
 }
 
 // deno-lint-ignore no-explicit-any
