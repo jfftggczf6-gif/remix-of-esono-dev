@@ -536,7 +536,7 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
     });
   };
 
-  const caLine = findLigne([], 'ca total', 'chiffre', 'revenue', 'ca ');
+  const caLine = findLigne([], 'ca total', 'chiffre', 'revenue', 'ca ', 'total revenus', 'ventes totales', 'recettes', 'turnover', 'ventes');
   // Exclude lines containing '%' to avoid confusing amounts with percentages
   const mbLine = findLigne(['%', '(%)'], 'marge brute', 'gross');
   const ebitdaLine = findLigne(['%', '(%)'], 'ebitda');
