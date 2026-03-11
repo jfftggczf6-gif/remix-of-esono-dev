@@ -71,11 +71,11 @@ export async function runPipelineFromClient(
   for (let i = 0; i < PIPELINE.length; i++) {
     const step = PIPELINE[i];
 
-    // Never skip reconcile-plan-ovo — it must always run to sync with latest framework
-    const isReconcile = step.fn === 'reconcile-plan-ovo';
+    // Never skip reconcile-plan-ovo or generate-ovo-plan — they must always run to sync data
+    const isAlwaysRun = step.fn === 'reconcile-plan-ovo' || step.fn === 'generate-ovo-plan';
 
-    // Skip if rich data exists (but not reconcile step)
-    if (!force && !isReconcile && richTypes.has(step.type)) {
+    // Skip if rich data exists (but not always-run steps)
+    if (!force && !isAlwaysRun && richTypes.has(step.type)) {
       results.push({ step: step.name, success: true, skipped: true });
       completedCount++;
       onProgress?.({ current: i + 1, total: PIPELINE.length, name: `${step.name} (existant)` });

@@ -14,6 +14,7 @@ const PIPELINE_STEPS = [
   { name: "Framework", function: "generate-framework" },
   { name: "Plan OVO", function: "generate-plan-ovo" },
   { name: "Sync Plan OVO", function: "reconcile-plan-ovo" },
+  { name: "Excel OVO", function: "generate-ovo-plan" },
   { name: "Business Plan", function: "generate-business-plan" },
   { name: "ODD", function: "generate-odd" },
   { name: "Diagnostic", function: "generate-diagnostic" },
@@ -87,6 +88,7 @@ serve(async (req) => {
       "generate-diagnostic": "diagnostic_data",
       "generate-plan-ovo": "plan_ovo",
       "reconcile-plan-ovo": "plan_ovo",
+      "generate-ovo-plan": "plan_ovo_excel",
       "generate-business-plan": "business_plan",
       "generate-odd": "odd_analysis",
     };
@@ -99,11 +101,11 @@ serve(async (req) => {
     for (const step of PIPELINE_STEPS) {
       const delivType = fnToDelivType[step.function];
       
-      // Never skip reconcile-plan-ovo — it must always run
-      const isReconcile = step.function === "reconcile-plan-ovo";
+      // Never skip reconcile-plan-ovo or generate-ovo-plan — they must always run
+      const isAlwaysRun = step.function === "reconcile-plan-ovo" || step.function === "generate-ovo-plan";
       
-      // Skip if rich data already exists (unless force=true or reconcile step)
-      if (!force && !isReconcile && delivType && richTypes.has(delivType)) {
+      // Skip if rich data already exists (unless force=true or always-run step)
+      if (!force && !isAlwaysRun && delivType && richTypes.has(delivType)) {
         console.log(`Skipping ${step.name}: rich data already exists`);
         results.push({ step: step.name, success: true, skipped: true });
         completedCount++;

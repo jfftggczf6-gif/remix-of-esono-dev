@@ -133,14 +133,72 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const data: EntrepreneurData & { enterprise_id?: string; request_id?: string } = await req.json();
+    let data: EntrepreneurData & { enterprise_id?: string; request_id?: string } = await req.json();
+
+    const enterpriseId = data.enterprise_id;
+    const requestId = data.request_id || crypto.randomUUID();
+
+    // ── DB-reload mode: if only enterprise_id provided, load from DB ──
+    if (enterpriseId && !data.company) {
+      console.log(`[generate-ovo-plan] DB-reload mode — loading data from DB for enterprise ${enterpriseId}`);
+      const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+      const { data: ent } = await svc.from("enterprises").select("*").eq("id", enterpriseId).single();
+      if (!ent) throw new Error("Enterprise not found");
+
+      // Load all relevant deliverables
+      const { data: delivs } = await svc.from("deliverables")
+        .select("type, data")
+        .eq("enterprise_id", enterpriseId)
+        .in("type", ["bmc_analysis", "sic_analysis", "inputs_data", "framework_data", "plan_ovo", "diagnostic_data"])
+        .order("updated_at", { ascending: false });
+
+      const getDeliv = (t: string) => delivs?.find((d: any) => d.type === t)?.data || undefined;
+      const bmcData = getDeliv("bmc_analysis") as any;
+      const inputsData = getDeliv("inputs_data") as any;
+
+      // Extract products/services from BMC canvas
+      const products: EntrepreneurData["products"] = [];
+      const services: EntrepreneurData["services"] = [];
+      if (bmcData?.canvas?.proposition_valeur) {
+        const pv = bmcData.canvas.proposition_valeur;
+        const items = Array.isArray(pv) ? pv : (pv.items || pv.elements || [pv]);
+        items.forEach((item: any, i: number) => {
+          const name = typeof item === "string" ? item : (item.name || item.titre || item.label || `Offre ${i + 1}`);
+          const desc = typeof item === "string" ? item : (item.description || item.detail || name);
+          products.push({ name, description: desc, deduit_du_bmc: true });
+        });
+      }
+      // Fallback: at least one product from enterprise description
+      if (products.length === 0 && services.length === 0) {
+        products.push({ name: ent.name, description: ent.description || ent.name });
+      }
+
+      data = {
+        ...data,
+        user_id: ent.user_id,
+        company: ent.name,
+        country: ent.country || "Côte d'Ivoire",
+        sector: ent.sector || "Autre",
+        business_model: bmcData?.canvas?.modele_revenus?.[0] || "Vente directe",
+        products,
+        services,
+        current_year: new Date().getFullYear(),
+        employees: ent.employees_count || 1,
+        existing_revenue: inputsData?.compte_resultat?.chiffre_affaires ? Number(inputsData.compte_resultat.chiffre_affaires) : 0,
+        bmc_data: bmcData,
+        sic_data: getDeliv("sic_analysis") as any,
+        inputs_data: inputsData,
+        framework_data: getDeliv("framework_data") as any,
+        plan_ovo_data: getDeliv("plan_ovo") as any,
+        diagnostic_data: getDeliv("diagnostic_data") as any,
+      };
+      console.log(`[generate-ovo-plan] DB-reload: company=${data.company}, products=${data.products.length}, services=${data.services.length}`);
+    }
 
     // ── Validation: sécuriser products/services ───────────────────────
     if (!Array.isArray(data.products)) data.products = [];
     if (!Array.isArray(data.services)) data.services = [];
-
-    const enterpriseId = data.enterprise_id;
-    const requestId = data.request_id || crypto.randomUUID();
 
     console.log(`[generate-ovo-plan] START — user: ${authUser.id}, company: ${data.company}, enterprise: ${enterpriseId}, request: ${requestId}`);
     console.log(`[generate-ovo-plan] products: ${data.products.length}, services: ${data.services.length}`);
