@@ -553,21 +553,21 @@ export default function CoachDashboard() {
     }
   };
 
-  const handleDownloadOddExcelCoach = async (entDelivs: Deliverable[]) => {
+  const handleDownloadOddExcelCoach = async (entDelivs: Deliverable[], enterpriseId?: string) => {
     try {
-      const oddExcel = entDelivs.find((d) => d.type === 'odd_excel');
-      const fileName = (oddExcel?.data as Record<string, unknown> | null)?.file_name as string | undefined;
-      if (!fileName) { toast.error('Fichier ODD Excel introuvable'); return; }
-      const { data: signedData, error: signedErr } = await supabase.storage
-        .from('ovo-outputs')
-        .createSignedUrl(fileName, 3600);
-      if (signedErr || !signedData?.signedUrl) { toast.error('Erreur de téléchargement'); return; }
-      const response = await fetch(signedData.signedUrl);
-      if (!response.ok) throw new Error('Erreur');
+      // Use the unified download-deliverable endpoint for ODD
+      const ent = enterprises.find((e) => e.id === enterpriseId) || (selectedEnterprise ? enterprises.find((e) => e.id === selectedEnterprise) : null);
+      const entId = enterpriseId || selectedEnterprise;
+      if (!entId) { toast.error('Entreprise introuvable'); return; }
+      const token = await getValidAccessToken(authSession);
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=odd_analysis&enterprise_id=${entId}&format=xlsx`;
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error((err as any).error || 'Erreur de téléchargement'); }
       const blob = await response.blob();
+      const downloadName = `${ent?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'entreprise'}_ODD.xlsx`;
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = fileName;
+      a.download = downloadName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
