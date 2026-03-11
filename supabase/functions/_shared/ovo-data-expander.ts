@@ -178,12 +178,19 @@ function expandProductOrService(p: any): any {
     while (existing.length < 8) {
       const idx = existing.length;
       const prevEntry = existing[existing.length - 1];
-      const totalVol = (prevEntry.volume_h1 || 0) + (prevEntry.volume_h2 || 0);
+    const totalVol = (prevEntry.volume_q1 || prevEntry.volume_h1 || 0) + (prevEntry.volume_q2 || prevEntry.volume_h2 || 0) + (prevEntry.volume_q3 || 0) + (prevEntry.volume_q4 || 0);
       const newVol = Math.round(totalVol * (1 + g));
       const newEntry = { ...prevEntry };
       newEntry.year = yearLabels[idx];
-      newEntry.volume_h1 = Math.round(newVol * 0.45);
-      newEntry.volume_h2 = Math.round(newVol * 0.55);
+      const q1 = Math.round(newVol * 0.22);
+      const q2 = Math.round(newVol * 0.25);
+      const q3 = Math.round(newVol * 0.27);
+      newEntry.volume_q1 = q1;
+      newEntry.volume_q2 = q2;
+      newEntry.volume_q3 = q3;
+      newEntry.volume_q4 = newVol - q1 - q2 - q3;
+      delete newEntry.volume_h1;
+      delete newEntry.volume_h2;
       for (const k of ['unit_price_r1', 'unit_price_r2', 'unit_price_r3']) {
         if (newEntry[k]) newEntry[k] = Math.round(newEntry[k] * (1 + pg) / 1000) * 1000;
       }
