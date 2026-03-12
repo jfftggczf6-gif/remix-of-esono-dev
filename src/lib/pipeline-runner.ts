@@ -9,9 +9,14 @@ export interface PipelineProgress {
 
 export interface PipelineResult {
   completedCount: number;
+  executedCount: number;
+  skippedCount: number;
   results: { step: string; success: boolean; score?: number; skipped?: boolean; error?: string }[];
   creditError: boolean;
 }
+
+/** Bump this when business logic changes to force regeneration of stale data */
+export const CALC_VERSION = 2;
 
 /**
  * Determines the pipeline generation state by comparing source dates with deliverable dates.
