@@ -141,7 +141,9 @@ export default function PlanOvoViewer({ data }: { data: any }) {
     // Total investment
     const capexTotal = (data.capex || []).reduce((s: number, c: any) => s + (Number(c.acquisition_value) || 0), 0);
     const fundingNeed = Number(data.funding_need) || 0;
-    const totalInvestment = Math.max(fundingNeed, capexTotal) || 1;
+    // BUG 8 FIX: Don't fallback to 1 — use 0 and mark metrics as N/A
+    const totalInvestment = Math.max(fundingNeed, capexTotal);
+    const hasInvestment = totalInvestment > 0;
     // Debt service
     const loans = data.loans || {};
     let annualDebtService = 0;
@@ -156,18 +158,36 @@ export default function PlanOvoViewer({ data }: { data: any }) {
     const discountRate = ai?.discount_rate || 0.12;
     const nYears = 5;
 
+    // BUG 9 FIX: Guard against TRI already in % (> 1 means already %)
+    const triRaw = ai?.tri;
+    let triValue: number | null = null;
+    if (triRaw != null) {
+      triValue = Math.abs(triRaw) > 1 ? triRaw : triRaw * 100; // If > 1, already in %
+    } else {
+      triValue = hasInvestment ? calcIRR(futureCf, totalInvestment) : null;
+    }
 
+    // BUG 3 FIX: CAGR null if start value <= 0
+    const cagrRevenue = ai?.cagr_revenue != null
+      ? (revSeries[currentIdx] > 0 ? ai.cagr_revenue * 100 : null)
+      : calcCAGR(revSeries[currentIdx], revSeries[7], nYears);
+    const cagrEbitda = ai?.cagr_ebitda != null
+      ? (ebitdaSeries[currentIdx] > 0 ? ai.cagr_ebitda * 100 : null)
+      : calcCAGR(ebitdaSeries[currentIdx], ebitdaSeries[7], nYears);
 
+    // BUG 10 FIX: DSCR on year2 (index 3) = first repayment year, not current_year
+    const dscrEbitda = ebitdaSeries[3]; // year2 = first projection year
 
     return {
-      van: ai?.van ?? calcNPV(futureCf, discountRate, totalInvestment),
-      // AI returns decimals (0.15), fallback functions return % (15) — normalise to %
-      tri: ai?.tri != null ? ai.tri * 100 : calcIRR(futureCf, totalInvestment),
-      cagr_revenue: ai?.cagr_revenue != null ? ai.cagr_revenue * 100 : calcCAGR(revSeries[currentIdx], revSeries[7], nYears),
-      cagr_ebitda: ai?.cagr_ebitda != null ? ai.cagr_ebitda * 100 : calcCAGR(ebitdaSeries[currentIdx], ebitdaSeries[7], nYears),
-      roi: ai?.roi != null ? ai.roi * 100 : (totalInvestment > 0 ? (npSeries.slice(3).reduce((a, b) => a + b, 0) / totalInvestment) * 100 : null),
-      payback_years: ai?.payback_years ?? calcPayback(futureCf, totalInvestment),
-      dscr: ai?.dscr ?? (annualDebtService > 0 ? ebitdaSeries[currentIdx] / annualDebtService : null),
+      van: ai?.van ?? (hasInvestment ? calcNPV(futureCf, discountRate, totalInvestment) : null),
+      tri: triValue,
+      cagr_revenue: cagrRevenue,
+      cagr_ebitda: cagrEbitda,
+      roi: ai?.roi != null
+        ? (ai.roi * 100)
+        : (hasInvestment ? (npSeries.slice(3).reduce((a, b) => a + b, 0) / totalInvestment) * 100 : null),
+      payback_years: ai?.payback_years ?? (hasInvestment ? calcPayback(futureCf, totalInvestment) : null),
+      dscr: ai?.dscr ?? (annualDebtService > 0 ? dscrEbitda / annualDebtService : null),
       multiple_ebitda: ai?.multiple_ebitda ?? null,
       discount_rate: discountRate * 100,
       cost_of_capital: (ai?.cost_of_capital || 0.12) * 100,

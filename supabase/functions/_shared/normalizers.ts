@@ -786,25 +786,38 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
     }
     data.investment_metrics.tri = isNaN(irr) ? 0 : Math.round(irr * 10000) / 10000;
 
-    // CAGR Revenue — current_year to year6 = 5 years span
-    // Structure: current_year, year2, year3, year4, year5, year6 → 5 projection years
+    // BUG 3 FIX: CAGR Revenue — null if start <= 0
     const revCY = data.revenue.current_year;
     const revY6 = data.revenue.year6;
     if (revCY > 0 && revY6 > 0 && revY6 !== revCY) {
       data.investment_metrics.cagr_revenue = Math.round((Math.pow(revY6 / revCY, 1 / 5) - 1) * 10000) / 10000;
+    } else {
+      data.investment_metrics.cagr_revenue = null;
     }
 
-    // CAGR EBITDA — current_year to year6 = 5 years span
+    // BUG 3 FIX: CAGR EBITDA — null if start <= 0
     const ebCY = data.ebitda.current_year;
     const ebY6 = data.ebitda.year6;
     if (ebCY > 0 && ebY6 > 0 && ebY6 !== ebCY) {
       data.investment_metrics.cagr_ebitda = Math.round((Math.pow(ebY6 / ebCY, 1 / 5) - 1) * 10000) / 10000;
+    } else {
+      data.investment_metrics.cagr_ebitda = null;
     }
 
-    // ROI
+    // BUG 4 & 5 FIX: ROI with validation
     if (initialInv > 0) {
       const totalNet = PROJ_KEYS.reduce((sum, yk) => sum + (data.net_profit[yk] || 0), 0);
       data.investment_metrics.roi = Math.round((totalNet / initialInv) * 100) / 100;
+      // BUG 4: If VAN < 0 but ROI > 0, force ROI negative (incoherent)
+      if (data.investment_metrics.van < 0 && data.investment_metrics.roi > 0) {
+        console.warn(`[enforceFramework] VAN < 0 but ROI > 0 — forcing ROI to reflect losses`);
+        data.investment_metrics.roi = Math.min(data.investment_metrics.roi, 0);
+      }
+    } else {
+      data.investment_metrics.roi = null;
+      data.investment_metrics.payback_years = null;
+      data.investment_metrics.van = null;
+      data.investment_metrics.tri = null;
     }
 
     // Payback
