@@ -21,7 +21,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { type CellWrite, injectIntoXlsm, excelDateSerial, sanitize } from "../_shared/zip-utils.ts";
-import { expandCondensedData, validateAndFillVolumes, scaleToFrameworkTargets, scaleCOGSToFramework, normalizeRangeData } from "../_shared/ovo-data-expander.ts";
+import { expandCondensedData, validateAndFillVolumes, scaleToFrameworkTargets, scaleCOGSToFramework, normalizeRangeData, alignOpexToPlanOvo, verifyExcelRevenue, getTotalVolume } from "../_shared/ovo-data-expander.ts";
 import { getFiscalParamsForPrompt } from "../_shared/helpers.ts";
 import { enforceFrameworkConstraints } from "../_shared/normalizers.ts";
 
@@ -251,10 +251,13 @@ Deno.serve(async (req: Request) => {
     validateAndFillVolumes(financialJson);
 
     // Scale volumes to align Excel revenues with Framework/plan_ovo targets
-    scaleToFrameworkTargets(financialJson, data.framework_data, data.plan_ovo_data);
+    scaleToFrameworkTargets(financialJson, data.framework_data, data.plan_ovo_data, data.inputs_data);
 
     // Scale product COGS to match Framework gross margin (aligns Excel margin with Plan OVO viewer)
     scaleCOGSToFramework(financialJson, data.framework_data);
+
+    // Fix #4: Align OPEX sub-categories with plan_ovo aggregates
+    alignOpexToPlanOvo(financialJson, data.plan_ovo_data);
 
     // Apply Framework constraints to ensure Excel data matches JSON Plan OVO
     if (data.framework_data && financialJson.revenue) {
@@ -297,7 +300,7 @@ Deno.serve(async (req: Request) => {
                 const yr = item.per_year?.find((y: any) => y.year === yl);
                 if (!yr) continue;
                 const price = yr.unit_price_r1 || yr.unit_price_r2 || yr.unit_price_r3 || 0;
-                rev += ((yr.volume_q1 || 0) + (yr.volume_q2 || 0) + (yr.volume_q3 || 0) + (yr.volume_q4 || 0)) * price;
+                rev += getTotalVolume(yr) * price;
               }
               if (rev > 0 && Math.abs(rev - target) / target > 0.05) {
                 console.log(`[generate-ovo-plan] Post-constraint drift: ${yl} rev=${Math.round(rev)} vs target=${target}, ecart=${((Math.abs(rev - target) / target) * 100).toFixed(1)}%`);
@@ -306,7 +309,7 @@ Deno.serve(async (req: Request) => {
             }
             if (needsSecondPass) {
               console.log("[generate-ovo-plan] Triggering second scaling pass with Framework-only targets");
-              scaleToFrameworkTargets(financialJson, data.framework_data, undefined);
+              scaleToFrameworkTargets(financialJson, data.framework_data, undefined, data.inputs_data);
             }
           }
         }
@@ -353,6 +356,29 @@ Deno.serve(async (req: Request) => {
     console.log("[generate-ovo-plan] Building cell writes...");
     const cellWrites = buildCellWrites(financialJson);
     console.log(`[generate-ovo-plan] ${cellWrites.length} cells to write`);
+
+    // Fix #5: Post-build revenue verification
+    const { verified, gaps } = verifyExcelRevenue(financialJson, data.framework_data);
+    if (!verified) {
+      console.warn(`[generate-ovo-plan] Revenue verification FAILED — gaps: ${JSON.stringify(gaps)}`);
+      // If critical gaps (>10%), trigger corrective re-scaling
+      const criticalGaps = Object.values(gaps).filter(g => g.ecart > 10);
+      if (criticalGaps.length > 0) {
+        console.log("[generate-ovo-plan] Critical gaps detected, re-scaling and rebuilding cells...");
+        scaleToFrameworkTargets(financialJson, data.framework_data, undefined, data.inputs_data);
+        const correctedWrites = buildCellWrites(financialJson);
+        const { verified: v2 } = verifyExcelRevenue(financialJson, data.framework_data);
+        if (v2) {
+          console.log("[generate-ovo-plan] Corrective re-scaling successful");
+          cellWrites.length = 0;
+          cellWrites.push(...correctedWrites);
+        } else {
+          console.warn("[generate-ovo-plan] Corrective re-scaling still has gaps — proceeding with best effort");
+        }
+      }
+    } else {
+      console.log("[generate-ovo-plan] Revenue verification PASSED ✓");
+    }
 
     // ── Étape 4 : Injecter les valeurs dans le ZIP ─────────────────────
     console.log("[generate-ovo-plan] Injecting values into Excel...");

@@ -3,6 +3,20 @@
  * for Excel cell injection. Extracted from generate-ovo-plan.
  */
 
+// ── Common volume helper (Fix #1) ──
+// deno-lint-ignore no-explicit-any
+export function getTotalVolume(yr: any): number {
+  return (yr.volume_q1 || yr.volume_h1 || 0)
+       + (yr.volume_q2 || yr.volume_h2 || 0)
+       + (yr.volume_q3 || 0)
+       + (yr.volume_q4 || 0);
+}
+
+// deno-lint-ignore no-explicit-any
+function getWeightedPrice(yr: any): number {
+  return yr.unit_price_r1 || yr.unit_price_r2 || yr.unit_price_r3 || 0;
+}
+
 // deno-lint-ignore no-explicit-any
 export function expandCondensedData(json: Record<string, any>): void {
   if (Array.isArray(json.products)) {
@@ -51,16 +65,12 @@ export function scaleCOGSToFramework(json: Record<string, any>, frameworkData?: 
     });
 
   const caLine = findLigne('ca total', 'chiffre', 'revenue', 'ca ');
-  // H5: Prefer Marge Brute (Revenue - COGS) not Marge EBITDA (after OPEX) for COGS scaling
-  // Marge Brute = Revenue - COGS → target COGS = Revenue - Marge Brute
-  // Marge EBITDA = Revenue - COGS - OPEX → using it would under-estimate COGS
   const mbLine = findLigne('marge brute', 'gross margin', 'gross profit');
   if (!caLine) return;
   if (!mbLine) {
-    console.warn('[scaleCOGS] Marge Brute line not found in Framework — skipping COGS scaling to avoid using EBITDA as proxy');
+    console.warn('[scaleCOGS] Marge Brute line not found in Framework — skipping COGS scaling');
     return;
   }
-  // Guard: sanity check that we're not using the EBITDA line accidentally
   const mbLabel = (mbLine.poste || mbLine.libelle || '').toLowerCase();
   if (mbLabel.includes('ebitda') || mbLabel.includes('exploitation')) {
     console.warn('[scaleCOGS] Found EBITDA line instead of Marge Brute — skipping COGS scaling');
@@ -81,18 +91,18 @@ export function scaleCOGSToFramework(json: Record<string, any>, frameworkData?: 
     const fwMarge = typeof mbLine[fwKey] === 'number' ? mbLine[fwKey] : parseFcfaValue(String(mbLine[fwKey] || ''));
     if (fwRevenue <= 0 || fwMarge < 0) continue;
 
-    const targetCogsRate = (fwRevenue - fwMarge) / fwRevenue; // target COGS / revenue ratio
+    const targetCogsRate = (fwRevenue - fwMarge) / fwRevenue;
 
-    // Calculate current Excel COGS and Revenue for this year
+    // Fix #1: use getTotalVolume helper consistently
     let excelRevenue = 0;
     let excelCOGS = 0;
     for (const item of allItems) {
       if (!item.per_year || !Array.isArray(item.per_year)) continue;
       const yr = item.per_year.find((y: any) => y.year === yearLabel);
       if (!yr) continue;
-      const price = yr.unit_price_r1 || yr.unit_price_r2 || yr.unit_price_r3 || 0;
+      const price = getWeightedPrice(yr);
       const cogs = yr.cogs_r1 || yr.cogs_r2 || yr.cogs_r3 || 0;
-      const vol = (yr.volume_h1 || 0) + (yr.volume_h2 || 0) + (yr.volume_q3 || 0) + (yr.volume_q4 || 0);
+      const vol = getTotalVolume(yr);
       excelRevenue += vol * price;
       excelCOGS += vol * cogs;
     }
@@ -102,11 +112,10 @@ export function scaleCOGSToFramework(json: Record<string, any>, frameworkData?: 
     const currentCogsRate = excelCOGS / excelRevenue;
     const cogsScalingRatio = targetCogsRate / currentCogsRate;
     const ecart = Math.abs(cogsScalingRatio - 1);
-    if (ecart <= 0.05) continue; // < 5% — no adjustment needed
+    if (ecart <= 0.05) continue;
 
     console.log(`[scaleCOGS] ${yearLabel}: currentCOGS%=${(currentCogsRate*100).toFixed(1)}%, targetCOGS%=${(targetCogsRate*100).toFixed(1)}%, ratio=${cogsScalingRatio.toFixed(3)}`);
 
-    // Apply ratio to all cogs fields for this year
     for (const item of allItems) {
       if (!item.per_year || !Array.isArray(item.per_year)) continue;
       const yr = item.per_year.find((y: any) => y.year === yearLabel);
@@ -119,19 +128,16 @@ export function scaleCOGSToFramework(json: Record<string, any>, frameworkData?: 
 }
 
 // deno-lint-ignore no-explicit-any
-export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData?: Record<string, any>, planOvoData?: Record<string, any>): void {
+export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData?: Record<string, any>, planOvoData?: Record<string, any>, inputsData?: Record<string, any>): void {
   const targets: Record<string, number> = {};
-  const yearLabelToJsonKey: Record<string, string> = {
-    "YEAR-2": "year_minus_2", "YEAR-1": "year_minus_1", "CURRENT YEAR": "current_year",
-    "YEAR2": "year2", "YEAR3": "year3", "YEAR4": "year4", "YEAR5": "year5", "YEAR6": "year6",
-  };
+  const yearLabels = ["YEAR-2", "YEAR-1", "CURRENT YEAR", "YEAR2", "YEAR3", "YEAR4", "YEAR5", "YEAR6"];
 
   // Framework is the source of truth for projection years (YEAR2-YEAR6)
   const fw = frameworkData as any;
   if (fw?.projection_5ans?.lignes && Array.isArray(fw.projection_5ans.lignes)) {
     const caLine = fw.projection_5ans.lignes.find((l: any) => {
       const lb = (l.poste || l.libelle || '').toLowerCase();
-      return lb.includes("ca total") || lb.includes("chiffre") || lb.includes("revenue");
+      return lb.includes("ca total") || lb.includes("chiffre") || lb.includes("revenue") || lb.includes("ventes") || lb.includes("recettes") || lb.includes("turnover") || lb.includes("total revenus");
     });
     if (caLine) {
       const fwMapping: Record<string, string> = {
@@ -159,6 +165,28 @@ export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData
     }
   }
 
+  // Fix #3: Derive historical targets from Inputs data when available
+  const inp = inputsData as any;
+  if (inp) {
+    const inputCA = Number(inp?.compte_resultat?.chiffre_affaires || inp?.compte_resultat?.ca || inp?.revenue || 0);
+    if (inputCA > 0 && !targets["CURRENT YEAR"]) {
+      targets["CURRENT YEAR"] = inputCA;
+      console.log(`[scaleToFramework] Injected CURRENT YEAR target from Inputs: ${inputCA}`);
+    }
+    // Derive YEAR-1 and YEAR-2 from CY using inverse growth if not already set
+    const avgGrowth = 0.15; // reasonable default
+    if (inputCA > 0) {
+      if (!targets["YEAR-1"]) {
+        targets["YEAR-1"] = Math.round(inputCA / (1 + avgGrowth));
+        console.log(`[scaleToFramework] Derived YEAR-1 target: ${targets["YEAR-1"]}`);
+      }
+      if (!targets["YEAR-2"]) {
+        targets["YEAR-2"] = Math.round(inputCA / Math.pow(1 + avgGrowth, 2));
+        console.log(`[scaleToFramework] Derived YEAR-2 target: ${targets["YEAR-2"]}`);
+      }
+    }
+  }
+
   if (Object.keys(targets).length === 0) {
     console.log("[scaleToFramework] No targets found, skipping scaling");
     return;
@@ -166,7 +194,6 @@ export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData
 
   console.log("[scaleToFramework] Targets:", JSON.stringify(targets));
 
-  const yearLabels = ["YEAR-2", "YEAR-1", "CURRENT YEAR", "YEAR2", "YEAR3", "YEAR4", "YEAR5", "YEAR6"];
   const allItems = [
     ...(Array.isArray(json.products) ? json.products.filter((p: any) => p.active !== false) : []),
     ...(Array.isArray(json.services) ? json.services.filter((s: any) => s.active !== false) : []),
@@ -176,13 +203,14 @@ export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData
     const target = targets[yearLabel];
     if (!target || target <= 0) continue;
 
+    // Fix #1: use getTotalVolume consistently
     let revenueExcel = 0;
     for (const item of allItems) {
       if (!item.per_year || !Array.isArray(item.per_year)) continue;
       const yr = item.per_year.find((y: any) => y.year === yearLabel);
       if (!yr) continue;
-      const price = yr.unit_price_r1 || yr.unit_price_r2 || yr.unit_price_r3 || 0;
-      const totalVol = (yr.volume_q1 || yr.volume_h1 || 0) + (yr.volume_q2 || yr.volume_h2 || 0) + (yr.volume_q3 || 0) + (yr.volume_q4 || 0);
+      const price = getWeightedPrice(yr);
+      const totalVol = getTotalVolume(yr);
       revenueExcel += totalVol * price;
     }
 
@@ -194,6 +222,7 @@ export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData
     const ratio = target / revenueExcel;
     console.log(`[scaleToFramework] ${yearLabel}: Excel=${Math.round(revenueExcel)}, Target=${target}, Ratio=${ratio.toFixed(3)}, Ecart=${(ecart*100).toFixed(1)}%`);
 
+    // Proportional scaling of all items
     for (const item of allItems) {
       if (!item.per_year || !Array.isArray(item.per_year)) continue;
       const yr = item.per_year.find((y: any) => y.year === yearLabel);
@@ -202,6 +231,35 @@ export function scaleToFrameworkTargets(json: Record<string, any>, frameworkData
       yr.volume_h2 = Math.round((yr.volume_h2 || 0) * ratio);
       yr.volume_q3 = Math.round((yr.volume_q3 || 0) * ratio);
       yr.volume_q4 = Math.round((yr.volume_q4 || 0) * ratio);
+    }
+
+    // Fix #2: Residual adjustment — recompute Excel revenue after scaling and fix rounding gap
+    let postScaleRevenue = 0;
+    let biggestItem: any = null;
+    let biggestItemRevenue = 0;
+    for (const item of allItems) {
+      if (!item.per_year || !Array.isArray(item.per_year)) continue;
+      const yr = item.per_year.find((y: any) => y.year === yearLabel);
+      if (!yr) continue;
+      const price = getWeightedPrice(yr);
+      const vol = getTotalVolume(yr);
+      const itemRev = vol * price;
+      postScaleRevenue += itemRev;
+      if (itemRev > biggestItemRevenue) {
+        biggestItemRevenue = itemRev;
+        biggestItem = yr;
+      }
+    }
+
+    const residual = target - postScaleRevenue;
+    if (biggestItem && Math.abs(residual) > 1 && getWeightedPrice(biggestItem) > 0) {
+      const price = getWeightedPrice(biggestItem);
+      const volumeAdjust = Math.round(residual / price);
+      if (volumeAdjust !== 0) {
+        // Add residual to h1 (largest quarter proxy)
+        biggestItem.volume_h1 = (biggestItem.volume_h1 || 0) + volumeAdjust;
+        console.log(`[scaleToFramework] ${yearLabel}: residual adjustment: ${volumeAdjust} units added to largest item (gap=${Math.round(residual)} FCFA)`);
+      }
     }
   }
 }
@@ -243,6 +301,106 @@ export function normalizeRangeData(json: Record<string, any>): void {
   normalize(json.services || []);
 }
 
+/**
+ * Scale OPEX sub-categories to align with plan_ovo aggregate OPEX (Fix #4).
+ * When plan_ovo has opex totals, scale sub-categories proportionally.
+ */
+// deno-lint-ignore no-explicit-any
+export function alignOpexToPlanOvo(json: Record<string, any>, planOvoData?: Record<string, any>): void {
+  const po = planOvoData as any;
+  if (!po?.opex || typeof po.opex !== 'object') return;
+  if (!json.opex || typeof json.opex !== 'object') return;
+
+  const poOpex = po.opex;
+  // plan_ovo opex format: { total_cy: number, growth: number } per category
+  // or direct year values { year_minus_2, year_minus_1, current_year, year2, ... }
+
+  for (const [category, poVal] of Object.entries(poOpex)) {
+    if (!poVal || typeof poVal !== 'object') continue;
+    const poObj = poVal as any;
+    const poCY = poObj.total_cy || poObj.current_year || 0;
+    if (poCY <= 0) continue;
+
+    const excelCat = json.opex[category];
+    if (!excelCat || typeof excelCat !== 'object') continue;
+
+    // Calculate current total_cy from expanded sub-categories
+    let currentCY = 0;
+    const subEntries = Object.entries(excelCat);
+    for (const [, subVals] of subEntries) {
+      if (Array.isArray(subVals) && subVals.length >= 5) {
+        // Index 2+3 = H1+H2 = current year
+        currentCY += (subVals[2] || 0) + (subVals[3] || 0);
+      }
+    }
+
+    if (currentCY <= 0) continue;
+    const opexRatio = poCY / currentCY;
+    const ecart = Math.abs(opexRatio - 1);
+    if (ecart <= 0.10) continue; // allow 10% tolerance for OPEX
+
+    console.log(`[alignOpex] ${category}: currentCY=${currentCY}, targetCY=${poCY}, ratio=${opexRatio.toFixed(3)}`);
+
+    // Scale all sub-category arrays proportionally
+    for (const [subKey, subVals] of subEntries) {
+      if (Array.isArray(subVals)) {
+        json.opex[category][subKey] = subVals.map((v: number) => Math.round((v || 0) * opexRatio / 1000) * 1000);
+      }
+    }
+  }
+}
+
+/**
+ * Post-build revenue verification (Fix #5).
+ * Returns computed Excel revenues per year for comparison with Framework targets.
+ */
+// deno-lint-ignore no-explicit-any
+export function verifyExcelRevenue(json: Record<string, any>, frameworkData?: Record<string, any>): { verified: boolean; gaps: Record<string, { excel: number; target: number; ecart: number }> } {
+  const gaps: Record<string, { excel: number; target: number; ecart: number }> = {};
+  let verified = true;
+
+  const fw = frameworkData as any;
+  if (!fw?.projection_5ans?.lignes) return { verified: true, gaps };
+
+  const caLine = fw.projection_5ans.lignes.find((l: any) => {
+    const lb = (l.poste || l.libelle || '').toLowerCase();
+    return lb.includes("ca total") || lb.includes("chiffre") || lb.includes("revenue") || lb.includes("ventes") || lb.includes("total revenus");
+  });
+  if (!caLine) return { verified: true, gaps };
+
+  const fwMap: Record<string, string> = { "YEAR2": "an1", "YEAR3": "an2", "YEAR4": "an3", "YEAR5": "an4", "YEAR6": "an5" };
+  const allItems = [
+    ...(Array.isArray(json.products) ? json.products.filter((p: any) => p.active !== false) : []),
+    ...(Array.isArray(json.services) ? json.services.filter((s: any) => s.active !== false) : []),
+  ];
+
+  for (const [yearLabel, fwKey] of Object.entries(fwMap)) {
+    const raw = caLine[fwKey];
+    const target = typeof raw === 'number' ? raw : parseFcfaValue(String(raw || ''));
+    if (target <= 0) continue;
+
+    let excelRev = 0;
+    for (const item of allItems) {
+      const yr = item.per_year?.find((y: any) => y.year === yearLabel);
+      if (!yr) continue;
+      excelRev += getTotalVolume(yr) * getWeightedPrice(yr);
+    }
+
+    const ecart = excelRev > 0 ? Math.abs(excelRev - target) / target : 1;
+    if (ecart > 0.05) {
+      gaps[yearLabel] = { excel: Math.round(excelRev), target, ecart: Math.round(ecart * 100) };
+      verified = false;
+      if (ecart > 0.10) {
+        console.error(`[verifyRevenue] CRITICAL: ${yearLabel} Excel=${Math.round(excelRev)} vs Target=${target}, écart=${(ecart*100).toFixed(1)}%`);
+      } else {
+        console.warn(`[verifyRevenue] WARNING: ${yearLabel} Excel=${Math.round(excelRev)} vs Target=${target}, écart=${(ecart*100).toFixed(1)}%`);
+      }
+    }
+  }
+
+  return { verified, gaps };
+}
+
 // ── Internal helpers ──
 
 function parseFcfaValue(raw: string): number {
@@ -269,7 +427,7 @@ function expandProductOrService(p: any): any {
     while (existing.length < 8) {
       const idx = existing.length;
       const prevEntry = existing[existing.length - 1];
-      const totalVol = (prevEntry.volume_h1 || 0) + (prevEntry.volume_h2 || 0) + (prevEntry.volume_q3 || 0) + (prevEntry.volume_q4 || 0);
+      const totalVol = getTotalVolume(prevEntry);
       const newVol = Math.round(totalVol * (1 + g));
       const newEntry = { ...prevEntry };
       newEntry.year = yearLabels[idx];
@@ -332,7 +490,7 @@ function expandProductOrService(p: any): any {
     const q1 = Math.round(yc.volume * 0.22);
     const q2 = Math.round(yc.volume * 0.25);
     const q3 = Math.round(yc.volume * 0.27);
-    const q4 = yc.volume - q1 - q2 - q3; // remainder to avoid rounding drift
+    const q4 = yc.volume - q1 - q2 - q3;
 
     return {
       year: yc.year,
@@ -352,7 +510,7 @@ function expandProductOrService(p: any): any {
 function repairPerYearVolumes(perYear: any[], growthRate: number): any[] {
   if (!perYear || perYear.length < 3) return perYear;
   const cyEntry = perYear.find((e: any) => e.year === "CURRENT YEAR") || perYear[2];
-  const cyVolume = (cyEntry?.volume_h1 || 0) + (cyEntry?.volume_h2 || 0) + (cyEntry?.volume_q3 || 0) + (cyEntry?.volume_q4 || 0);
+  const cyVolume = getTotalVolume(cyEntry);
   if (cyVolume === 0) return perYear;
 
   const g = growthRate || 0.15;
@@ -360,7 +518,7 @@ function repairPerYearVolumes(perYear: any[], growthRate: number): any[] {
 
   for (let i = 3; i < perYear.length && i < 8; i++) {
     const entry = perYear[i];
-    const vol = (entry.volume_h1 || 0) + (entry.volume_h2 || 0) + (entry.volume_q3 || 0) + (entry.volume_q4 || 0);
+    const vol = getTotalVolume(entry);
     if (vol > 0) {
       lastKnownVolume = vol;
     } else {
