@@ -1401,7 +1401,7 @@ export default function EntrepreneurDashboard() {
             <><Sparkles className="h-5 w-5" /> Générer les livrables</>
           )}
         </Button>
-        {pipelineState === 'up_to_date' && !generating && (
+        {pipelineState && !generating && (
           <Button
             size="lg"
             variant="outline"

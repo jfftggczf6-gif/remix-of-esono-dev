@@ -1,20 +1,14 @@
 
 
-## Afficher le bouton "Régénération complète" dès qu'il y a des livrables
+## Réponse
 
-### Changement
+Lovable offre deux options pour tester des modifications sans affecter le projet principal :
 
-**Fichier** : `src/components/dashboard/EntrepreneurDashboard.tsx` — ligne 1404
+1. **Remix (clone)** : Créer une copie complète du projet. Allez dans **Settings → Remix this project**. Cela crée un nouveau projet identique où vous pouvez tester librement.
 
-Remplacer :
-```tsx
-{pipelineState === 'up_to_date' && !generating && (
-```
+2. **Branches GitHub** (expérimental) : Si votre projet est connecté à GitHub, vous pouvez activer le switching de branches dans **Account Settings → Labs → GitHub Branch Switching**. Cela vous permet de travailler sur une branche séparée.
 
-Par :
-```tsx
-{pipelineState && !generating && (
-```
+Je ne peux pas créer de remix ou de branche directement pour vous — ces actions se font depuis l'interface Lovable.
 
-Cela affiche le bouton dès que `pipelineState` est défini (`'generate'`, `'update'` ou `'up_to_date'`), c'est-à-dire dès qu'une entreprise existe. L'utilisateur pourra toujours forcer un recalcul complet peu importe l'état actuel des livrables.
+**Recommandation** : Le remix est le plus simple et le plus fiable pour tester des modifications en isolation.
 
