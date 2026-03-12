@@ -739,10 +739,31 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
     }
   }
 
+  // BUG 2 FIX (post-framework): Validate EBITDA >= Net Profit
+  const { is: tauxISValidation } = getFiscalParams(country || "Côte d'Ivoire");
+  for (const yk of PROJ_KEYS) {
+    if (data.net_profit[yk] > data.ebitda[yk]) {
+      data.net_profit[yk] = Math.round(data.ebitda[yk] * (1 - tauxISValidation / 100));
+      console.warn(`[enforceFramework] net_profit > ebitda for ${yk}, corrected.`);
+    }
+    // Also: EBITDA cannot exceed gross_profit
+    if (data.ebitda[yk] > data.gross_profit[yk] && data.gross_profit[yk] > 0) {
+      data.ebitda[yk] = Math.round(data.gross_profit[yk] * 0.85);
+      console.warn(`[enforceFramework] ebitda > gross_profit for ${yk}, capped at 85%.`);
+    }
+  }
+
   // Recalculate investment metrics deterministically
   if (data.investment_metrics && data.cashflow) {
     const discountRate = data.investment_metrics.discount_rate || 0.12;
-    const initialInv = data.funding_need || 0;
+
+    // BUG 5 FIX: Derive funding_need from CAPEX if zero
+    let initialInv = data.funding_need || 0;
+    if (initialInv <= 0 && Array.isArray(data.capex) && data.capex.length > 0) {
+      initialInv = data.capex.reduce((sum: number, c: any) => sum + (toNumber(c.acquisition_value)), 0);
+      data.funding_need = initialInv;
+      console.warn(`[enforceFramework] funding_need was 0, derived from CAPEX: ${initialInv}`);
+    }
 
     // NPV calculation
     const cfValues = PROJ_KEYS.map((yk, i) => data.cashflow[yk] / Math.pow(1 + discountRate, i + 1));
