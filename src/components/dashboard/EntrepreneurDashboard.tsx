@@ -1384,7 +1384,7 @@ export default function EntrepreneurDashboard() {
       </div>
 
       {/* ===== BOTTOM-LEFT GENERATE BUTTON (overlay) ===== */}
-      <div className="fixed bottom-20 left-0 z-50 px-4">
+      <div className="fixed bottom-20 left-0 z-50 px-4 flex gap-2">
         <Button
           size="lg"
           onClick={() => handleGenerate(false)}
@@ -1401,6 +1401,16 @@ export default function EntrepreneurDashboard() {
             <><Sparkles className="h-5 w-5" /> Générer les livrables</>
           )}
         </Button>
+        {pipelineState === 'up_to_date' && !generating && (
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => handleGenerate(true)}
+            className="gap-2 rounded-xl px-4 py-3 h-auto text-xs"
+          >
+            <Sparkles className="h-4 w-4" /> Régénération complète
+          </Button>
+        )}
       </div>
 
       {/* ===== NON-BLOCKING GENERATION PROGRESS BANNER ===== */}
