@@ -256,8 +256,14 @@ Deno.serve(async (req: Request) => {
     // Scale product COGS to match Framework gross margin (aligns Excel margin with Plan OVO viewer)
     scaleCOGSToFramework(financialJson, data.framework_data);
 
-    // Fix #4: Align OPEX sub-categories with plan_ovo aggregates
+    // Align staff costs with plan_ovo staff_salaries
+    alignStaffToTarget(financialJson, data.plan_ovo_data);
+
+    // Fix #4: Align OPEX sub-categories with plan_ovo aggregates (with mapping table)
     alignOpexToPlanOvo(financialJson, data.plan_ovo_data);
+
+    // Align total OPEX with Framework-implied OPEX (Marge Brute - EBITDA)
+    alignTotalOpexToFramework(financialJson, data.framework_data);
 
     // Apply Framework constraints to ensure Excel data matches JSON Plan OVO
     if (data.framework_data && financialJson.revenue) {
