@@ -1024,12 +1024,6 @@ export default function CoachDashboard() {
                             onClick={() => handleDownloadCoach(DELIV_MAP[mod.code], 'html', ent.id)}>
                             <Download className="h-3 w-3" /> HTML
                           </Button>
-                          {mod.code === 'framework' && (
-                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
-                              onClick={() => handleDownloadCoach('framework_data', 'xlsx', ent.id)}>
-                              <Download className="h-3 w-3" /> XLSX
-                            </Button>
-                          )}
                           {mod.code === 'plan_ovo' && entDelivs.find((x: any) => x.type === 'plan_ovo_excel') && (
                             <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
                               onClick={() => handleDownloadOvoCoach(ent.id, entDelivs)}>
