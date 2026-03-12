@@ -1302,7 +1302,7 @@ export default function EntrepreneurDashboard() {
                 ) : selectedModule === 'business_plan' ? (
                   <BusinessPlanPreview data={selectedDeliv.data as Record<string, any>} />
                 ) : (
-                  <DeliverableViewer moduleCode={selectedModule} data={selectedDeliv.data} />
+                  <DeliverableViewer moduleCode={selectedModule} data={selectedDeliv.data} allDeliverables={deliverables} />
                 )}
               </div>
             ) : (
