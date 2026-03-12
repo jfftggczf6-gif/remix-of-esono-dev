@@ -187,8 +187,9 @@ export default function PlanOvoViewer({ data }: { data: any }) {
         ? (ai.roi * 100)
         : (hasInvestment ? (npSeries.slice(3).reduce((a, b) => a + b, 0) / totalInvestment) * 100 : null),
       payback_years: ai?.payback_years ?? (hasInvestment ? calcPayback(futureCf, totalInvestment) : null),
-      dscr: ai?.dscr ?? (annualDebtService > 0 ? dscrEbitda / annualDebtService : null),
-      multiple_ebitda: ai?.multiple_ebitda ?? null,
+      // Guard: DSCR and multiple_ebitda are meaningless when projection EBITDA is negative
+      dscr: dscrEbitda <= 0 ? null : (ai?.dscr ?? (annualDebtService > 0 ? dscrEbitda / annualDebtService : null)),
+      multiple_ebitda: dscrEbitda <= 0 ? null : (ai?.multiple_ebitda ?? null),
       discount_rate: discountRate * 100,
       cost_of_capital: (ai?.cost_of_capital || 0.12) * 100,
     };
