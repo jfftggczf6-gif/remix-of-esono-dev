@@ -1,30 +1,14 @@
 
-Objectif
-- Replacer le bloc des boutons de génération pour qu’il n’empiète plus sur les icônes du bas, en revenant côté gauche comme avant, mais davantage décalé à gauche.
 
-Ce que je vais modifier
-1) Fichier ciblé
-- `src/components/dashboard/EntrepreneurDashboard.tsx` (zone du conteneur des boutons flottants en bas).
+## Réponse
 
-2) Changement de position
-- Remplacer la position actuelle:
-  - `fixed bottom-4 right-4 ...`
-- Par une position gauche, au-dessus de la barre d’icônes:
-  - `fixed bottom-20 left-2 sm:left-4 ...`
-- Résultat attendu: le groupe de boutons revient à gauche (comme demandé) et ne recouvre plus les icônes de navigation du bas.
+Lovable offre deux options pour tester des modifications sans affecter le projet principal :
 
-3) Comportement conservé
-- Aucun changement de logique:
-  - `Générer les livrables` inchangé
-  - `Régénération complète` inchangé
-  - états `disabled/loading` inchangés
+1. **Remix (clone)** : Créer une copie complète du projet. Allez dans **Settings → Remix this project**. Cela crée un nouveau projet identique où vous pouvez tester librement.
 
-Validation prévue
-- Vérifier sur `/dashboard` (viewport actuel ~1078x782) que:
-  - les icônes du bas sont toutes visibles et cliquables
-  - les boutons restent accessibles
-  - aucune superposition gênante sur le contenu central
+2. **Branches GitHub** (expérimental) : Si votre projet est connecté à GitHub, vous pouvez activer le switching de branches dans **Account Settings → Labs → GitHub Branch Switching**. Cela vous permet de travailler sur une branche séparée.
 
-Détails techniques
-- Modification CSS Tailwind uniquement (positionnement du wrapper des boutons flottants).
-- Aucun impact backend, données, pipeline, ou permissions.
+Je ne peux pas créer de remix ou de branche directement pour vous — ces actions se font depuis l'interface Lovable.
+
+**Recommandation** : Le remix est le plus simple et le plus fiable pour tester des modifications en isolation.
+
