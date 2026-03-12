@@ -37,7 +37,10 @@ export async function getPipelineState(enterpriseId: string): Promise<PipelineSt
   const isRich = (d: any): boolean => {
     if (!d.data || typeof d.data !== 'object') return false;
     if (d.type === 'inputs_data') return d.data.compte_resultat && toNumber(d.data.compte_resultat.chiffre_affaires) > 0;
-    if (d.type === 'odd_analysis') return d.data.evaluation_cibles_odd || d.data.synthese;
+    if (d.type === 'odd_analysis') {
+      const hasV2 = d.data.metadata?.target_matrix_version === 'v2_template_aligned';
+      return hasV2 && (d.data.evaluation_cibles_odd || d.data.synthese);
+    }
     if (d.type === 'plan_ovo') return !!d.data.scenarios;
     return d.data.canvas || d.data.theorie_changement || d.data.compte_resultat || d.data.ratios || d.data.diagnostic_par_dimension || d.data.scenarios || d.data.checklist;
   };

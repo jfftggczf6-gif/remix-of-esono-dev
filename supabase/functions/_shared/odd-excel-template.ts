@@ -370,8 +370,7 @@ export async function fillOddExcelTemplate(
     console.warn("[odd-excel] Feuille INDICATEURS non trouvée, ignorée");
   }
 
-  // Remove calcChain.xml to avoid inconsistencies — Excel will recalculate automatically
-  zip.remove("xl/calcChain.xml");
+  // Keep calcChain.xml to preserve formula calculations (column J scores)
 
   console.log(`[odd-excel] ✅ Template rempli pour "${enterpriseName}" (${matchedCount} cibles matchées)`);
   return await zip.generateAsync({
