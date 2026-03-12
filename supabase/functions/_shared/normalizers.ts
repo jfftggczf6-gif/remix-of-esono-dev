@@ -780,7 +780,7 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
           data.ebitda_margin_pct[yk] = data.revenue[yk] > 0
             ? (data.ebitda[yk] / data.revenue[yk]) * 100 : 0;
           // Cascade: net_profit cannot exceed EBITDA
-          if (data.net_profit[yk] > data.ebitda[yk]) {
+          if (data.net_profit[yk] >= data.ebitda[yk]) {
             data.net_profit[yk] = Math.round(data.ebitda[yk] * (1 - tauxISOpex / 100));
           }
           // Cascade: cashflow ≈ EBITDA × (1 - IS%)
