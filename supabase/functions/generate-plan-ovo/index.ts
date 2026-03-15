@@ -121,8 +121,8 @@ Génère le JSON suivant avec des valeurs réalistes basées sur les données:
   "score": <0-100>,
   "company": "${name}",
   "country": "${fp.focus}",
-  "currency": "XOF",
-  "exchange_rate_eur": 655.957,
+  "currency": "${fp.currency_iso}",
+  "exchange_rate_eur": ${fp.exchange_rate_eur},
   "base_year": ${cy},
   "years": {
     "year_minus_2": ${ym2},

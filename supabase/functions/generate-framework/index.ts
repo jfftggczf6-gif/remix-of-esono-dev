@@ -208,7 +208,7 @@ serve(async (req) => {
     const knowledgeBase = getFinancialKnowledgePrompt(countryKey, sectorKey, false);
 
     const enrichedPrompt = userPrompt(
-      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData
+      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData, fiscalParams.devise
     ) + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
 
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;
