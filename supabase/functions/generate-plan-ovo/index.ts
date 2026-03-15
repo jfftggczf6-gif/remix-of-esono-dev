@@ -13,11 +13,11 @@ function buildSystemPrompt(country: string, sector: string): string {
 À partir des données historiques fournies, génère un plan financier réaliste sur 8 ans (N-2 à N+5) en JSON strict.
 
 Paramètres fiscaux pour ${fp.focus}:
-- Devise: XOF (FCFA)
+- Devise: ${fp.currency_iso} (${fp.devise})
 - TVA: ${fp.tva}%
 - Impôt sur les sociétés: ${fp.is_standard}%${fp.seuil_pme !== 'N/A' ? ` (ou ${fp.is_pme}% si CA < ${fp.seuil_pme})` : ''}
 - Charges sociales: ${fp.charges_sociales}% du salaire brut
-- Taux de change EUR: 655.957
+- Taux de change EUR: ${fp.exchange_rate_eur}
 
 CONTRAINTE GÉOGRAPHIQUE ABSOLUE:
 - Le pays de l'entreprise est ${fp.focus}. Tous les CAPEX, investissements, locaux, zones géographiques DOIVENT concerner UNIQUEMENT ${fp.focus}.
