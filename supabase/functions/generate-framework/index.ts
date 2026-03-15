@@ -19,9 +19,9 @@ COHÉRENCE CROISÉE:
 - Les scénarios (prudent/central/ambitieux) doivent avoir des écarts proportionnels et justifiés
 - projection_5ans.lignes: les valeurs an1 à an5 DOIVENT être numériques (pas de strings)
 
-IMPORTANT: Réponds UNIQUEMENT en JSON valide. Tous les montants en FCFA, numériques sans formatage.`;
+IMPORTANT: Réponds UNIQUEMENT en JSON valide. Tous les montants dans la devise du pays, numériques sans formatage.`;
 
-const userPrompt = (name: string, sector: string, country: string, docs: string, inputsData: any, bmcData: any) => `
+const userPrompt = (name: string, sector: string, country: string, docs: string, inputsData: any, bmcData: any, devise: string) => `
 Réalise l'analyse financière complète (Framework PME) de "${name}" (Secteur: ${sector}, Pays: ${country}).
 
 ${inputsData?.compte_resultat ? `DONNÉES FINANCIÈRES (Module Inputs):\n${JSON.stringify(inputsData, null, 2)}` : "Aucune donnée financière structurée, estime à partir des documents."}
@@ -33,7 +33,7 @@ Génère le framework d'analyse financière COMPLET en JSON avec TOUTES les sect
   "score": <0-100>,
   "periode": "N-2 à N",
   "fiabilite": "Élevée|Moyenne|Faible",
-  "devise": "FCFA",
+  "devise": "${devise}",
   "kpis": {
     "marge_ebitda": "<xx%>",
     "ca_annee_n": <nombre>,
@@ -208,7 +208,7 @@ serve(async (req) => {
     const knowledgeBase = getFinancialKnowledgePrompt(countryKey, sectorKey, false);
 
     const enrichedPrompt = userPrompt(
-      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData
+      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData, fiscalParams.devise
     ) + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
 
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;

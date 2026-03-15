@@ -574,7 +574,7 @@ function buildSystemPrompt(country: string): string {
 Tu génères un plan financier OVO au FORMAT CONDENSÉ pour un entrepreneur.
 
 CONTEXTE FISCAL ${fp.focus.toUpperCase()} (${new Date().getFullYear()}) :
-- Devise : XOF (FCFA) — taux fixe 655.957 XOF/EUR
+- Devise : ${fp.currency_iso} (${fp.devise}) — taux ${fp.exchange_rate_eur} ${fp.currency_iso}/EUR
 - TVA : ${fp.tva}% (${(fp.tva / 100).toFixed(2)})
 ${isRegimeInfo}
 - Cotisations sociales patronales : ${fp.charges_sociales}% du salaire brut (${(fp.charges_sociales / 100).toFixed(4)})
@@ -591,7 +591,7 @@ RÈGLES DE PROJECTION RÉALISTES :
 - Marge brute services : 60-85% selon complexité
 - Staff : effectif réel uniquement, pas de sur-estimation
 - Volumes = entiers (jamais décimaux)
-- Montants = FCFA, arrondir à 1000 FCFA près
+- Montants = ${fp.devise}, arrondir à 1000 ${fp.devise} près
 
 FORMAT CONDENSÉ OBLIGATOIRE :
 - Pour chaque produit/service : donne UNIQUEMENT prix CY, taux COGS, volumes (YM2/YM1/CY), taux de croissance
@@ -603,7 +603,7 @@ FORMAT CONDENSÉ OBLIGATOIRE :
 SORTIE OBLIGATOIRE :
 - UNIQUEMENT un objet JSON valide — zéro markdown, zéro texte avant/après
 - Respecter EXACTEMENT la structure condensée demandée
-- Tous montants en XOF (FCFA)`;
+- Tous montants en ${fp.currency_iso} (${fp.devise})`;
 }
 
 // ─────────────────────────────────────────────────────────────────────

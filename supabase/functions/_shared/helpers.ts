@@ -380,20 +380,21 @@ export async function saveDeliverable(supabase: any, enterprise_id: string, type
 export const FISCAL_PARAMS: Record<string, {
   tva: number; is: number; ir_max: number; smig: number;
   patente: string; cotisations_sociales: number; devise: string;
+  currency_iso: string; exchange_rate_eur: number;
 }> = {
-  "Côte d'Ivoire": { tva: 18, is: 25, ir_max: 36, smig: 75000, patente: "0.5% CA", cotisations_sociales: 25, devise: "FCFA" },
-  "Sénégal":        { tva: 18, is: 30, ir_max: 40, smig: 60000, patente: "Variable", cotisations_sociales: 24, devise: "FCFA" },
-  "Mali":           { tva: 18, is: 30, ir_max: 40, smig: 40000, patente: "Variable", cotisations_sociales: 22, devise: "FCFA" },
-  "Burkina Faso":   { tva: 18, is: 27.5, ir_max: 35, smig: 35000, patente: "Variable", cotisations_sociales: 22, devise: "FCFA" },
-  "Bénin":          { tva: 18, is: 30, ir_max: 35, smig: 40000, patente: "Variable", cotisations_sociales: 24.5, devise: "FCFA" },
-  "Togo":           { tva: 18, is: 27, ir_max: 35, smig: 35000, patente: "Variable", cotisations_sociales: 23.5, devise: "FCFA" },
-  "Niger":          { tva: 19, is: 30, ir_max: 35, smig: 30047, patente: "Variable", cotisations_sociales: 20, devise: "FCFA" },
-  "Guinée-Bissau":  { tva: 17, is: 25, ir_max: 30, smig: 19030, patente: "Variable", cotisations_sociales: 18, devise: "FCFA" },
-  "Cameroun":       { tva: 19.25, is: 33, ir_max: 35, smig: 41875, patente: "Variable", cotisations_sociales: 18.5, devise: "FCFA" },
-  "Gabon":          { tva: 18, is: 30, ir_max: 35, smig: 150000, patente: "Variable", cotisations_sociales: 20.1, devise: "FCFA" },
-  "Congo":          { tva: 18.9, is: 28, ir_max: 40, smig: 90000, patente: "Variable", cotisations_sociales: 22.6, devise: "FCFA" },
-  "RDC":            { tva: 16, is: 30, ir_max: 40, smig: 7075, patente: "Variable", cotisations_sociales: 14.5, devise: "CDF" },
-  "Guinée":         { tva: 18, is: 35, ir_max: 40, smig: 440000, patente: "Variable", cotisations_sociales: 23, devise: "GNF" },
+  "Côte d'Ivoire": { tva: 18, is: 25, ir_max: 36, smig: 75000, patente: "0.5% CA", cotisations_sociales: 25, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Sénégal":        { tva: 18, is: 30, ir_max: 40, smig: 60000, patente: "Variable", cotisations_sociales: 24, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Mali":           { tva: 18, is: 30, ir_max: 40, smig: 40000, patente: "Variable", cotisations_sociales: 22, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Burkina Faso":   { tva: 18, is: 27.5, ir_max: 35, smig: 35000, patente: "Variable", cotisations_sociales: 22, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Bénin":          { tva: 18, is: 30, ir_max: 35, smig: 40000, patente: "Variable", cotisations_sociales: 24.5, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Togo":           { tva: 18, is: 27, ir_max: 35, smig: 35000, patente: "Variable", cotisations_sociales: 23.5, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Niger":          { tva: 19, is: 30, ir_max: 35, smig: 30047, patente: "Variable", cotisations_sociales: 20, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Guinée-Bissau":  { tva: 17, is: 25, ir_max: 30, smig: 19030, patente: "Variable", cotisations_sociales: 18, devise: "FCFA", currency_iso: "XOF", exchange_rate_eur: 655.957 },
+  "Cameroun":       { tva: 19.25, is: 33, ir_max: 35, smig: 41875, patente: "Variable", cotisations_sociales: 18.5, devise: "FCFA", currency_iso: "XAF", exchange_rate_eur: 655.957 },
+  "Gabon":          { tva: 18, is: 30, ir_max: 35, smig: 150000, patente: "Variable", cotisations_sociales: 20.1, devise: "FCFA", currency_iso: "XAF", exchange_rate_eur: 655.957 },
+  "Congo":          { tva: 18.9, is: 28, ir_max: 40, smig: 90000, patente: "Variable", cotisations_sociales: 22.6, devise: "FCFA", currency_iso: "XAF", exchange_rate_eur: 655.957 },
+  "RDC":            { tva: 16, is: 30, ir_max: 40, smig: 7075, patente: "Variable", cotisations_sociales: 14.5, devise: "CDF", currency_iso: "CDF", exchange_rate_eur: 2800 },
+  "Guinée":         { tva: 18, is: 35, ir_max: 40, smig: 440000, patente: "Variable", cotisations_sociales: 23, devise: "GNF", currency_iso: "GNF", exchange_rate_eur: 9500 },
 };
 
 export function getFiscalParams(country: string) {
@@ -414,6 +415,7 @@ export function getFiscalParams(country: string) {
 export function getFiscalParamsForPrompt(country: string): {
   tva: number; is_standard: number; is_pme: number; seuil_pme: string;
   charges_sociales: number; focus: string;
+  devise: string; currency_iso: string; exchange_rate_eur: number;
 } {
   const fp = getFiscalParams(country);
   const c = (country || '').toLowerCase().trim();
@@ -432,9 +434,12 @@ export function getFiscalParamsForPrompt(country: string): {
     tva: fp.tva,
     is_standard: fp.is,
     is_pme: isCIV ? 4 : fp.is,
-    seuil_pme: isCIV ? '200M FCFA' : 'N/A',
+    seuil_pme: isCIV ? `200M ${fp.devise}` : 'N/A',
     charges_sociales: fp.cotisations_sociales,
     focus,
+    devise: fp.devise,
+    currency_iso: fp.currency_iso,
+    exchange_rate_eur: fp.exchange_rate_eur,
   };
 }
 
