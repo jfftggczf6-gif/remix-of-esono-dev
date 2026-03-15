@@ -603,7 +603,7 @@ FORMAT CONDENSÉ OBLIGATOIRE :
 SORTIE OBLIGATOIRE :
 - UNIQUEMENT un objet JSON valide — zéro markdown, zéro texte avant/après
 - Respecter EXACTEMENT la structure condensée demandée
-- Tous montants en XOF (FCFA)`;
+- Tous montants en ${fp.currency_iso} (${fp.devise})`;
 }
 
 // ─────────────────────────────────────────────────────────────────────
