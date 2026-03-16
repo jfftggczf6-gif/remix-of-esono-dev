@@ -157,10 +157,23 @@ Deno.serve(async (req: Request) => {
       const bmcData = getDeliv("bmc_analysis") as any;
       const inputsData = getDeliv("inputs_data") as any;
 
-      // Extract products/services from BMC canvas
+      // Extract products/services — Priority 1: Inputs (real prices from documents)
       const products: EntrepreneurData["products"] = [];
       const services: EntrepreneurData["services"] = [];
-      if (bmcData?.canvas?.proposition_valeur) {
+
+      if (inputsData?.produits_services && Array.isArray(inputsData.produits_services) && inputsData.produits_services.length > 0) {
+        for (const p of inputsData.produits_services) {
+          const target = (p.type || '').toLowerCase() === 'service' ? services : products;
+          target.push({
+            name: p.nom || `Produit`,
+            description: p.nom || '',
+            price: p.prix_unitaire || 0,
+          });
+        }
+        console.log(`[generate-ovo-plan] Loaded ${products.length} products + ${services.length} services from Inputs (real document prices)`);
+      }
+      // Priority 2: BMC canvas (names only, no prices)
+      else if (bmcData?.canvas?.proposition_valeur) {
         const pv = bmcData.canvas.proposition_valeur;
         const items = Array.isArray(pv) ? pv : (pv.items || pv.elements || [pv]);
         items.forEach((item: any, i: number) => {
