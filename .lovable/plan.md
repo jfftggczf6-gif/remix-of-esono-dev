@@ -1,60 +1,47 @@
 
 
-## Résultat de l'analyse : les données enrichies SONT bien dans l'Excel
+## Diagnostic : Divergence entre Plan OVO Viewer, Framework et Excel OVO
 
-### Flux complet vérifié
+### Cause racine
 
-Le pipeline fonctionne correctement de bout en bout :
+Il y a **3 pipelines indépendants** qui produisent chacun leurs propres chiffres :
 
-```text
-Inputs (8 feuilles)
-  ↓ extractées en JSON (produits_services, equipe, couts_variables, couts_fixes, bfr, investissements, financement, hypotheses_croissance)
-  ↓
-Prompt OVO (lignes 736-802) ← blocs injectés :
-  • inputsCoutsBlock (coûts variables/fixes)
-  • inputsEquipeBlock (équipe détaillée)
-  • inputsBfrBlock (DSO/DPO/stock/trésorerie)
-  • inputsCapexBlock (investissements)
-  • inputsFinBlock (prêts, capital, subventions)
-  • inputsHypBlock (objectifs CA, inflation, marges)
-  ↓
-IA génère JSON condensé (price_cy, cogs_rate, volumes, staff, capex, loans...)
-  ↓
-ovo-data-expander.ts :
-  • expandCondensedData → per_year[] (prix, COGS, volumes par trimestre)
-  • scaleToFrameworkTargets → volumes alignés sur CA Framework
-  • scaleCOGSToFramework → COGS ajustés sur marge brute Framework
-  ↓
-buildOvoWrites → écriture cellule par cellule dans le .xlsm :
-  • RevenueData : prix (col L/M/N), COGS (col S/T/U), volumes (col AE-AH)
-  • FinanceData : OPEX, Staff, CAPEX, Working Capital, Loans, Cash
-  • InputsData : noms produits, gammes, canaux, paramètres prêts
-```
+1. **Framework** (`generate-framework`) → stocké dans `deliverables.type = "framework_data"` → affiché dans `FrameworkViewer` → source de vérité pour les projections An1-An5 (CA, Marge Brute, EBITDA, Résultat Net)
 
-### Ce qui est dans l'Excel (.xlsm)
+2. **Plan OVO JSON** (`generate-plan-ovo`) → appel IA séparé → normalisé par `normalizePlanOvo` → puis contraint par `enforceFrameworkConstraints` → stocké dans `deliverables.type = "plan_ovo"` → affiché dans `PlanOvoViewer`
 
-| Donnée | Feuille Excel | Colonnes/Lignes |
-|--------|--------------|-----------------|
-| Prix unitaires produits | RevenueData | L, M, N (par gamme) |
-| COGS unitaires | RevenueData | S, T, U |
-| Volumes trimestriels | RevenueData | AE, AF, AG, AH |
-| Staff (effectifs, salaires) | FinanceData | lignes 134+ |
-| OPEX détaillés (marketing, bureau, assurances...) | FinanceData | lignes 201-352 |
-| CAPEX | FinanceData | lignes 408+ |
-| Working Capital (stock, DSO, DPO) | FinanceData | lignes 693-701 |
-| Cash initial | FinanceData | ligne 749 |
-| Prêts (montants, taux, échéanciers) | FinanceData | lignes 785-815 |
+3. **Excel OVO** (`generate-ovo-plan`) → appel IA **complètement séparé** (prompt différent, format condensé produit/volume/prix) → aligné par `scaleToFrameworkTargets` + `scaleCOGSToFramework` + `alignStaffToTarget` + `alignOpexToPlanOvo` → injecté cellule par cellule dans le `.xlsm`
 
-### Ce qui est dans la base (deliverables.data) — seulement un résumé
+Le problème est que le pipeline **Excel OVO** fait son propre appel IA, puis aligne les revenues (volumes × prix) sur les cibles Framework. Mais les COGS, OPEX, Staff et autres postes passent par des fonctions d'alignement différentes de celles de `enforceFrameworkConstraints`. Résultat : les agrégats dans le `.xlsm` divergent des chiffres du Plan OVO Viewer et du Framework.
 
-La table `deliverables` ne stocke qu'un résumé agrégé (revenue/COGS/OPEX/EBITDA par année, liste des CAPEX, loans), pas le détail par produit. C'est normal : le détail complet est dans le fichier `.xlsm` stocké dans le bucket `ovo-outputs`.
+### Divergences concrètes identifiées
 
-### Conclusion
+| Poste | Plan OVO Viewer | Excel OVO | Cause |
+|-------|----------------|-----------|-------|
+| Revenue | ✅ Aligné Framework | ✅ Aligné (scaleToFrameworkTargets) | OK |
+| COGS | Framework: `revenue - marge_brute` | `scaleCOGSToFramework` (ratio par produit) | Arrondi + agrégation multi-produits = écart |
+| Staff | Ajusté via `enforceFrameworkConstraints` (ratio OPEX) | Ajusté via `alignStaffToTarget` (ratio ~0.45) | Fonctions différentes |
+| OPEX | Proportionnel `gross_profit - ebitda` | `alignOpexToPlanOvo` puis `alignTotalOpexToFramework` | Double ajustement crée des écarts |
+| EBITDA | Exact Framework | Calculé par formules Excel (MB - OPEX) | Pas directement écrit, dépend des postes |
 
-**Aucune modification n'est nécessaire.** Les données enrichies des Inputs sont bien :
-1. Injectées dans les prompts OVO et Framework
-2. Utilisées par l'IA pour générer des projections réalistes
-3. Écrites cellule par cellule dans le fichier Excel final
+### Solution proposée
 
-Pour vérifier visuellement, il suffit d'ouvrir le `.xlsm` téléchargé et de regarder la feuille `RevenueData` (prix et volumes par produit) et `FinanceData` (OPEX, CAPEX, prêts, BFR).
+**Modifier `generate-ovo-plan/index.ts`** pour qu'il utilise les données du **Plan OVO JSON réconcilié** (`plan_ovo` deliverable) comme source de vérité pour les agrégats, au lieu de laisser les fonctions d'alignement produire leurs propres valeurs indépendamment.
+
+Concrètement :
+
+1. **Après tous les alignements produit/COGS/OPEX/Staff**, ajouter une étape de **vérification finale** qui compare les totaux calculés (somme des produits × prix, somme OPEX, etc.) aux valeurs du `plan_ovo` deliverable réconcilié.
+
+2. **Si écart > 1% sur un agrégat** (Revenue, COGS, OPEX total, Staff total), appliquer un **facteur correctif proportionnel** sur les lignes détaillées pour que le total de l'Excel corresponde exactement au Plan OVO Viewer.
+
+3. **Ajouter des logs de vérification** comparant chaque agrégat Excel vs Plan OVO vs Framework pour tracer les écarts.
+
+### Fichiers modifiés
+
+- `supabase/functions/generate-ovo-plan/index.ts` — Ajouter l'étape de réconciliation finale post-alignement
+- `supabase/functions/_shared/ovo-data-expander.ts` — Ajouter une fonction `reconcileWithPlanOvo()` qui ajuste les détails pour matcher les totaux du Plan OVO JSON
+
+### Résultat attendu
+
+Après modification, les 3 vues (Framework, Plan OVO Viewer, Excel OVO) afficheront les mêmes chiffres pour Revenue, COGS, Marge Brute, OPEX, EBITDA, Résultat Net et Cash-Flow.
 
