@@ -5,15 +5,30 @@ import { getExtractionKnowledgePrompt } from "../_shared/financial-knowledge.ts"
 
 const buildSystemPrompt = (devise: string) => `Tu es un analyste financier expert certifié SYSCOHADA révisé (2017), spécialisé PME africaines (zones UEMOA/CEMAC).
 
-MISSION: EXTRAIRE les données financières HISTORIQUES des documents fournis (comptes de résultat, bilans, états financiers).
+MISSION: EXTRAIRE les données financières HISTORIQUES des documents fournis (comptes de résultat, bilans, états financiers, templates Excel multi-feuilles).
 Tu NE FAIS PAS de projections, PAS de scénarios, PAS de plan d'action.
 
 RÈGLES D'EXTRACTION:
-1. Extrais UNIQUEMENT les chiffres présents dans les documents uploadés.
-2. Si une donnée n'est pas dans les documents, mets 0 (ne l'invente PAS).
-3. Vérifie la cohérence: Total Actif = Total Passif, Résultat net cohérent.
-4. Tous les montants en ${devise} sans séparateurs de milliers dans les champs numériques.
-5. Le score reflète la COMPLÉTUDE des données extraites (100 = toutes les données trouvées).
+1. Analyse CHAQUE feuille/section/onglet du document uploadé. Ne te limite pas à un résumé — extrais toutes les données structurées disponibles.
+2. Extrais UNIQUEMENT les chiffres présents dans les documents uploadés.
+3. Si une donnée n'est pas dans les documents, mets 0 (ne l'invente PAS).
+4. Vérifie la cohérence: Total Actif = Total Passif, Résultat net cohérent.
+5. Tous les montants en ${devise} sans séparateurs de milliers dans les champs numériques.
+6. Le score reflète la COMPLÉTUDE des données extraites (100 = toutes les données trouvées).
+
+FEUILLES À ANALYSER SYSTÉMATIQUEMENT (si présentes):
+- Informations générales / Fiche entreprise → informations_generales
+- Historique financier (N-2, N-1, N) → historique_3ans
+- Compte de résultat / P&L → compte_resultat
+- Bilan → bilan
+- Produits & services (grilles tarifaires, prix) → produits_services
+- Équipe / Effectifs / Masse salariale → equipe
+- Coûts variables (matières, logistique, emballages) → couts_variables
+- Coûts fixes (loyer, électricité, maintenance, admin) → couts_fixes
+- BFR / Working capital (DSO, DPO, stock) → bfr
+- Investissements / CAPEX → investissements
+- Financement (capital, subventions, prêts) → financement
+- Hypothèses de croissance / Projections → hypotheses_croissance
 
 ${getExtractionKnowledgePrompt()}
 
@@ -25,13 +40,41 @@ Extrais les données financières HISTORIQUES de "${name}" (Secteur: ${sector}, 
 ${bmcData?.canvas ? `DONNÉES BMC (pour contexte):\n${JSON.stringify(bmcData.canvas, null, 2)}` : ""}
 ${docs ? `DOCUMENTS FINANCIERS À ANALYSER:\n${docs}` : "AUCUN DOCUMENT FINANCIER UPLOADÉ — mets toutes les valeurs à 0."}
 
-Extrais et retourne ce JSON:
+Analyse CHAQUE feuille/section du document. Extrais et retourne ce JSON COMPLET:
 {
   "score": <0-100 complétude des données extraites>,
-  "periode": "<ex: Exercice 2024 ou N/A si pas de documents>",
+  "periode": "<ex: N-2 à N ou Exercice 2024 ou N/A si pas de documents>",
   "devise": "${devise}",
   "fiabilite": "<Élevée|Moyenne|Faible>",
   "source_documents": ["<nom des fichiers analysés>"],
+
+  "informations_generales": {
+    "nom": "<nom entreprise>",
+    "forme_juridique": "<SARL, SA, EI, etc.>",
+    "pays": "<pays>",
+    "ville": "<ville>",
+    "secteur": "<secteur d'activité>",
+    "date_creation": "<date ou année de création>",
+    "dirigeant": "<nom du dirigeant>",
+    "description_activite": "<description de l'activité principale>"
+  },
+
+  "historique_3ans": {
+    "n_moins_2": {
+      "annee": <number>,
+      "ca_total": <number>,
+      "couts_variables": <number>,
+      "charges_fixes": <number>,
+      "resultat_exploitation": <number>,
+      "resultat_net": <number>,
+      "nombre_clients": <number>,
+      "nombre_employes": <number>,
+      "tresorerie": <number>,
+      "ca_par_produit": [{"nom": "<produit>", "ca": <number>}]
+    },
+    "n_moins_1": { <même structure> },
+    "n": { <même structure> }
+  },
 
   "compte_resultat": {
     "chiffre_affaires": <number>,
@@ -61,12 +104,6 @@ Extrais et retourne ce JSON:
     }
   },
 
-  "effectifs": {
-    "total": <number>,
-    "cadres": <number>,
-    "employes": <number>
-  },
-
   "produits_services": [
     {
       "nom": "<nom exact du produit/service tel que dans le document>",
@@ -79,6 +116,77 @@ Extrais et retourne ce JSON:
       "source": "<document|estimé_sectoriel>"
     }
   ],
+
+  "equipe": [
+    {
+      "poste": "<intitulé du poste>",
+      "nombre": <number>,
+      "salaire_mensuel": <number si disponible, sinon 0>,
+      "charges_sociales_pct": <number si disponible, sinon 0>
+    }
+  ],
+
+  "couts_variables": [
+    {
+      "poste": "<ex: matières premières, logistique, emballages, commissions>",
+      "montant_mensuel": <number>,
+      "montant_annuel": <number>
+    }
+  ],
+
+  "couts_fixes": [
+    {
+      "poste": "<ex: loyer, électricité, eau, maintenance, marketing, admin, assurances>",
+      "montant_mensuel": <number>,
+      "montant_annuel": <number>
+    }
+  ],
+
+  "bfr": {
+    "delai_clients_jours": <number>,
+    "delai_fournisseurs_jours": <number>,
+    "stock_moyen_jours": <number>,
+    "tresorerie_depart": <number>
+  },
+
+  "investissements": [
+    {
+      "nature": "<ex: terrain, bâtiment, véhicule, machines, informatique>",
+      "montant": <number>,
+      "annee_achat": <number>,
+      "duree_amortissement_ans": <number>
+    }
+  ],
+
+  "financement": {
+    "apports_capital": <number>,
+    "subventions": <number>,
+    "prets": [
+      {
+        "source": "<ex: banque, OVO, famille, bailleur>",
+        "montant": <number>,
+        "taux_pct": <number>,
+        "duree_mois": <number>,
+        "differe_mois": <number>
+      }
+    ]
+  },
+
+  "hypotheses_croissance": {
+    "objectifs_ca": [{"annee": "<N+1>", "montant": <number>}],
+    "taux_marge_brute_cible": <number en %>,
+    "taux_marge_operationnelle_cible": <number en %>,
+    "inflation_annuelle": <number en %>,
+    "augmentation_prix_annuelle": <number en %>,
+    "croissance_volumes_annuelle": <number en %>,
+    "taux_is": <number en %>
+  },
+
+  "effectifs": {
+    "total": <number>,
+    "cadres": <number>,
+    "employes": <number>
+  },
 
   "kpis": {
     "marge_brute_pct": "<xx% ou N/A>",
@@ -95,7 +203,29 @@ RÈGLES PRODUITS/SERVICES :
 - Le prix_unitaire DOIT être le prix EXACT du document. Ne l'arrondis PAS.
 - Si le cout_unitaire n'est pas explicite, ESTIME-le à partir de la marge brute sectorielle du pays/secteur (ex: BTP marge 20-35% donc coût = 65-80% du prix). Indique source: "estimé_sectoriel".
 - Si le prix_unitaire n'apparaît PAS dans les documents, mets 0 et ajoute-le à donnees_manquantes. N'invente JAMAIS un prix.
-- Si aucun produit/service n'est identifiable, retourne un tableau vide [].`;
+- Si aucun produit/service n'est identifiable, retourne un tableau vide [].
+
+RÈGLES ÉQUIPE :
+- Extrais CHAQUE poste avec son effectif et son salaire mensuel si disponible.
+- Si la masse salariale totale est connue mais pas le détail, déduis les salaires individuels.
+
+RÈGLES COÛTS :
+- Sépare clairement coûts VARIABLES (liés au volume: matières, emballages, livraison) et coûts FIXES (loyer, électricité, assurances, admin).
+- Si un montant est mensuel, calcule aussi l'annuel et vice-versa.
+
+RÈGLES BFR :
+- Extrais les délais de paiement (DSO clients, DPO fournisseurs, rotation stocks).
+- La trésorerie de départ est le cash en caisse/banque au début de l'exercice.
+
+RÈGLES INVESTISSEMENTS :
+- Extrais CHAQUE investissement planifié avec montant, année et durée d'amortissement.
+
+RÈGLES FINANCEMENT :
+- Extrais CHAQUE source de financement: capital, subventions, prêts (avec taux, durée, différé).
+
+RÈGLES HYPOTHÈSES DE CROISSANCE :
+- Si le document contient des objectifs de CA sur 5 ans, extrais-les.
+- Si des taux de croissance, marges cibles, ou paramètres d'inflation sont spécifiés, extrais-les.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -111,7 +241,7 @@ serve(async (req) => {
       ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData, fiscalParams.devise
     ) + ragContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
 
-    const rawData = await callAI(buildSystemPrompt(fiscalParams.devise), enrichedPrompt, 8192);
+    const rawData = await callAI(buildSystemPrompt(fiscalParams.devise), enrichedPrompt, 16384);
     const data = normalizeInputs(rawData);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", data, "inputs");

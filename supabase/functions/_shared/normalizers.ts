@@ -187,6 +187,104 @@ export function normalizeInputs(raw: any): any {
     employes: toNumber(pick(rawEff, 'employes', 'employés', 'workers', 'ouvriers')),
   };
 
+  // ── Normalize informations_generales (passthrough, preserve if present) ──
+  if (d.informations_generales && typeof d.informations_generales === 'object') {
+    // Just preserve as-is, no transformation needed
+  }
+
+  // ── Normalize historique_3ans ──
+  if (d.historique_3ans && typeof d.historique_3ans === 'object') {
+    for (const key of ['n_moins_2', 'n_moins_1', 'n']) {
+      const yr = d.historique_3ans[key];
+      if (yr && typeof yr === 'object') {
+        yr.ca_total = toNumber(pick(yr, 'ca_total', 'chiffre_affaires', 'ca'), 0);
+        yr.couts_variables = toNumber(pick(yr, 'couts_variables', 'charges_variables'), 0);
+        yr.charges_fixes = toNumber(pick(yr, 'charges_fixes', 'couts_fixes'), 0);
+        yr.resultat_exploitation = toNumber(pick(yr, 'resultat_exploitation', 'ebit'), 0);
+        yr.resultat_net = toNumber(pick(yr, 'resultat_net', 'net_income'), 0);
+        yr.nombre_clients = toNumber(pick(yr, 'nombre_clients', 'clients'), 0);
+        yr.nombre_employes = toNumber(pick(yr, 'nombre_employes', 'employes', 'effectif'), 0);
+        yr.tresorerie = toNumber(pick(yr, 'tresorerie', 'trésorerie', 'cash'), 0);
+        // Preserve ca_par_produit array as-is if present
+      }
+    }
+  }
+
+  // ── Normalize equipe ──
+  if (d.equipe && Array.isArray(d.equipe)) {
+    d.equipe = d.equipe.map((e: any) => ({
+      poste: e.poste || e.titre || e.role || 'Non spécifié',
+      nombre: toNumber(pick(e, 'nombre', 'effectif', 'count'), 0),
+      salaire_mensuel: toNumber(pick(e, 'salaire_mensuel', 'salaire', 'salary'), 0),
+      charges_sociales_pct: toNumber(pick(e, 'charges_sociales_pct', 'charges_sociales', 'social_rate'), 0),
+    }));
+  }
+
+  // ── Normalize couts_variables ──
+  if (d.couts_variables && Array.isArray(d.couts_variables)) {
+    d.couts_variables = d.couts_variables.map((c: any) => ({
+      poste: c.poste || c.libelle || c.label || 'Non spécifié',
+      montant_mensuel: toNumber(pick(c, 'montant_mensuel', 'mensuel'), 0),
+      montant_annuel: toNumber(pick(c, 'montant_annuel', 'montant_annuel_an1', 'annuel'), 0),
+    }));
+  }
+
+  // ── Normalize couts_fixes ──
+  if (d.couts_fixes && Array.isArray(d.couts_fixes)) {
+    d.couts_fixes = d.couts_fixes.map((c: any) => ({
+      poste: c.poste || c.libelle || c.label || 'Non spécifié',
+      montant_mensuel: toNumber(pick(c, 'montant_mensuel', 'mensuel'), 0),
+      montant_annuel: toNumber(pick(c, 'montant_annuel', 'montant_annuel_an1', 'annuel'), 0),
+    }));
+  }
+
+  // ── Normalize bfr ──
+  if (d.bfr && typeof d.bfr === 'object') {
+    d.bfr = {
+      delai_clients_jours: toNumber(pick(d.bfr, 'delai_clients_jours', 'dso', 'delai_clients'), 0),
+      delai_fournisseurs_jours: toNumber(pick(d.bfr, 'delai_fournisseurs_jours', 'dpo', 'delai_fournisseurs'), 0),
+      stock_moyen_jours: toNumber(pick(d.bfr, 'stock_moyen_jours', 'dio', 'stock_jours', 'rotation_stock'), 0),
+      tresorerie_depart: toNumber(pick(d.bfr, 'tresorerie_depart', 'tresorerie_initiale', 'cash_depart'), 0),
+    };
+  }
+
+  // ── Normalize investissements ──
+  if (d.investissements && Array.isArray(d.investissements)) {
+    d.investissements = d.investissements.map((inv: any) => ({
+      nature: inv.nature || inv.type || inv.libelle || 'Non spécifié',
+      montant: toNumber(pick(inv, 'montant', 'amount', 'valeur'), 0),
+      annee_achat: toNumber(pick(inv, 'annee_achat', 'annee', 'year'), 0),
+      duree_amortissement_ans: toNumber(pick(inv, 'duree_amortissement_ans', 'duree_amortissement', 'amortissement'), 0),
+    }));
+  }
+
+  // ── Normalize financement ──
+  if (d.financement && typeof d.financement === 'object') {
+    d.financement.apports_capital = toNumber(pick(d.financement, 'apports_capital', 'capital', 'apports'), 0);
+    d.financement.subventions = toNumber(pick(d.financement, 'subventions', 'grants', 'subvention'), 0);
+    if (d.financement.prets && Array.isArray(d.financement.prets)) {
+      d.financement.prets = d.financement.prets.map((p: any) => ({
+        source: p.source || p.banque || p.preteur || 'Non spécifié',
+        montant: toNumber(pick(p, 'montant', 'amount'), 0),
+        taux_pct: toNumber(pick(p, 'taux_pct', 'taux', 'rate'), 0),
+        duree_mois: toNumber(pick(p, 'duree_mois', 'duree', 'term'), 0),
+        differe_mois: toNumber(pick(p, 'differe_mois', 'differe', 'grace_period'), 0),
+      }));
+    }
+  }
+
+  // ── Normalize hypotheses_croissance ──
+  if (d.hypotheses_croissance && typeof d.hypotheses_croissance === 'object') {
+    const hc = d.hypotheses_croissance;
+    hc.taux_marge_brute_cible = toNumber(pick(hc, 'taux_marge_brute_cible', 'marge_brute_cible'), 0);
+    hc.taux_marge_operationnelle_cible = toNumber(pick(hc, 'taux_marge_operationnelle_cible', 'marge_op_cible'), 0);
+    hc.inflation_annuelle = toNumber(pick(hc, 'inflation_annuelle', 'inflation'), 0);
+    hc.augmentation_prix_annuelle = toNumber(pick(hc, 'augmentation_prix_annuelle', 'hausse_prix'), 0);
+    hc.croissance_volumes_annuelle = toNumber(pick(hc, 'croissance_volumes_annuelle', 'croissance_volumes'), 0);
+    hc.taux_is = toNumber(pick(hc, 'taux_is', 'impot_societes'), 0);
+    // Preserve objectifs_ca array as-is
+  }
+
   return d;
 }
 

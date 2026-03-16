@@ -314,9 +314,96 @@ serve(async (req) => {
       produitsContext = `\n\nPRODUITS/SERVICES RÉELS (source documents Inputs — utiliser ces marges pour les projections) :\n${prodLines}\nUtilise ces marges RÉELLES par produit pour calculer la Marge Brute projetée. Ne remplace PAS ces données par des benchmarks sectoriels.`;
     }
 
+    // Inject historique 3 ans from Inputs for real trend analysis
+    let historiqueContext = '';
+    if (inputsData?.historique_3ans && typeof inputsData.historique_3ans === 'object') {
+      const h = inputsData.historique_3ans;
+      const years = ['n_moins_2', 'n_moins_1', 'n'];
+      const lines = years.map(y => {
+        const yr = h[y];
+        if (!yr || yr.ca_total === 0) return null;
+        return `  ${y.toUpperCase()}: CA=${yr.ca_total || 0}, Coûts var=${yr.couts_variables || 0}, Charges fixes=${yr.charges_fixes || 0}, Rés. exploit.=${yr.resultat_exploitation || 0}, Rés. net=${yr.resultat_net || 0}, Trésorerie=${yr.tresorerie || 0}, Employés=${yr.nombre_employes || 0}`;
+      }).filter(Boolean);
+      if (lines.length > 0) {
+        historiqueContext = `\n\nHISTORIQUE FINANCIER 3 ANS (données réelles extraites des documents — utiliser pour les ratios historiques et ancrer les projections) :\n${lines.join('\n')}`;
+      }
+    }
+
+    // Inject CAPEX réel from Inputs
+    let capexContext = '';
+    if (inputsData?.investissements && Array.isArray(inputsData.investissements) && inputsData.investissements.length > 0) {
+      const lines = inputsData.investissements.map((inv: any, i: number) =>
+        `  ${i+1}. ${inv.nature}: ${inv.montant || 0} ${fiscalParams.devise}, année ${inv.annee_achat || 'N/A'}, amort. ${inv.duree_amortissement_ans || 'N/A'} ans`
+      ).join('\n');
+      capexContext = `\n\nCAPEX RÉEL (source documents — utiliser pour le calcul VAN/TRI) :\n${lines}`;
+    }
+
+    // Inject financement réel from Inputs
+    let financementContext = '';
+    if (inputsData?.financement) {
+      const fin = inputsData.financement;
+      const parts = [];
+      if (fin.apports_capital > 0) parts.push(`  Capital: ${fin.apports_capital} ${fiscalParams.devise}`);
+      if (fin.subventions > 0) parts.push(`  Subventions: ${fin.subventions} ${fiscalParams.devise}`);
+      if (fin.prets && Array.isArray(fin.prets) && fin.prets.length > 0) {
+        fin.prets.forEach((p: any) => {
+          parts.push(`  Prêt ${p.source}: ${p.montant} ${fiscalParams.devise} à ${p.taux_pct}% sur ${p.duree_mois} mois (différé ${p.differe_mois || 0} mois)`);
+        });
+      }
+      if (parts.length > 0) {
+        financementContext = `\n\nFINANCEMENT RÉEL (source documents — utiliser pour le calcul DSCR) :\n${parts.join('\n')}`;
+      }
+    }
+
+    // Inject BFR réel from Inputs
+    let bfrContext = '';
+    if (inputsData?.bfr && typeof inputsData.bfr === 'object') {
+      const b = inputsData.bfr;
+      const parts = [];
+      if (b.delai_clients_jours > 0) parts.push(`  DSO clients: ${b.delai_clients_jours} jours`);
+      if (b.delai_fournisseurs_jours > 0) parts.push(`  DPO fournisseurs: ${b.delai_fournisseurs_jours} jours`);
+      if (b.stock_moyen_jours > 0) parts.push(`  Rotation stock: ${b.stock_moyen_jours} jours`);
+      if (b.tresorerie_depart > 0) parts.push(`  Trésorerie de départ: ${b.tresorerie_depart} ${fiscalParams.devise}`);
+      if (parts.length > 0) {
+        bfrContext = `\n\nBFR / TRÉSORERIE (source documents — utiliser pour les projections trésorerie) :\n${parts.join('\n')}`;
+      }
+    }
+
+    // Inject hypothèses de croissance from Inputs
+    let hypothesesContext = '';
+    if (inputsData?.hypotheses_croissance && typeof inputsData.hypotheses_croissance === 'object') {
+      const hc = inputsData.hypotheses_croissance;
+      const parts = [];
+      if (hc.objectifs_ca && Array.isArray(hc.objectifs_ca) && hc.objectifs_ca.length > 0) {
+        parts.push(`  Objectifs CA: ${hc.objectifs_ca.map((o: any) => `${o.annee}=${o.montant}`).join(', ')}`);
+      }
+      if (hc.taux_marge_brute_cible > 0) parts.push(`  Marge brute cible: ${hc.taux_marge_brute_cible}%`);
+      if (hc.inflation_annuelle > 0) parts.push(`  Inflation: ${hc.inflation_annuelle}%`);
+      if (hc.croissance_volumes_annuelle > 0) parts.push(`  Croissance volumes: ${hc.croissance_volumes_annuelle}%`);
+      if (hc.taux_is > 0) parts.push(`  Taux IS: ${hc.taux_is}%`);
+      if (parts.length > 0) {
+        hypothesesContext = `\n\nHYPOTHÈSES DE CROISSANCE DE L'ENTREPRENEUR (source documents — ancrer les projections sur ces objectifs) :\n${parts.join('\n')}`;
+      }
+    }
+
+    // Inject coûts détaillés from Inputs
+    let coutsContext = '';
+    if (inputsData?.couts_variables && Array.isArray(inputsData.couts_variables) && inputsData.couts_variables.length > 0) {
+      coutsContext += `\n\nCOÛTS VARIABLES DÉTAILLÉS (source documents) :\n${inputsData.couts_variables.map((c: any) => `  - ${c.poste}: ${c.montant_annuel || c.montant_mensuel * 12} ${fiscalParams.devise}/an`).join('\n')}`;
+    }
+    if (inputsData?.couts_fixes && Array.isArray(inputsData.couts_fixes) && inputsData.couts_fixes.length > 0) {
+      coutsContext += `\n\nCOÛTS FIXES DÉTAILLÉS (source documents) :\n${inputsData.couts_fixes.map((c: any) => `  - ${c.poste}: ${c.montant_annuel || c.montant_mensuel * 12} ${fiscalParams.devise}/an`).join('\n')}`;
+    }
+
+    // Inject equipe from Inputs
+    let equipeContext = '';
+    if (inputsData?.equipe && Array.isArray(inputsData.equipe) && inputsData.equipe.length > 0) {
+      equipeContext = `\n\nÉQUIPE DÉTAILLÉE (source documents) :\n${inputsData.equipe.map((e: any) => `  - ${e.poste}: ${e.nombre} personne(s), salaire ${e.salaire_mensuel || 'N/A'} ${fiscalParams.devise}/mois`).join('\n')}`;
+    }
+
     const enrichedPrompt = userPrompt(
       ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData, fiscalParams.devise
-    ) + produitsContext + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
+    ) + produitsContext + historiqueContext + capexContext + financementContext + bfrContext + hypothesesContext + coutsContext + equipeContext + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
 
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;
 
