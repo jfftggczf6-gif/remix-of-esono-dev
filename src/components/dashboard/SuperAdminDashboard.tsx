@@ -257,6 +257,17 @@ export default function SuperAdminDashboard() {
           </Card>
         </TabsContent>
 
+        {/* COACHES TAB */}
+        <TabsContent value="coaches">
+          <CoachesTab
+            coaches={coaches}
+            enterprises={enterprises}
+            deliverables={deliverables}
+            coachUploads={coachUploads}
+            enterpriseMap={enterpriseMap}
+          />
+        </TabsContent>
+
         {/* ENTERPRISES TAB */}
         <TabsContent value="enterprises">
           <Card>
