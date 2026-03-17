@@ -160,6 +160,31 @@ export async function verifyAndGetContext(req: Request) {
   const { data: files } = await supabase.storage.from("documents").list(enterprise_id);
   let documentContent = "";
   const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // H8: 50MB max per file
+  const processedPaths = new Set<string>();
+
+  const parseAndAppend = async (fileData: Blob, fileName: string, ext: string, label: string) => {
+    if (ext === "docx" || ext === "doc") {
+      const buffer = await fileData.arrayBuffer();
+      const text = await parseDocx(buffer);
+      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 20000)}`;
+    } else if (ext === "xlsx" || ext === "xls") {
+      const buffer = await fileData.arrayBuffer();
+      const text = await parseXlsx(buffer);
+      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 20000)}`;
+    } else if (ext === "csv") {
+      const text = await fileData.text();
+      documentContent += `\n\n--- CSV: ${fileName} ---\n${text.substring(0, 20000)}`;
+    } else if (ext === "txt" || ext === "md") {
+      const text = await fileData.text();
+      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 15000)}`;
+    } else if (ext === "pdf") {
+      documentContent += `\n\n--- ${label}: ${fileName} (PDF) ---`;
+    } else {
+      documentContent += `\n\n--- ${label}: ${fileName} (format non supporté) ---`;
+    }
+  };
+
+  // 1. Read root-level files (entrepreneur uploads)
   if (files && files.length > 0) {
     for (const file of files.slice(0, 10)) {
       const fileSizeBytes = file.metadata?.size || 0;
@@ -169,28 +194,28 @@ export async function verifyAndGetContext(req: Request) {
         continue;
       }
       const ext = file.name.split(".").pop()?.toLowerCase();
-      const { data: fileData } = await supabase.storage.from("documents").download(`${enterprise_id}/${file.name}`);
+      const storagePath = `${enterprise_id}/${file.name}`;
+      processedPaths.add(storagePath);
+      const { data: fileData } = await supabase.storage.from("documents").download(storagePath);
       if (!fileData) continue;
+      await parseAndAppend(fileData, file.name, ext || "", "Document");
+    }
+  }
 
-      if (ext === "docx" || ext === "doc") {
-        const buffer = await fileData.arrayBuffer();
-        const text = await parseDocx(buffer);
-        documentContent += `\n\n--- Document: ${file.name} ---\n${text.substring(0, 20000)}`;
-      } else if (ext === "xlsx" || ext === "xls") {
-        const buffer = await fileData.arrayBuffer();
-        const text = await parseXlsx(buffer);
-        documentContent += `\n\n--- Tableur: ${file.name} ---\n${text.substring(0, 20000)}`;
-      } else if (ext === "csv") {
-        const text = await fileData.text();
-        documentContent += `\n\n--- CSV: ${file.name} ---\n${text.substring(0, 20000)}`;
-      } else if (ext === "txt" || ext === "md") {
-        const text = await fileData.text();
-        documentContent += `\n\n--- Document: ${file.name} ---\n${text.substring(0, 15000)}`;
-      } else if (ext === "pdf") {
-        documentContent += `\n\n--- Document: ${file.name} (PDF - ${(file.metadata?.size || 0) / 1024}KB) ---`;
-      } else {
-        documentContent += `\n\n--- Document: ${file.name} (format non supporté) ---`;
-      }
+  // 2. Read coach-uploaded files from coach_uploads table
+  const { data: coachUploads } = await supabase
+    .from("coach_uploads")
+    .select("storage_path, filename, category")
+    .eq("enterprise_id", enterprise_id);
+
+  if (coachUploads && coachUploads.length > 0) {
+    for (const cu of coachUploads) {
+      if (processedPaths.has(cu.storage_path)) continue; // deduplicate
+      processedPaths.add(cu.storage_path);
+      const ext = cu.filename.split(".").pop()?.toLowerCase();
+      const { data: fileData } = await supabase.storage.from("documents").download(cu.storage_path);
+      if (!fileData) continue;
+      await parseAndAppend(fileData, cu.filename, ext || "", `Document Coach (${cu.category})`);
     }
   }
 

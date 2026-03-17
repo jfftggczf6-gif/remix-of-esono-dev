@@ -100,6 +100,12 @@ export default function CoachDashboard() {
   const [generatingOvoPlanMirror, setGeneratingOvoPlanMirror] = useState(false);
   const [reportPreview, setReportPreview] = useState<{ html: string; enterpriseName: string } | null>(null);
 
+  // Enterprise info extraction states
+  const [extractedInfo, setExtractedInfo] = useState<{ name: string | null; country: string | null; sector: string | null } | null>(null);
+  const [showExtractDialog, setShowExtractDialog] = useState(false);
+  const [extractingEntId, setExtractingEntId] = useState<string | null>(null);
+  const [savingExtraction, setSavingExtraction] = useState(false);
+
   const bmcInputRef = useRef<HTMLInputElement>(null);
   const inputsInputRef = useRef<HTMLInputElement>(null);
   const suppInputRef = useRef<HTMLInputElement>(null);
