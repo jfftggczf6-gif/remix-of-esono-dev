@@ -1,30 +1,14 @@
 
 
-## Deux corrections : documents coach dans le contexte IA + extraction d'infos entreprise
+## Réponse
 
-### Problème 1 : Les documents coach ne sont pas lus par l'IA
+Lovable offre deux options pour tester des modifications sans affecter le projet principal :
 
-Le coach uploade les fichiers dans `documents/{enterprise_id}/coach/{category}/...`, mais `verifyAndGetContext()` dans `helpers.ts` fait `list(enterprise_id)` qui ne liste que les fichiers **à la racine**. Les fichiers dans les sous-dossiers `coach/` ne sont jamais trouvés → l'IA hallucine.
+1. **Remix (clone)** : Créer une copie complète du projet. Allez dans **Settings → Remix this project**. Cela crée un nouveau projet identique où vous pouvez tester librement.
 
-**Correction dans `supabase/functions/_shared/helpers.ts`** — après la boucle de lecture des fichiers root (ligne ~195), ajouter :
+2. **Branches GitHub** (expérimental) : Si votre projet est connecté à GitHub, vous pouvez activer le switching de branches dans **Account Settings → Labs → GitHub Branch Switching**. Cela vous permet de travailler sur une branche séparée.
 
-1. Requête vers la table `coach_uploads` pour récupérer tous les `storage_path` liés à l'`enterprise_id`
-2. Pour chaque entrée, télécharger le fichier via `storage_path` et le parser (docx/xlsx/csv/txt) avec les mêmes fonctions existantes
-3. Ajouter le contenu parsé à `documentContent` avec un label `Document Coach ({category})`
+Je ne peux pas créer de remix ou de branche directement pour vous — ces actions se font depuis l'interface Lovable.
 
-Le `supabase` client utilisé est déjà le service role, donc pas de problème RLS.
-
-### Problème 2 : Pas d'extraction d'infos (secteur, etc.) côté coach
-
-Côté entrepreneur, après upload d'un document source, la fonction `extract-enterprise-info` est appelée et un dialog s'affiche pour confirmer le nom, pays et secteur extraits. Cette logique est **totalement absente** du `CoachDashboard`.
-
-**Correction dans `src/components/dashboard/CoachDashboard.tsx`** :
-
-1. Ajouter les states `extractedInfo`, `showExtractDialog`, `extractingEntId`
-2. Après un upload réussi dans `handleUpload`, appeler `extract-enterprise-info` avec l'`enterprise_id` (best-effort, silencieux)
-3. Si l'info extraite diffère de l'entreprise actuelle, afficher un Dialog de confirmation identique à celui de l'entrepreneur
-4. Sur confirmation, mettre à jour l'entreprise via `supabase.from('enterprises').update(...)`
-
-### Aucune migration requise
-Les deux corrections utilisent des tables et fonctions existantes.
+**Recommandation** : Le remix est le plus simple et le plus fiable pour tester des modifications en isolation.
 
