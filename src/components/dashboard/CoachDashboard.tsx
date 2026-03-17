@@ -1890,6 +1890,47 @@ export default function CoachDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Report Preview Dialog ─── */}
+      <Dialog open={!!reportPreview} onOpenChange={(open) => { if (!open) setReportPreview(null); }}>
+        <DialogContent className="max-w-[90vw] h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 flex-none">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg font-semibold">
+                Rapport — {reportPreview?.enterpriseName}
+              </DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!reportPreview) return;
+                  const blob = new Blob([reportPreview.html], { type: 'text/html' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `Rapport_${reportPreview.enterpriseName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success('Rapport téléchargé !');
+                }}
+              >
+                <Download className="h-4 w-4 mr-1" /> Télécharger
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 px-6 pb-6">
+            <iframe
+              srcDoc={reportPreview?.html ?? ''}
+              className="w-full h-full rounded-md border bg-background"
+              title="Rapport Coach"
+              sandbox="allow-same-origin"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </DashboardLayout>
   );
 }
