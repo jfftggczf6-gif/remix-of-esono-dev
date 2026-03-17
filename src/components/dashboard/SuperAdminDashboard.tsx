@@ -45,6 +45,17 @@ interface Deliverable {
   type: string;
   created_at: string;
   generated_by: string | null;
+  coach_id?: string | null;
+  visibility?: string | null;
+}
+
+interface CoachUpload {
+  id: string;
+  coach_id: string;
+  enterprise_id: string;
+  filename: string;
+  category: string;
+  created_at: string;
 }
 
 export default function SuperAdminDashboard() {
