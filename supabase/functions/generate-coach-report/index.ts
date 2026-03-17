@@ -187,24 +187,25 @@ ${dataContext}`;
 
     console.log("Generating coach report for enterprise:", ent.name);
 
-    // Call Lovable AI Gateway (OpenAI-compatible) with a fast model
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
+    // Call Anthropic API directly with extended timeout
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")!;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${lovableApiKey}`,
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 8192,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
       }),
-      signal: AbortSignal.timeout(50000),
+      signal: AbortSignal.timeout(120000),
     });
 
     if (!aiResponse.ok) {
@@ -217,12 +218,6 @@ ${dataContext}`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits IA insuffisants. Veuillez recharger vos crédits dans les paramètres de votre workspace Lovable (Settings → Workspace → Usage)." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       return new Response(JSON.stringify({ error: "Erreur IA: " + errText.substring(0, 200) }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -230,7 +225,7 @@ ${dataContext}`;
     }
 
     const aiResult = await aiResponse.json();
-    let htmlContent = aiResult.choices?.[0]?.message?.content || "";
+    let htmlContent = aiResult.content?.[0]?.text || "";
 
     // Clean up any markdown wrappers
     htmlContent = htmlContent
