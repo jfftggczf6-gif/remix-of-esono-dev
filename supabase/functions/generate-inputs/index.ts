@@ -3,10 +3,88 @@ import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, 
 import { normalizeInputs } from "../_shared/normalizers.ts";
 import { getExtractionKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
+/* ───── Financial document detection ───── */
+
+const FINANCIAL_KEYWORDS = [
+  "chiffre d'affaires", "chiffre d affaires", "bilan", "compte de résultat",
+  "p&l", "total actif", "total passif", "capitaux propres", "résultat net",
+  "résultat d'exploitation", "trésorerie", "immobilisations", "amortissement",
+  "charges d'exploitation", "produits d'exploitation", "soldes intermédiaires",
+  "excédent brut", "valeur ajoutée", "marge brute", "dotations", "provisions",
+  "dettes financières", "créances clients", "fournisseurs", "stock",
+  "balance générale", "grand livre", "journal comptable",
+];
+
+const FINANCIAL_FILE_EXTENSIONS = [".xlsx", ".xls", ".csv"];
+
+function hasFinancialContent(documentContent: string, coachUploads: any[]): boolean {
+  // 1. Check if any coach upload is categorized as "inputs"
+  if (coachUploads.some((u: any) => u.category === "inputs")) return true;
+
+  // 2. Check for Excel/CSV files in document labels
+  const lower = documentContent.toLowerCase();
+  if (FINANCIAL_FILE_EXTENSIONS.some(ext => lower.includes(ext))) return true;
+
+  // 3. Check for financial keywords (need at least 3 distinct matches to avoid false positives)
+  let matches = 0;
+  for (const kw of FINANCIAL_KEYWORDS) {
+    if (lower.includes(kw)) matches++;
+    if (matches >= 3) return true;
+  }
+
+  return false;
+}
+
+function buildEmptyInputs(name: string, sector: string, country: string, devise: string) {
+  return {
+    score: 0,
+    periode: "N/A",
+    devise,
+    fiabilite: "Aucune",
+    source_documents: [],
+    informations_generales: {
+      nom: name, forme_juridique: "", pays: country, ville: "",
+      secteur: sector, date_creation: "", dirigeant: "", description_activite: "",
+    },
+    historique_3ans: {
+      n_moins_2: { annee: 0, ca_total: 0, couts_variables: 0, charges_fixes: 0, resultat_exploitation: 0, resultat_net: 0, nombre_clients: 0, nombre_employes: 0, tresorerie: 0, ca_par_produit: [] },
+      n_moins_1: { annee: 0, ca_total: 0, couts_variables: 0, charges_fixes: 0, resultat_exploitation: 0, resultat_net: 0, nombre_clients: 0, nombre_employes: 0, tresorerie: 0, ca_par_produit: [] },
+      n:          { annee: 0, ca_total: 0, couts_variables: 0, charges_fixes: 0, resultat_exploitation: 0, resultat_net: 0, nombre_clients: 0, nombre_employes: 0, tresorerie: 0, ca_par_produit: [] },
+    },
+    compte_resultat: {
+      chiffre_affaires: 0, achats_matieres: 0, charges_personnel: 0, charges_externes: 0,
+      dotations_amortissements: 0, resultat_exploitation: 0, charges_financieres: 0, resultat_net: 0,
+    },
+    bilan: {
+      actif: { immobilisations: 0, stocks: 0, creances_clients: 0, tresorerie: 0, total_actif: 0 },
+      passif: { capitaux_propres: 0, dettes_lt: 0, dettes_ct: 0, fournisseurs: 0, total_passif: 0 },
+    },
+    produits_services: [],
+    equipe: [],
+    couts_variables: [],
+    couts_fixes: [],
+    bfr: { delai_clients_jours: 0, delai_fournisseurs_jours: 0, stock_moyen_jours: 0, tresorerie_depart: 0 },
+    investissements: [],
+    financement: { apports_capital: 0, subventions: 0, prets: [] },
+    hypotheses_croissance: {
+      objectifs_ca: [], taux_marge_brute_cible: 0, taux_marge_operationnelle_cible: 0,
+      inflation_annuelle: 0, augmentation_prix_annuelle: 0, croissance_volumes_annuelle: 0, taux_is: 0,
+    },
+    effectifs: { total: 0, cadres: 0, employes: 0 },
+    kpis: { marge_brute_pct: "N/A", marge_nette_pct: "N/A", ratio_endettement_pct: "N/A" },
+    donnees_manquantes: ["Aucun document financier uploadé — veuillez uploader le template Analyse Financière Excel"],
+    hypotheses: [],
+  };
+}
+
+/* ───── Prompts ───── */
+
 const buildSystemPrompt = (devise: string) => `Tu es un analyste financier expert certifié SYSCOHADA révisé (2017), spécialisé PME africaines (zones UEMOA/CEMAC).
 
 MISSION: EXTRAIRE les données financières HISTORIQUES des documents fournis (comptes de résultat, bilans, états financiers, templates Excel multi-feuilles).
 Tu NE FAIS PAS de projections, PAS de scénarios, PAS de plan d'action.
+
+ATTENTION CRITIQUE: Si les documents fournis sont des questionnaires BMC, des canvas d'impact social, ou tout document NON FINANCIER (pas de compte de résultat, pas de bilan, pas de P&L, pas de template Excel financier), retourne TOUTES les valeurs numériques à 0 et score à 0. N'invente AUCUN chiffre à partir de descriptions narratives.
 
 RÈGLES D'EXTRACTION:
 1. Analyse CHAQUE feuille/section/onglet du document uploadé. Ne te limite pas à un résumé — extrais toutes les données structurées disponibles.
@@ -227,6 +305,8 @@ RÈGLES HYPOTHÈSES DE CROISSANCE :
 - Si le document contient des objectifs de CA sur 5 ans, extrais-les.
 - Si des taux de croissance, marges cibles, ou paramètres d'inflation sont spécifiés, extrais-les.`;
 
+/* ───── Main handler ───── */
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -235,6 +315,27 @@ serve(async (req) => {
     const bmcData = ctx.deliverableMap["bmc_analysis"] || {};
     const fiscalParams = getFiscalParams(ent.country || "Côte d'Ivoire");
 
+    // ── Guard: detect if actual financial documents exist ──
+    const { data: coachUploads } = await ctx.supabase
+      .from("coach_uploads")
+      .select("category, filename")
+      .eq("enterprise_id", ctx.enterprise_id);
+
+    const financialDetected = hasFinancialContent(
+      ctx.documentContent || "",
+      coachUploads || [],
+    );
+
+    if (!financialDetected) {
+      console.log("generate-inputs: No financial documents detected — returning empty skeleton");
+      const emptyData = buildEmptyInputs(
+        ent.name, ent.sector || "", ent.country || "", fiscalParams.devise
+      );
+      await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", emptyData, "inputs");
+      return jsonResponse({ success: true, data: emptyData, score: 0 });
+    }
+
+    // ── Financial docs found — proceed with AI extraction ──
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal"]);
 
     const enrichedPrompt = userPrompt(
