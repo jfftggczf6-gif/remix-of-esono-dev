@@ -101,6 +101,7 @@ serve(async (req) => {
     const results: { step: string; success: boolean; score?: number; skipped?: boolean; error?: string }[] = [];
     let completedCount = 0;
     let creditError = false;
+    let inputsScoreZero = false; // Track if inputs has no financial data
 
     // Run pipeline sequentially
     for (const step of PIPELINE_STEPS) {
