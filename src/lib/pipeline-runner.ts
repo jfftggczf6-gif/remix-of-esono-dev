@@ -196,6 +196,10 @@ export async function runPipelineFromClient(
         results.push({ step: step.name, success: true, score: result.score });
         completedCount++;
         onStepComplete?.();
+        // Detect empty inputs (no financial data) to skip downstream financial steps
+        if (step.fn === 'generate-inputs' && (result.score === 0 || !result.score)) {
+          inputsScoreZero = true;
+        }
       } else {
         const err = await response.json().catch(() => ({ error: 'Unknown' }));
 
