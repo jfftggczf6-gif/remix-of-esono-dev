@@ -944,8 +944,6 @@ export default function CoachDashboard() {
               {uploadsByCategory.supplementary.length > 0 && (
                 <span className="text-xs text-muted-foreground">{uploadsByCategory.supplementary.length} doc(s)</span>
               )}
-              <input ref={suppInputRef} type="file" multiple accept=".docx,.doc,.pdf,.xlsx,.xls,.csv,.txt" className="hidden"
-                onChange={e => { Array.from(e.target.files || []).forEach(f => handleUpload(f, 'supplementary', ent.id)); e.target.value = ''; }} />
             </div>
 
             {/* Bouton Générer */}
