@@ -63,6 +63,7 @@ export default function SuperAdminDashboard() {
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [coachUploads, setCoachUploads] = useState<CoachUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchUsers, setSearchUsers] = useState('');
   const [searchEnterprises, setSearchEnterprises] = useState('');
