@@ -914,8 +914,6 @@ export default function CoachDashboard() {
                       </div>
                     ))}
                   </div>
-                  <input ref={inputsInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
-                    onChange={e => { if (e.target.files?.[0]) handleUpload(e.target.files[0], 'inputs', ent.id); e.target.value = ''; }} />
                 </CardContent>
               </Card>
 
