@@ -343,7 +343,7 @@ RÈGLES:
 2. Utilise les informations du BMC (proposition de valeur, segments clients, canaux, sources de revenus) pour affiner les estimations.
 3. Les montants doivent être réalistes pour une PME du secteur dans ce pays.
 4. Mets fiabilite = "Indicative — estimation sectorielle" et estimation_sectorielle = true.
-5. Le score DOIT être entre 10 et 20 (reflète l'absence de données réelles).
+5. Le score reflète la complétude de ton estimation (0-100). Évalue librement selon la richesse des benchmarks et infos BMC/SIC disponibles.
 6. Ajoute dans donnees_manquantes: "Aucun document financier réel — estimations basées sur benchmarks sectoriels"
 7. Ajoute dans hypotheses les benchmarks utilisés pour chaque estimation.
 
@@ -374,7 +374,7 @@ ${userPrompt(ent.name, ent.sector || "", ent.country || "", "", bmcData, fiscalP
       // Force estimation flags
       estimationData.estimation_sectorielle = true;
       estimationData.fiabilite = "Indicative — estimation sectorielle";
-      estimationData.score = Math.min(estimationData.score || 15, 20); // Cap at 20
+      estimationData.score = estimationData.score || 15;
       if (!estimationData.donnees_manquantes) estimationData.donnees_manquantes = [];
       if (!estimationData.donnees_manquantes.includes("Aucun document financier réel — estimations basées sur benchmarks sectoriels")) {
         estimationData.donnees_manquantes.unshift("Aucun document financier réel — estimations basées sur benchmarks sectoriels. Uploadez le template Analyse Financière Excel pour des données précises.");
