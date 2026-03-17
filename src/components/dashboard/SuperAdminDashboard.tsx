@@ -70,16 +70,18 @@ export default function SuperAdminDashboard() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [pRes, rRes, eRes, dRes] = await Promise.all([
+    const [pRes, rRes, eRes, dRes, cuRes] = await Promise.all([
       supabase.from('profiles').select('user_id, full_name, email, created_at'),
       supabase.from('user_roles').select('user_id, role'),
       supabase.from('enterprises').select('id, name, user_id, coach_id, sector, country, phase, score_ir, last_activity, contact_email, created_at'),
-      supabase.from('deliverables').select('id, enterprise_id, type, created_at, generated_by').order('created_at', { ascending: false }).limit(200),
+      supabase.from('deliverables').select('id, enterprise_id, type, created_at, generated_by, coach_id, visibility').order('created_at', { ascending: false }).limit(500),
+      supabase.from('coach_uploads').select('id, coach_id, enterprise_id, filename, category, created_at').order('created_at', { ascending: false }).limit(500),
     ]);
     if (pRes.data) setProfiles(pRes.data);
     if (rRes.data) setRoles(rRes.data);
     if (eRes.data) setEnterprises(eRes.data);
     if (dRes.data) setDeliverables(dRes.data);
+    if (cuRes.data) setCoachUploads(cuRes.data as CoachUpload[]);
     setLoading(false);
   };
 
