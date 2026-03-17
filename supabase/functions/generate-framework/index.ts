@@ -291,9 +291,10 @@ serve(async (req) => {
     const bmcData = ctx.deliverableMap["bmc_analysis"] || ctx.moduleMap["bmc"] || null;
 
     // Warning: check if Inputs data contains real historical financials
+    const isEstimation = inputsData?.estimation_sectorielle === true;
     const hasRealInputs = inputsData?.compte_resultat?.chiffre_affaires && inputsData.compte_resultat.chiffre_affaires > 0;
     if (!hasRealInputs) {
-      console.warn("[generate-framework] WARNING: Inputs data is empty or missing compte_resultat. Projections will not be anchored to real historical data. Generate Inputs module first for accurate results.");
+      console.warn("[generate-framework] WARNING: Inputs data is empty or missing compte_resultat. Projections will not be anchored to real historical data.");
     }
 
     // RAG: enrichir avec benchmarks sectoriels et données fiscales
