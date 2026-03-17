@@ -98,7 +98,6 @@ export default function CoachDashboard() {
   const [addLoading, setAddLoading] = useState(false);
   const [mirrorPipelineState, setMirrorPipelineState] = useState<PipelineState>('generate');
   const [generatingOvoPlanMirror, setGeneratingOvoPlanMirror] = useState(false);
-  const [addLoading, setAddLoading] = useState(false);
 
   const bmcInputRef = useRef<HTMLInputElement>(null);
   const inputsInputRef = useRef<HTMLInputElement>(null);
