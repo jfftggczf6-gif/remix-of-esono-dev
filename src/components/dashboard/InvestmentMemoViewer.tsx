@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Download, Copy, CheckCircle2, AlertTriangle, Shield, TrendingUp } from 'lucide-react';
+import { Briefcase, Download, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
