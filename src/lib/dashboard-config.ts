@@ -71,4 +71,5 @@ export const MODULE_FN_MAP: Record<string, string> = {
   plan_ovo: 'generate-plan-ovo',
   business_plan: 'generate-business-plan',
   odd: 'generate-odd',
+  pre_screening: 'generate-pre-screening',
 };
