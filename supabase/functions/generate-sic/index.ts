@@ -186,7 +186,7 @@ serve(async (req) => {
     const bmcData = ctx.deliverableMap["bmc_analysis"] || ctx.moduleMap["bmc"] || {};
 
     // RAG: enrichir avec données ODD et impact social
-    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs", "secteurs"]);
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs", "secteurs"], "sic_analysis");
 
     const rawAiData = await callAI(SYSTEM_PROMPT, userPrompt(
       ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData

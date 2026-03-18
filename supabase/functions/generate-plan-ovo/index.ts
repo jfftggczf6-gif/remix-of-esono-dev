@@ -218,7 +218,7 @@ serve(async (req) => {
     };
 
     // RAG: enrichir avec benchmarks et fiscal
-    const ragContext = await buildRAGContext(ctx.supabase, country, ent.sector || "", ["benchmarks", "fiscal", "bailleurs"]);
+    const ragContext = await buildRAGContext(ctx.supabase, country, ent.sector || "", ["benchmarks", "fiscal", "bailleurs"], "plan_ovo");
 
     const rawData = await callAI(buildSystemPrompt(country, ent.sector || ""), buildUserPrompt(
       ent.name, ent.sector || "", country, ctx.documentContent, allData, ctx.baseYear

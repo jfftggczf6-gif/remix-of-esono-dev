@@ -264,7 +264,7 @@ serve(async (req) => {
     };
 
     // RAG: enrichir avec données de la base de connaissances
-    const ragContext = await buildRAGContext(ctx.supabase, pays, secteur, ["benchmarks", "fiscal", "bailleurs", "reglementation"]);
+    const ragContext = await buildRAGContext(ctx.supabase, pays, secteur, ["benchmarks", "fiscal", "bailleurs", "reglementation"], "diagnostic_data");
 
     const validationRules = getValidationRulesPrompt();
     const sectorBenchmarks = getSectorKnowledgePrompt(secteur);

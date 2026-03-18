@@ -114,7 +114,7 @@ serve(async (req) => {
     const ent = ctx.enterprise;
 
     // RAG: enrichir avec benchmarks sectoriels
-    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "secteurs"]);
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "secteurs"], "bmc_analysis");
 
     const sectorBenchmarks = getSectorKnowledgePrompt(ent.sector || "services_b2b");
     const rawBmcData = await callAI(BMC_SYSTEM_PROMPT, BMC_USER_PROMPT(
