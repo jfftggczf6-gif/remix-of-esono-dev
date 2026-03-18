@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/helpers.ts";
+import { getSectorKnowledgePrompt, getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -94,6 +95,9 @@ serve(async (req) => {
       return str.length > maxLen ? str.substring(0, maxLen) + "..." : str;
     }
 
+    const sectorBenchmarks = getSectorKnowledgePrompt(ent.sector || "services_b2b");
+    const donorCriteria = getDonorCriteriaPrompt();
+
     const dataContext = `
 === INFORMATIONS ENTREPRISE ===
 Nom: ${ent.name}
@@ -134,6 +138,12 @@ ${summarize(delivMap["business_plan"], 2500)}
 
 === ODD (Objectifs de Développement Durable) ===
 ${summarize(delivMap["odd_analysis"], 1500)}
+
+=== BENCHMARKS SECTORIELS ===
+${sectorBenchmarks}
+
+=== CRITÈRES BAILLEURS ===
+${donorCriteria}
 `;
 
     const coachName = coachProfile?.full_name || coachProfile?.email || "Coach";
@@ -200,6 +210,7 @@ ${dataContext}`;
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 16384,
+        temperature: 0.3,
         system: systemPrompt,
         messages: [
           { role: "user", content: userPrompt },

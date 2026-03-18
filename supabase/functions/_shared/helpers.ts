@@ -235,13 +235,19 @@ export async function verifyAndGetContext(req: Request) {
       } else {
         try {
           const uint8 = new Uint8Array(buffer);
-          let binary = "";
-          for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+          const CHUNK_SIZE = 0x8000;
+          let binary = '';
+          for (let i = 0; i < uint8.length; i += CHUNK_SIZE) {
+            const chunk = uint8.subarray(i, i + CHUNK_SIZE);
+            binary += String.fromCharCode.apply(null, Array.from(chunk));
+          }
           const base64 = btoa(binary);
           const mimeMap: Record<string, string> = {
             jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp"
           };
           const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 45000);
           const imgResponse = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
@@ -266,7 +272,9 @@ export async function verifyAndGetContext(req: Request) {
                 ]
               }]
             }),
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
           if (imgResponse.ok) {
             const imgResult = await imgResponse.json();
             const extractedText = imgResult.content?.[0]?.text || "";
@@ -372,7 +380,7 @@ export async function verifyAndGetContext(req: Request) {
   return { supabase, user, enterprise: ent, enterprise_id, documentContent, moduleMap, deliverableMap, baseYear };
 }
 
-export async function callAI(systemPrompt: string, userPrompt: string, maxTokens = 16384, model = "claude-sonnet-4-20250514") {
+export async function callAI(systemPrompt: string, userPrompt: string, maxTokens = 16384, model = "claude-sonnet-4-20250514", temperature = 0) {
   const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
 
   const doCall = async (mt: number): Promise<string> => {
@@ -386,7 +394,7 @@ export async function callAI(systemPrompt: string, userPrompt: string, maxTokens
       body: JSON.stringify({
         model,
         max_tokens: mt,
-        temperature: 0,
+        temperature,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),

@@ -5,6 +5,7 @@ import {
   getFiscalParams
 } from "../_shared/helpers.ts";
 import { normalizeDiagnostic } from "../_shared/normalizers.ts";
+import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 // ── Helpers locaux ──────────────────────────────────────────────────────────
 
@@ -265,9 +266,15 @@ serve(async (req) => {
     // RAG: enrichir avec données de la base de connaissances
     const ragContext = await buildRAGContext(ctx.supabase, pays, secteur, ["benchmarks", "fiscal", "bailleurs", "reglementation"]);
 
+    const validationRules = getValidationRulesPrompt();
+    const sectorBenchmarks = getSectorKnowledgePrompt(secteur);
+
     const rawData = await callAI(
       SYSTEM_PROMPT,
-      buildUserPrompt(ent.name, secteur, pays, ctx.documentContent, livrables, kbContext) + ragContext
+      buildUserPrompt(ent.name, secteur, pays, ctx.documentContent, livrables, kbContext)
+        + `\n\n══════ RÈGLES DE VALIDATION CROISÉE ══════\n${validationRules}`
+        + `\n\n══════ BENCHMARKS SECTORIELS ══════\n${sectorBenchmarks}`
+        + ragContext
     );
 
     const data = normalizeDiagnostic(rawData);

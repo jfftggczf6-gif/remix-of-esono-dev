@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext } from "../_shared/helpers.ts";
 import { syncBusinessPlanWithPlanOvo } from "../_shared/normalizers.ts";
+import { getFinancialKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle, ShadingType, LevelFormat, PageBreak, Header, Footer } from "npm:docx@8";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import JSZip from "https://esm.sh/jszip@3.10.1";
@@ -708,9 +709,17 @@ serve(async (req) => {
     // RAG: enrichir avec données bailleurs et benchmarks
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["bailleurs", "benchmarks", "secteurs", "reglementation"]);
 
+    // Financial knowledge (no examples to save tokens)
+    const knowledgeBase = getFinancialKnowledgePrompt(
+      (ent.country || "Côte d'Ivoire").toLowerCase().replace(/[\s']/g, "_"),
+      (ent.sector || "services_b2b").toLowerCase().replace(/[\s\-\/]/g, "_"),
+      false
+    );
+    const knowledgeBlock = `\n\n══════ BASE DE CONNAISSANCES FINANCIÈRE ══════\n${knowledgeBase}`;
+
     // PART 1: Sections 1-8
     console.log("[BP] AI Call 1/2: Sections 1-8...");
-    const part1 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart1(ctx) + ragContext, 16384, OPUS_MODEL);
+    const part1 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart1(ctx) + knowledgeBlock + ragContext, 16384, OPUS_MODEL, 0.3);
     console.log("[BP] Part 1 OK, keys:", Object.keys(part1).length);
 
     // Build summary of part1 for context in part2
@@ -718,7 +727,7 @@ serve(async (req) => {
 
     // PART 2: Sections 9-14
     console.log("[BP] AI Call 2/2: Sections 9-14...");
-    const part2 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart2(ctx, part1Summary) + ragContext, 16384, OPUS_MODEL);
+    const part2 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart2(ctx, part1Summary) + knowledgeBlock + ragContext, 16384, OPUS_MODEL, 0.3);
     console.log("[BP] Part 2 OK, keys:", Object.keys(part2).length);
 
     // Merge

@@ -3,6 +3,8 @@ import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
   jsonResponse, errorResponse,
 } from "../_shared/helpers.ts";
+import { normalizeScreeningReport } from "../_shared/normalizers.ts";
+import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 
 const SYSTEM_PROMPT = `Tu es un analyste financier senior spécialisé dans le screening de PME africaines pour des programmes de financement (DFI, fonds d'impact, incubateurs, banques).
 
@@ -162,6 +164,15 @@ ${ctx.documentContent || "(Aucun document uploadé)"}
 ══════ LIVRABLES EXISTANTS ══════
 ${delivSummary.length > 0 ? delivSummary.join("\n\n") : "(Aucun livrable généré)"}
 
+══════ BENCHMARKS SECTORIELS ══════
+${getSectorKnowledgePrompt(ent.sector || "services_b2b")}
+
+══════ CRITÈRES BAILLEURS DE RÉFÉRENCE ══════
+${getDonorCriteriaPrompt()}
+
+══════ RÈGLES DE VALIDATION CROISÉE ══════
+${getValidationRulesPrompt()}
+
 ${ragContext}
 ${programmeSection}
 
@@ -174,19 +185,20 @@ Réponds en JSON selon ce schéma :
 ${SCREENING_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 12288);
+    const normalizedData = normalizeScreeningReport(rawData);
 
     // Save as screening_report deliverable
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", rawData, "diagnostic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", normalizedData, "diagnostic");
 
     // Update enterprise score_ir
-    if (rawData.screening_score) {
+    if (normalizedData.screening_score) {
       await ctx.supabase.from("enterprises").update({
-        score_ir: rawData.screening_score,
+        score_ir: normalizedData.screening_score,
         last_activity: new Date().toISOString(),
       }).eq("id", ctx.enterprise_id);
     }
 
-    return jsonResponse({ success: true, data: rawData, score: rawData.screening_score || 0 });
+    return jsonResponse({ success: true, data: normalizedData, score: normalizedData.screening_score || 0 });
   } catch (e: any) {
     console.error("generate-screening-report error:", e);
     return errorResponse(e.message || "Erreur", e.status || 500);
