@@ -291,8 +291,11 @@ export default function DataRoomManager({ enterpriseId, userId, dataRoomSlug }: 
                     <Eye className="h-2.5 w-2.5" /> Vu
                   </Badge>
                 )}
-                <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => handleCopyLink(share.access_token)}>
-                  <Copy className="h-3 w-3" /> Copier
+                <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={handleCopyLink}>
+                  <Link className="h-3 w-3" /> Lien
+                </Button>
+                <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => handleCopyToken(share.access_token || '')}>
+                  <Copy className="h-3 w-3" /> Token
                 </Button>
                 <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => handleDeleteShare(share.id)}>
                   <Trash2 className="h-3 w-3" />
