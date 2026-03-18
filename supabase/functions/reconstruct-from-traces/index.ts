@@ -1,0 +1,133 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
+} from "../_shared/helpers.ts";
+
+const SYSTEM_PROMPT = `Tu es un expert-comptable et analyste financier senior spécialisé dans la reconstitution de données financières de PME africaines (normes SYSCOHADA 2017).
+
+TON RÔLE : À partir de fragments documentaires hétérogènes (relevés bancaires, factures, photos de reçus, tableurs partiels, notes manuscrites, extraits comptables), tu dois RECONSTITUER un jeu de données financières cohérent et exploitable.
+
+MÉTHODOLOGIE DE RECONSTRUCTION :
+1. Identifier chaque fragment documentaire et son type (relevé, facture, bilan partiel, etc.)
+2. Extraire toutes les données chiffrées disponibles
+3. Recouper les données entre sources pour valider la cohérence
+4. Quand une donnée manque, formuler une hypothèse raisonnable basée sur :
+   - Les benchmarks sectoriels fournis
+   - Les ratios SYSCOHADA standards
+   - Les autres données disponibles dans le dossier
+5. Documenter CHAQUE hypothèse et son fondement
+
+RÈGLES ABSOLUES :
+- Toutes les valeurs monétaires en FCFA (pas d'abréviation : 50000000 et non 50M)
+- Exercice fiscal : janvier-décembre (ajuster si les documents montrent un autre cycle)
+- Distinguer clairement "donnée extraite" vs "hypothèse estimée"
+- Score de confiance global basé sur le ratio données réelles / hypothèses
+- Si un document est illisible ou vide, l'indiquer clairement
+
+IMPORTANT: Réponds UNIQUEMENT en JSON valide.`;
+
+const OUTPUT_SCHEMA = `{
+  "score_confiance": <0-100, basé sur ratio données réelles vs hypothèses>,
+  "score": <0-100, qualité globale des données reconstituées>,
+
+  "compte_resultat": {
+    "chiffre_affaires": <number>,
+    "achats_matieres": <number>,
+    "charges_personnel": <number>,
+    "charges_externes": <number>,
+    "dotations_amortissements": <number>,
+    "impots_taxes": <number>,
+    "resultat_exploitation": <number>,
+    "charges_financieres": <number>,
+    "resultat_net": <number>,
+    "source": "reconstruction"
+  },
+
+  "bilan": {
+    "immobilisations": <number>,
+    "stocks": <number>,
+    "creances_clients": <number>,
+    "tresorerie_actif": <number>,
+    "total_actif": <number>,
+    "capitaux_propres": <number>,
+    "dettes_financieres": <number>,
+    "dettes_fournisseurs": <number>,
+    "total_passif": <number>
+  },
+
+  "effectifs": {
+    "total": <number>,
+    "cadres": <number>,
+    "employes": <number>,
+    "temporaires": <number>
+  },
+
+  "kpis": {
+    "marge_brute_pct": <number>,
+    "marge_nette_pct": <number>,
+    "ratio_endettement_pct": <number>,
+    "bfr_jours": <number>,
+    "ca_par_employe": <number>
+  },
+
+  "reconstruction_report": {
+    "source_documents": ["string — liste des documents identifiés et utilisés"],
+    "hypotheses": ["string — chaque hypothèse formulée avec justification"],
+    "donnees_manquantes": ["string — données impossibles à reconstituer"],
+    "note_analyste": "string — résumé en 3-4 phrases de la qualité du dossier"
+  }
+}`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const ctx = await verifyAndGetContext(req);
+    const ent = ctx.enterprise;
+
+    // Build RAG context for sector benchmarks
+    const ragContext = await buildRAGContext(
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+    );
+
+    const prompt = `ENTREPRISE : ${ent.name}
+SECTEUR : ${ent.sector || "Non spécifié"}
+PAYS : ${ent.country || "Côte d'Ivoire"}
+EFFECTIFS DÉCLARÉS : ${ent.employees_count || "Non spécifié"}
+FORME JURIDIQUE : ${ent.legal_form || "Non spécifié"}
+DESCRIPTION : ${ent.description || "Non spécifié"}
+
+══════ DOCUMENTS DISPONIBLES ══════
+${ctx.documentContent || "(Aucun document uploadé)"}
+
+${ragContext}
+
+══════ INSTRUCTIONS ══════
+Analyse TOUS les documents ci-dessus. Reconstitue un compte de résultat, un bilan et les KPIs.
+Pour chaque valeur, indique dans reconstruction_report.hypotheses si c'est une donnée extraite ou une estimation.
+Le score_confiance reflète le % de données réellement extraites vs estimées.
+
+Réponds en JSON selon ce schéma :
+${OUTPUT_SCHEMA}`;
+
+    const rawData = await callAI(SYSTEM_PROMPT, prompt, 12288);
+
+    // Ensure source marker
+    if (rawData.compte_resultat && !rawData.compte_resultat.source) {
+      rawData.compte_resultat.source = "reconstruction";
+    }
+
+    // Save as inputs_data deliverable (same format as generate-inputs)
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", rawData, "inputs");
+
+    return new Response(JSON.stringify({ success: true, data: rawData, score: rawData.score || rawData.score_confiance || 0 }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e: any) {
+    console.error("reconstruct-from-traces error:", e);
+    return new Response(JSON.stringify({ error: e.message || "Erreur" }), {
+      status: e.status || 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
