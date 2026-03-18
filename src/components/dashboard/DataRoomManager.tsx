@@ -53,6 +53,7 @@ interface DataRoomShare {
 interface DataRoomManagerProps {
   enterpriseId: string;
   userId: string;
+  dataRoomSlug: string;
 }
 
 export default function DataRoomManager({ enterpriseId, userId }: DataRoomManagerProps) {
