@@ -188,6 +188,15 @@ Utilise les cashflows du Plan OVO pour le DCF. Si pas de Plan OVO, estime à par
 Applique les décotes/primes appropriées au profil de l'entreprise.
 Produis une fourchette de valorisation réaliste pour le contexte PME Afrique.
 
+CONFIDENCE PAR CHAMP :
+Pour CHAQUE valeur financière clé, évalue ta confiance (0-100) dans le champ _confidence :
+- 80-100 : donnée directement extraite d'un document fiable
+- 60-79 : donnée extraite d'un document non certifié
+- 40-59 : donnée estimée à partir de données partielles + benchmarks
+- 20-39 : donnée largement estimée
+- 0-19 : hypothèse pure
+Indique la source de chaque valeur.
+
 Réponds en JSON selon ce schéma :
 ${VALUATION_SCHEMA}`;
 
