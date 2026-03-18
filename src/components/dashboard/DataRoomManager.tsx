@@ -147,10 +147,15 @@ export default function DataRoomManager({ enterpriseId, userId, dataRoomSlug }: 
     }
   };
 
-  const handleCopyLink = (token: string) => {
-    const url = `${window.location.origin}/data-room/${token}`;
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/data-room/${dataRoomSlug}`;
     navigator.clipboard.writeText(url);
-    toast.success('Lien copié !');
+    toast.success('Lien copié ! Envoyez le token séparément.');
+  };
+
+  const handleCopyToken = (accessToken: string) => {
+    navigator.clipboard.writeText(accessToken);
+    toast.success('Token copié ! Envoyez-le dans un message séparé du lien.');
   };
 
   const handleDeleteShare = async (id: string) => {
