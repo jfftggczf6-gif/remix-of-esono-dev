@@ -202,8 +202,9 @@ export default function Register() {
           Déjà inscrit ?{' '}
           <Link to="/login" className="text-primary hover:underline font-medium">
             Se connecter
-          </Link>
+        </Link>
         </p>
+        </>)}
       </div>
     </div>
   );
