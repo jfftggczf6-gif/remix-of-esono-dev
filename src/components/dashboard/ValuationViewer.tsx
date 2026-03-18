@@ -58,7 +58,7 @@ export default function ValuationViewer({ data, onRegenerate }: Props) {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Valeur Médiane</p>
-              <p className="text-3xl font-bold text-violet-700">{fmt(synthese.valeur_mediane, devise)}</p>
+              <p className="text-3xl font-bold text-violet-700">{fmt(synthese.valeur_mediane, devise)}<ConfidenceIndicator field="valeur_mediane" confidence={data._confidence} /></p>
               <p className="text-xs text-muted-foreground mt-1">Méthode : {synthese.methode_privilegiee || '—'}</p>
             </div>
             <div>
