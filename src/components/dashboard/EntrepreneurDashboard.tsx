@@ -859,11 +859,6 @@ export default function EntrepreneurDashboard() {
         <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={openEditDialog}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
-        {(enterprise as any).operating_mode && (
-          <Badge variant="outline" className="text-[10px] ml-1">
-            {(enterprise as any).operating_mode === 'reconstruction' ? '🔧 Reconstruction' : '📁 Due Diligence'}
-          </Badge>
-        )}
         <div className="mr-auto" />
         <div className="flex items-center gap-4">
           <span className="text-sm text-foreground">
