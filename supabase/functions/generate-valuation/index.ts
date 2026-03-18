@@ -113,6 +113,15 @@ const VALUATION_SCHEMA = `{
     "si_levee_500m": "string",
     "multiple_sortie_estime": "string",
     "irr_investisseur_estime": "string"
+  },
+
+  "_confidence": {
+    "ca_dernier_exercice": { "level": <0-100>, "source": "string" },
+    "ebitda_dernier_exercice": { "level": <0-100>, "source": "string" },
+    "wacc": { "level": <0-100>, "source": "string — ex: Calcul CAPM avec ERP Afrique standard" },
+    "multiple_ebitda": { "level": <0-100>, "source": "string — ex: Benchmark I&P/Partech 2023-2024" },
+    "valeur_mediane": { "level": <0-100>, "source": "string" },
+    "terminal_value": { "level": <0-100>, "source": "string" }
   }
 }`;
 
