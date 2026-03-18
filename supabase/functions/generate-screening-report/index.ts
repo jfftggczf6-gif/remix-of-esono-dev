@@ -4,6 +4,7 @@ import {
   jsonResponse, errorResponse,
 } from "../_shared/helpers.ts";
 import { normalizeScreeningReport } from "../_shared/normalizers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 
 const SYSTEM_PROMPT = `Tu es un analyste financier senior spécialisé dans le screening de PME africaines pour des programmes de financement (DFI, fonds d'impact, incubateurs, banques).
@@ -298,9 +299,9 @@ ${SCREENING_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
     const normalizedData = normalizeScreeningReport(rawData);
+    const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 
-    // Save as screening_report deliverable
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", normalizedData, "diagnostic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", validatedData, "diagnostic");
 
     // Update enterprise score_ir
     if (normalizedData.screening_score) {

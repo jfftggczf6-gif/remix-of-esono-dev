@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams } from "../_shared/helpers.ts";
 import { normalizeInputs } from "../_shared/normalizers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { getExtractionKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 /* ───── Financial document detection ───── */
@@ -341,7 +342,8 @@ serve(async (req) => {
     ) + ragContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
 
     const rawData = await callAI(buildSystemPrompt(fiscalParams.devise), enrichedPrompt, 16384);
-    const data = normalizeInputs(rawData);
+    const normalized = normalizeInputs(rawData);
+    const data = validateAndEnrich(normalized, ent.country, ent.sector);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", data, "inputs");
 

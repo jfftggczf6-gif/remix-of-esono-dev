@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams } from "../_shared/helpers.ts";
 import { normalizeFramework } from "../_shared/normalizers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { fillFrameworkExcelTemplate } from "../_shared/framework-excel-template.ts";
 import { getFinancialKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
@@ -408,7 +409,8 @@ serve(async (req) => {
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;
 
     const rawData = await callAI(enrichedSystemPrompt, enrichedPrompt, 16384, OPUS_MODEL);
-    const data = normalizeFramework(rawData);
+    const normalized = normalizeFramework(rawData);
+    const data = validateAndEnrich(normalized, ent.country, ent.sector);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "framework_data", data, "framework");
 

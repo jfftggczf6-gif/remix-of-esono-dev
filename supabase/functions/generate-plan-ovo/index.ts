@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParamsForPrompt } from "../_shared/helpers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { normalizePlanOvo, enforceFrameworkConstraints } from "../_shared/normalizers.ts";
 import { getFinancialKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
@@ -229,6 +230,7 @@ serve(async (req) => {
     // Enforce Framework constraints: overwrite projections with exact Framework values
     const frameworkData = allData.framework;
     data = enforceFrameworkConstraints(data, frameworkData, allData.inputs, country);
+    data = validateAndEnrich(data, country, ent.sector);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "plan_ovo", data, "plan_ovo");
 

@@ -30,6 +30,9 @@ import OnePagerViewer from './OnePagerViewer';
 import PitchDeckViewer from './PitchDeckViewer';
 import InvestmentMemoViewer from './InvestmentMemoViewer';
 import DataRoomManager from './DataRoomManager';
+import ValidationBanner from './ValidationBanner';
+import VersionHistory from './VersionHistory';
+import ActivityTimeline from './ActivityTimeline';
 import {
   MODULE_CONFIG, PIPELINE, MODULE_FN_MAP,
   type Enterprise, type Deliverable, type EnterpriseModule, type UploadedFile,
@@ -1425,6 +1428,15 @@ export default function EntrepreneurDashboard() {
               </div>
             ) : selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
               <div className="p-6">
+                <ValidationBanner validation={(selectedDeliv.data as any)?._validation} />
+                <div className="flex gap-2 mb-4">
+                  <VersionHistory
+                    deliverableId={selectedDeliv.id}
+                    enterpriseId={enterprise?.id || ''}
+                    deliverableType={selectedDeliv.type}
+                    onRestore={() => fetchData()}
+                  />
+                </div>
                 {selectedModule === 'bmc' ? (
                   <BmcViewer data={selectedDeliv.data} />
                 ) : selectedModule === 'sic' ? (
@@ -1452,6 +1464,16 @@ export default function EntrepreneurDashboard() {
                 <p className="text-sm text-muted-foreground/70 max-w-sm">
                   Cliquez sur "Générer les livrables" dans la barre latérale.
                 </p>
+              </div>
+            )}
+
+            {/* Activity Timeline */}
+            {enterprise && selectedModule !== 'dataroom' && (
+              <div className="border-t border-border p-4">
+                <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Activité récente
+                </h4>
+                <ActivityTimeline enterpriseId={enterprise.id} limit={10} />
               </div>
             )}
           </div>

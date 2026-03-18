@@ -3,6 +3,7 @@ import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
 } from "../_shared/helpers.ts";
 import { normalizeReconstruction } from "../_shared/normalizers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { getSectorKnowledgePrompt, getExtractionKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 const SYSTEM_PROMPT = `Tu es un expert-comptable et analyste financier senior spécialisé dans la reconstitution de données financières de PME africaines (normes SYSCOHADA 2017).
@@ -120,13 +121,13 @@ ${OUTPUT_SCHEMA}`;
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 12288);
     const normalizedData = normalizeReconstruction(rawData);
 
-    // Ensure source marker
     if (normalizedData.compte_resultat && !normalizedData.compte_resultat.source) {
       normalizedData.compte_resultat.source = "reconstruction";
     }
 
-    // Save as inputs_data deliverable (same format as generate-inputs)
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", normalizedData, "inputs");
+    const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
+
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", validatedData, "inputs");
 
     return new Response(JSON.stringify({ success: true, data: normalizedData, score: normalizedData.score || normalizedData.score_confiance || 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

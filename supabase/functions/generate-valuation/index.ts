@@ -4,6 +4,7 @@ import {
   jsonResponse, errorResponse,
 } from "../_shared/helpers.ts";
 import { getFinancialKnowledgePrompt, getValuationBenchmarksPrompt, getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 
 const SYSTEM_PROMPT = `Tu es un analyste en Corporate Finance spécialisé dans la valorisation de PME africaines (UEMOA/CEMAC).
 
@@ -182,10 +183,11 @@ Réponds en JSON selon ce schéma :
 ${VALUATION_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
+    const data = validateAndEnrich(rawData, ent.country, ent.sector);
 
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "valuation", rawData, "valuation");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "valuation", data, "valuation");
 
-    return jsonResponse({ success: true, data: rawData, score: rawData.score || 0 });
+    return jsonResponse({ success: true, data, score: data.score || 0 });
   } catch (e: any) {
     console.error("generate-valuation error:", e);
     return errorResponse(e.message || "Erreur", e.status || 500);

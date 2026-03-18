@@ -5,6 +5,7 @@ import {
 } from "../_shared/helpers.ts";
 import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 import { normalizePreScreening } from "../_shared/normalizers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 
 const SYSTEM_PROMPT = `Tu es un analyste financier senior qui fait le TRIAGE INITIAL de dossiers PME africaines pour des programmes de financement.
 
@@ -262,8 +263,9 @@ ${PRE_SCREENING_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
     const normalizedData = normalizePreScreening(rawData);
+    const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "pre_screening", normalizedData, "diagnostic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "pre_screening", validatedData, "diagnostic");
 
     if (normalizedData.pre_screening_score) {
       await ctx.supabase.from("enterprises").update({
