@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building2, FileText, Trash2, UserCog, Search, RefreshCw, Target } from 'lucide-react';
+import { Users, Building2, FileText, Trash2, UserCog, Search, RefreshCw, Target, Database } from 'lucide-react';
 import CoachesTab from './CoachesTab';
 import ProgrammeCriteriaEditor from './ProgrammeCriteriaEditor';
 import ScreeningDashboard from './ScreeningDashboard';
+import KnowledgeBaseManager from './KnowledgeBaseManager';
 
 interface Profile {
   user_id: string;
@@ -210,6 +211,7 @@ export default function SuperAdminDashboard() {
           <TabsTrigger value="coaches">Coaches</TabsTrigger>
           <TabsTrigger value="enterprises">Entreprises</TabsTrigger>
           <TabsTrigger value="screening" className="gap-1"><Target className="h-3.5 w-3.5" />Screening</TabsTrigger>
+          <TabsTrigger value="knowledge" className="gap-1"><Database className="h-3.5 w-3.5" />Base de connaissances</TabsTrigger>
           <TabsTrigger value="activity">Activité récente</TabsTrigger>
         </TabsList>
 
@@ -410,6 +412,11 @@ export default function SuperAdminDashboard() {
         <TabsContent value="screening" className="space-y-6">
           <ProgrammeCriteriaEditor />
           <ScreeningDashboard />
+        </TabsContent>
+
+        {/* KNOWLEDGE BASE TAB */}
+        <TabsContent value="knowledge">
+          <KnowledgeBaseManager />
         </TabsContent>
       </Tabs>
     </DashboardLayout>
