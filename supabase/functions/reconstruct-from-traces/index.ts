@@ -3,6 +3,7 @@ import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
 } from "../_shared/helpers.ts";
 import { normalizeReconstruction } from "../_shared/normalizers.ts";
+import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { getSectorKnowledgePrompt, getExtractionKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 const SYSTEM_PROMPT = `Tu es un expert-comptable et analyste financier senior spécialisé dans la reconstitution de données financières de PME africaines (normes SYSCOHADA 2017).
