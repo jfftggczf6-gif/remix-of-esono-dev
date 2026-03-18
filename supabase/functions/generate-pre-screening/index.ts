@@ -218,7 +218,7 @@ serve(async (req) => {
     const validationRules = getValidationRulesPrompt();
 
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "pre_screening"
     );
 
     const programmeSection = programmeCriteria

@@ -244,7 +244,7 @@ serve(async (req) => {
     const diagnosticData = getDelivData("diagnostic_data");
 
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "screening_report"
     );
 
     // Build deliverables summary for context

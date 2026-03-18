@@ -168,7 +168,7 @@ serve(async (req) => {
     const valuationBenchmarks = getValuationBenchmarksPrompt();
     const donorCriteria = getDonorCriteriaPrompt();
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "investment_memo"
     );
 
     const delivSummary: string[] = [];

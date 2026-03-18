@@ -90,7 +90,7 @@ serve(async (req) => {
 
     // Build RAG context for sector benchmarks
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "inputs_data"
     );
 
     const prompt = `ENTREPRISE : ${ent.name}
