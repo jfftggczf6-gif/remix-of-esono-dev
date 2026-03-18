@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Rocket, GraduationCap } from 'lucide-react';
+import { Loader2, Rocket, GraduationCap, MailCheck } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -28,9 +28,9 @@ export default function Register() {
   const [country, setCountry] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [signupDone, setSignupDone] = useState(false);
 
-  const { signUp, setRole: _setRole } = useAuth();
-  const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +41,7 @@ export default function Register() {
     setIsLoading(true);
     try {
       await signUp(email, password, fullName, selectedRole);
-      toast.success('Compte créé avec succès !');
-      navigate('/dashboard');
+      setSignupDone(true);
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de l'inscription");
     } finally {
@@ -53,6 +52,21 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-lg">
+        {signupDone ? (
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <MailCheck className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Vérifiez votre email</h1>
+            <p className="text-muted-foreground">
+              Un email de confirmation a été envoyé à <strong className="text-foreground">{email}</strong>.
+              Cliquez sur le lien dans l'email pour activer votre compte.
+            </p>
+            <Link to="/login" className="text-primary hover:underline font-medium text-sm">
+              Retour à la connexion
+            </Link>
+          </div>
+        ) : (<>
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
           <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
@@ -188,8 +202,9 @@ export default function Register() {
           Déjà inscrit ?{' '}
           <Link to="/login" className="text-primary hover:underline font-medium">
             Se connecter
-          </Link>
+        </Link>
         </p>
+        </>)}
       </div>
     </div>
   );

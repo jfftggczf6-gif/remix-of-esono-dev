@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(false);
-  const skipRoleFetch = useRef(false);
+  
 
   const ROLE_PRIORITY: AppRole[] = ['super_admin', 'coach', 'entrepreneur'];
 
@@ -63,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        if (skipRoleFetch.current) return;
         setRoleLoading(true);
         fetchUserData(session.user.id).finally(() => setRoleLoading(false));
       } else {
@@ -77,32 +76,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, selectedRole?: AppRole) => {
-    // Prevent onAuthStateChange from fetching the role during signUp:
-    // the role isn't in DB yet at that point — we insert it manually below.
-    skipRoleFetch.current = true;
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName, role: selectedRole || 'entrepreneur' },
-          emailRedirectTo: window.location.origin,
-        },
-      });
-      if (error) throw error;
-      if (data.user) {
-        const role = selectedRole || 'entrepreneur';
-        await supabase.from('user_roles').upsert(
-          { user_id: data.user.id, role },
-          { onConflict: 'user_id,role' }
-        );
-        setRoleState(role);
-      }
-    } finally {
-      // Always reset the flag — even if an error occurs — so future
-      // auth state changes are not permanently blocked.
-      skipRoleFetch.current = false;
-    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName, role: selectedRole || 'entrepreneur' },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    if (error) throw error;
   };
 
   const signIn = async (email: string, password: string) => {
