@@ -36,7 +36,7 @@ interface ReconstructionResult {
   };
 }
 
-export default function ReconstructionUploader({ enterpriseId, session, navigate, onComplete }: ReconstructionUploaderProps) {
+export default function ReconstructionUploader({ enterpriseId, session, navigate, onComplete, onPreScreeningDone }: ReconstructionUploaderProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
