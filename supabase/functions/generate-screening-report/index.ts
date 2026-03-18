@@ -3,6 +3,8 @@ import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
   jsonResponse, errorResponse,
 } from "../_shared/helpers.ts";
+import { normalizeScreeningReport } from "../_shared/normalizers.ts";
+import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 
 const SYSTEM_PROMPT = `Tu es un analyste financier senior spécialisé dans le screening de PME africaines pour des programmes de financement (DFI, fonds d'impact, incubateurs, banques).
 
