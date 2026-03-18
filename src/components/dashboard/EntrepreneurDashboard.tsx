@@ -1393,9 +1393,29 @@ export default function EntrepreneurDashboard() {
               <div className="p-6">
                 <DataRoomManager enterpriseId={enterprise.id} userId={user.id} dataRoomSlug={(enterprise as any).data_room_slug || ''} />
               </div>
+            ) : selectedModule === 'pre_screening' && selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
+              <div className="p-6">
+                <PreScreeningViewer
+                  data={selectedDeliv.data as Record<string, any>}
+                  onRegenerate={async () => {
+                    if (!enterprise) return;
+                    try {
+                      const token = await getValidAccessToken(authSession, navigate);
+                      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pre-screening`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ enterprise_id: enterprise.id }),
+                      });
+                      if (!resp.ok) throw new Error('Erreur');
+                      toast.success('Pre-screening regénéré !');
+                      await fetchData();
+                    } catch { toast.error('Erreur de pre-screening'); }
+                  }}
+                  onLaunchPipeline={() => handleGenerate()}
+                />
+              </div>
             ) : selectedModule === 'screening' && selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
               <div className="p-6">
-                <ScreeningReportViewer data={selectedDeliv.data as Record<string, any>} />
+                <ScreeningReportViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={handleGenerateScreening} />
               </div>
             ) : selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
               <div className="p-6">
