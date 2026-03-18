@@ -191,7 +191,7 @@ export default function Register() {
             Se connecter
         </Link>
         </p>
-        </>)}
+        
       </div>
     </div>
   );
