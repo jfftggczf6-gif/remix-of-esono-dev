@@ -15,7 +15,7 @@ import {
   Plus, Building2, Sparkles, Download,
   LogOut, Clock, CheckCircle2, Loader2,
   FolderPlus, Pencil, Trash2, TrendingUp,
-  FileText, BarChart3, Stethoscope, LayoutGrid, Globe, FileSpreadsheet, Target
+  FileText, BarChart3, Stethoscope, LayoutGrid, Globe, FileSpreadsheet, Target, Search
 } from 'lucide-react';
 import BmcViewer from './BmcViewer';
 import SicViewer from './SicViewer';
