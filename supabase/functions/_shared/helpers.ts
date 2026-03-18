@@ -726,7 +726,8 @@ export async function buildRAGContext(
   supabase: any,
   country: string,
   sector: string,
-  categories: string[]
+  categories: string[],
+  deliverableType?: string
 ): Promise<string> {
   try {
     const queryText = `PME ${sector || "entreprise"} en ${country || "Afrique"} : benchmarks financiers, conditions bancaires, fiscalité, bailleurs de fonds, cours matières premières, réglementation`;
