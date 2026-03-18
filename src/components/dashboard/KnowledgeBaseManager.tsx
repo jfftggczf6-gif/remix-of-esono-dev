@@ -138,7 +138,6 @@ export default function KnowledgeBaseManager() {
 
   const handleAddEntry = async () => {
     if (!newEntry.title || !newEntry.content) return;
-    const token = await getValidAccessToken();
     const result = await callEdgeFunction('ingest-knowledge', {
       entries: [{
         category: newEntry.category,
