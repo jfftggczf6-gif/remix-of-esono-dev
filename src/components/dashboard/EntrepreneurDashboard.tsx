@@ -1115,6 +1115,11 @@ export default function EntrepreneurDashboard() {
                 <Search className="h-5 w-5 text-muted-foreground" />
                 <h1 className="font-display font-semibold text-base">Diagnostic & Screening</h1>
               </>
+            ) : selectedModule === 'pre_screening' ? (
+              <>
+                <Search className="h-5 w-5 text-muted-foreground" />
+                <h1 className="font-display font-semibold text-base">Pre-screening / Triage</h1>
+              </>
             ) : selectedModule === 'dataroom' ? (
               <>
                 <FolderPlus className="h-5 w-5 text-muted-foreground" />
