@@ -24,6 +24,7 @@ import BusinessPlanPreview from './BusinessPlanPreview';
 
 import ReconstructionUploader from './ReconstructionUploader';
 import ScreeningReportViewer from './ScreeningReportViewer';
+import PreScreeningViewer from './PreScreeningViewer';
 import DataRoomManager from './DataRoomManager';
 import {
   MODULE_CONFIG, PIPELINE, MODULE_FN_MAP,
