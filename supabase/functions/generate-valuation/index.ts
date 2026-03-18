@@ -187,7 +187,7 @@ ${VALUATION_SCHEMA}`;
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "valuation", data, "valuation");
 
-    return jsonResponse({ success: true, data: rawData, score: rawData.score || 0 });
+    return jsonResponse({ success: true, data, score: data.score || 0 });
   } catch (e: any) {
     console.error("generate-valuation error:", e);
     return errorResponse(e.message || "Erreur", e.status || 500);
