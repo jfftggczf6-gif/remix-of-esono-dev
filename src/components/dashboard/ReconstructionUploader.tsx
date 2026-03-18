@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
 import {
-  Wand2, Upload, X, FileText, Loader2, CheckCircle2,
+  Wand2, X, FileText, Loader2, CheckCircle2,
   AlertTriangle, RotateCcw
 } from 'lucide-react';
 
