@@ -122,6 +122,26 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
       }
       await supabase.from('enterprises').update(modeUpdates).eq('id', enterpriseId);
 
+      // Auto-launch pre-screening
+      setProgressLabel('Analyse du dossier en cours…');
+      setProgress(90);
+      try {
+        const preScreenResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pre-screening`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ enterprise_id: enterpriseId }),
+          }
+        );
+        if (preScreenResp.ok) {
+          const preScreenData = await preScreenResp.json();
+          onPreScreeningDone?.(preScreenData.data);
+        }
+      } catch (e) {
+        console.warn('Pre-screening failed (non-blocking):', e);
+      }
+
       setProgress(100);
       setProgressLabel('Terminé !');
       setResult(resultData);
