@@ -230,6 +230,7 @@ serve(async (req) => {
     // Enforce Framework constraints: overwrite projections with exact Framework values
     const frameworkData = allData.framework;
     data = enforceFrameworkConstraints(data, frameworkData, allData.inputs, country);
+    data = validateAndEnrich(data, country, ent.sector);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "plan_ovo", data, "plan_ovo");
 

@@ -183,8 +183,9 @@ Réponds en JSON selon ce schéma :
 ${VALUATION_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
+    const data = validateAndEnrich(rawData, ent.country, ent.sector);
 
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "valuation", rawData, "valuation");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "valuation", data, "valuation");
 
     return jsonResponse({ success: true, data: rawData, score: rawData.score || 0 });
   } catch (e: any) {

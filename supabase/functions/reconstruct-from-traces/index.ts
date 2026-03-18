@@ -121,13 +121,13 @@ ${OUTPUT_SCHEMA}`;
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 12288);
     const normalizedData = normalizeReconstruction(rawData);
 
-    // Ensure source marker
     if (normalizedData.compte_resultat && !normalizedData.compte_resultat.source) {
       normalizedData.compte_resultat.source = "reconstruction";
     }
 
-    // Save as inputs_data deliverable (same format as generate-inputs)
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", normalizedData, "inputs");
+    const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
+
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", validatedData, "inputs");
 
     return new Response(JSON.stringify({ success: true, data: normalizedData, score: normalizedData.score || normalizedData.score_confiance || 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

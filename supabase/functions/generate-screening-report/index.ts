@@ -299,9 +299,9 @@ ${SCREENING_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
     const normalizedData = normalizeScreeningReport(rawData);
+    const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 
-    // Save as screening_report deliverable
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", normalizedData, "diagnostic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", validatedData, "diagnostic");
 
     // Update enterprise score_ir
     if (normalizedData.screening_score) {

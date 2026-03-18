@@ -342,7 +342,8 @@ serve(async (req) => {
     ) + ragContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
 
     const rawData = await callAI(buildSystemPrompt(fiscalParams.devise), enrichedPrompt, 16384);
-    const data = normalizeInputs(rawData);
+    const normalized = normalizeInputs(rawData);
+    const data = validateAndEnrich(normalized, ent.country, ent.sector);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", data, "inputs");
 

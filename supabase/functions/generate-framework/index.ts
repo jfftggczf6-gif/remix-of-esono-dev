@@ -409,7 +409,8 @@ serve(async (req) => {
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;
 
     const rawData = await callAI(enrichedSystemPrompt, enrichedPrompt, 16384, OPUS_MODEL);
-    const data = normalizeFramework(rawData);
+    const normalized = normalizeFramework(rawData);
+    const data = validateAndEnrich(normalized, ent.country, ent.sector);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "framework_data", data, "framework");
 

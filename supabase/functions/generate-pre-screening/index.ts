@@ -262,8 +262,9 @@ ${PRE_SCREENING_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
     const normalizedData = normalizePreScreening(rawData);
+    const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "pre_screening", normalizedData, "diagnostic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "pre_screening", validatedData, "diagnostic");
 
     if (normalizedData.pre_screening_score) {
       await ctx.supabase.from("enterprises").update({
