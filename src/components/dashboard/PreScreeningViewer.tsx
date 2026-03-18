@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   AlertTriangle, CheckCircle2, XCircle, Info, FileSearch, Heart, Shield, Copy,
   Download, Target, TrendingUp, Banknote, RefreshCw, ChevronDown, ChevronUp,
-  Wand2, Rocket, Upload, Zap
+  Wand2, Rocket, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 
