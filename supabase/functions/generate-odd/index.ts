@@ -4,6 +4,7 @@ import {
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext
 } from "../_shared/helpers.ts";
 import { normalizeOdd } from "../_shared/normalizers.ts";
+import { getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
 import { fillOddExcelTemplate } from "../_shared/odd-excel-template.ts";
 
 const SYSTEM_PROMPT = `Tu es un expert en Objectifs de Développement Durable (ODD) pour PME en Afrique de l'Ouest (UEMOA).
