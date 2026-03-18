@@ -1141,6 +1141,17 @@ export default function EntrepreneurDashboard() {
               </>
             )}
             <div className="ml-auto flex gap-2">
+              {deliverables.some(d => d.type === 'pre_screening') && (
+                <Button
+                  variant={selectedModule === 'pre_screening' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2 text-xs"
+                  onClick={() => setSelectedModule('pre_screening')}
+                >
+                  <FileSearch className="h-3.5 w-3.5" />
+                  {selectedModule === 'pre_screening' ? 'Triage' : 'Pre-screening'}
+                </Button>
+              )}
               <Button
                 variant={selectedModule === 'dataroom' ? 'default' : 'outline'}
                 size="sm"
