@@ -112,7 +112,7 @@ export default function ScreeningDashboard() {
         return {
           ...ent,
           matchScore: screeningScore ?? (ent.score_ir || 0),
-          matchDetails: [],
+          matchDetails: [] as { label: string; passed: boolean }[],
           deliverableCount: entDelivs.length,
           screeningScore,
           verdict: screeningData?.verdict || (screeningScore != null && screeningScore >= 60 ? 'Éligible' : screeningScore != null ? 'Non éligible' : '—'),
