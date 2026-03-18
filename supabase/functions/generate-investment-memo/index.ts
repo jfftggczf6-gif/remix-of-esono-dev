@@ -214,7 +214,7 @@ Réponds en JSON selon ce schéma :
 ${MEMO_SCHEMA_PART1}`;
 
     console.log("Investment Memo — Pass 1/2...");
-    const part1 = await callAI(MEMO_SYSTEM_PROMPT, prompt1, 16384, "claude-sonnet-4-20250514", 0.3);
+    const part1 = await callAI(MEMO_SYSTEM_PROMPT, prompt1, 16384, OPUS_MODEL, 0.3);
 
     // PASS 2: Sections 8-15
     const part1Summary = JSON.stringify({
