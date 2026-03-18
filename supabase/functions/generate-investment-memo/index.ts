@@ -237,7 +237,7 @@ Réponds en JSON selon ce schéma :
 ${MEMO_SCHEMA_PART2}`;
 
     console.log("Investment Memo — Pass 2/2...");
-    const part2 = await callAI(MEMO_SYSTEM_PROMPT, prompt2, 16384, "claude-sonnet-4-20250514", 0.3);
+    const part2 = await callAI(MEMO_SYSTEM_PROMPT, prompt2, 16384, OPUS_MODEL, 0.3);
 
     // Merge both passes
     const mergedMemo = { ...part1, ...part2 };
