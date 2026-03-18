@@ -1,1 +1,4 @@
 project_id = "uduxtueedfadmbiomxme"
+
+[functions.generate-screening-report]
+verify_jwt = false
