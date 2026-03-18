@@ -185,9 +185,10 @@ Réponds en JSON selon ce schéma :
 ${SCREENING_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 12288);
+    const normalizedData = normalizeScreeningReport(rawData);
 
     // Save as screening_report deliverable
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", rawData, "diagnostic");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", normalizedData, "diagnostic");
 
     // Update enterprise score_ir
     if (rawData.screening_score) {
