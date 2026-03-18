@@ -77,6 +77,7 @@ export const PIPELINE = [
   { name: 'One-Pager',     fn: 'generate-onepager',      type: 'onepager' as DeliverableType },
   { name: 'Pitch Deck',    fn: 'generate-pitch-deck',    type: 'pitch_deck' as DeliverableType },
   { name: 'Investment Memo', fn: 'generate-investment-memo', type: 'investment_memo' as DeliverableType },
+  { name: 'Screening', fn: 'generate-screening-report', type: 'screening_report' as DeliverableType },
 ];
 
 export const MODULE_FN_MAP: Record<string, string> = {
