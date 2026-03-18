@@ -102,6 +102,11 @@ DESCRIPTION : ${ent.description || "Non spécifié"}
 ══════ DOCUMENTS DISPONIBLES ══════
 ${ctx.documentContent || "(Aucun document uploadé)"}
 
+══════ INVARIANTS COMPTABLES & BENCHMARKS ══════
+${getExtractionKnowledgePrompt()}
+
+${getSectorKnowledgePrompt(ent.sector || "services_b2b")}
+
 ${ragContext}
 
 ══════ INSTRUCTIONS ══════
@@ -113,14 +118,15 @@ Réponds en JSON selon ce schéma :
 ${OUTPUT_SCHEMA}`;
 
     const rawData = await callAI(SYSTEM_PROMPT, prompt, 12288);
+    const normalizedData = normalizeReconstruction(rawData);
 
     // Ensure source marker
-    if (rawData.compte_resultat && !rawData.compte_resultat.source) {
-      rawData.compte_resultat.source = "reconstruction";
+    if (normalizedData.compte_resultat && !normalizedData.compte_resultat.source) {
+      normalizedData.compte_resultat.source = "reconstruction";
     }
 
     // Save as inputs_data deliverable (same format as generate-inputs)
-    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", rawData, "inputs");
+    await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", normalizedData, "inputs");
 
     return new Response(JSON.stringify({ success: true, data: rawData, score: rawData.score || rawData.score_confiance || 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
