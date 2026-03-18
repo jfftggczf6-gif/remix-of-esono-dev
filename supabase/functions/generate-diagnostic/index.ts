@@ -5,6 +5,7 @@ import {
   getFiscalParams
 } from "../_shared/helpers.ts";
 import { normalizeDiagnostic } from "../_shared/normalizers.ts";
+import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 // ── Helpers locaux ──────────────────────────────────────────────────────────
 
