@@ -818,9 +818,35 @@ export default function EntrepreneurDashboard() {
   const delivTypeMap: Record<string, string> = {
     bmc: 'bmc_analysis', sic: 'sic_analysis', inputs: 'inputs_data', framework: 'framework_data',
     diagnostic: 'diagnostic_data', plan_ovo: 'plan_ovo', business_plan: 'business_plan', odd: 'odd_analysis',
+    screening: 'screening_report',
   };
   const selectedDelivType = delivTypeMap[selectedModule];
   const selectedDeliv = selectedDelivType ? getDeliverable(selectedDelivType) : null;
+
+  const handleGenerateScreening = async () => {
+    if (!enterprise) return;
+    setGeneratingScreening(true);
+    try {
+      const token = await getValidAccessToken(authSession, navigate);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-screening-report`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ enterprise_id: enterprise.id }),
+        }
+      );
+      if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Erreur'); }
+      const result = await response.json();
+      toast.success(`Screening terminé ! Score: ${result.score}/100`);
+      setSelectedModule('screening');
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur de screening');
+    } finally {
+      setGeneratingScreening(false);
+    }
+  };
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
