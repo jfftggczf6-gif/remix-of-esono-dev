@@ -91,7 +91,7 @@ export default function KnowledgeBaseManager() {
   }, [entries, filterCategory, search]);
 
   const callEdgeFunction = async (fnName: string, body: any = {}) => {
-    const token = await getValidAccessToken();
+    const token = await getValidAccessToken(null);
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/${fnName}`, {
       method: 'POST',
