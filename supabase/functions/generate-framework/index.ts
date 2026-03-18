@@ -262,7 +262,15 @@ Génère le framework d'analyse financière COMPLET en JSON avec TOUTES les sect
   "risques_financiers": ["<risque identifié>"],
   "recommandations": ["<recommandation financière>"],
   "capacite_investissement": "<analyse de la capacité d'investissement>",
-  "besoin_financement": "<estimation du besoin de financement>"
+  "besoin_financement": "<estimation du besoin de financement>",
+
+  "_confidence": {
+    "chiffre_affaires_y0": { "level": <0-100>, "source": "string" },
+    "marge_brute": { "level": <0-100>, "source": "string" },
+    "ebitda": { "level": <0-100>, "source": "string" },
+    "projection_croissance": { "level": <0-100>, "source": "string" },
+    "bfr": { "level": <0-100>, "source": "string" }
+  }
 }
 
 INSTRUCTIONS CRITIQUES:
