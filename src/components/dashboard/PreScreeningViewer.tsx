@@ -361,15 +361,18 @@ export default function PreScreeningViewer({ data, onRegenerate, onLaunchPipelin
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: 'CA estimé', value: santeFinanciere.ca_estime, suffix: '' },
-              { label: 'Marge brute', value: santeFinanciere.marge_brute_pct, suffix: '%' },
-              { label: 'Marge nette', value: santeFinanciere.marge_nette_pct, suffix: '%' },
-              { label: 'Endettement', value: santeFinanciere.ratio_endettement_pct, suffix: '%' },
-              { label: 'Trésorerie nette', value: santeFinanciere.tresorerie_nette, suffix: '' },
+              { label: 'CA estimé', value: santeFinanciere.ca_estime, suffix: '', field: 'ca_estime' },
+              { label: 'Marge brute', value: santeFinanciere.marge_brute_pct, suffix: '%', field: 'marge_brute' },
+              { label: 'Marge nette', value: santeFinanciere.marge_nette_pct, suffix: '%', field: '' },
+              { label: 'Endettement', value: santeFinanciere.ratio_endettement_pct, suffix: '%', field: '' },
+              { label: 'Trésorerie nette', value: santeFinanciere.tresorerie_nette, suffix: '', field: '' },
             ].map(kpi => (
               <div key={kpi.label} className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{kpi.label}</span>
-                <span className="text-sm font-semibold">{kpi.value != null ? `${kpi.suffix === '' ? formatAmount(kpi.value) : kpi.value + kpi.suffix}` : '—'}</span>
+                <span className="text-sm font-semibold">
+                  {kpi.value != null ? `${kpi.suffix === '' ? formatAmount(kpi.value) : kpi.value + kpi.suffix}` : '—'}
+                  {kpi.field && <ConfidenceIndicator field={kpi.field} confidence={data._confidence} />}
+                </span>
               </div>
             ))}
           </div>
