@@ -284,21 +284,60 @@ export async function verifyAndGetContext(req: Request) {
     }
   };
 
-  // 1. Read root-level files (entrepreneur uploads)
-  if (files && files.length > 0) {
-    for (const file of files.slice(0, 10)) {
+  // Helper to process a list of storage files from a given prefix
+  const processStorageFiles = async (fileList: any[], prefix: string, label: string, maxFiles: number) => {
+    for (const file of fileList.slice(0, maxFiles)) {
+      if (file.id === null || file.id === undefined) continue; // skip folders
       const fileSizeBytes = file.metadata?.size || 0;
       if (fileSizeBytes > MAX_FILE_SIZE_BYTES) {
         console.warn(`[verifyAndGetContext] Skipping ${file.name} — file size ${(fileSizeBytes / 1024 / 1024).toFixed(1)}MB exceeds 50MB limit`);
-        documentContent += `\n\n--- Document: ${file.name} (ignoré — fichier trop volumineux: ${(fileSizeBytes / 1024 / 1024).toFixed(1)}MB > 50MB) ---`;
+        documentContent += `\n\n--- ${label}: ${file.name} (ignoré — fichier trop volumineux: ${(fileSizeBytes / 1024 / 1024).toFixed(1)}MB > 50MB) ---`;
         continue;
       }
       const ext = file.name.split(".").pop()?.toLowerCase();
-      const storagePath = `${enterprise_id}/${file.name}`;
+      const storagePath = `${prefix}${file.name}`;
+      if (processedPaths.has(storagePath)) continue;
       processedPaths.add(storagePath);
       const { data: fileData } = await supabase.storage.from("documents").download(storagePath);
       if (!fileData) continue;
-      await parseAndAppend(fileData, file.name, ext || "", "Document");
+      await parseAndAppend(fileData, file.name, ext || "", label);
+    }
+  };
+
+  // 1. Read root-level files (entrepreneur uploads)
+  if (files && files.length > 0) {
+    await processStorageFiles(files, `${enterprise_id}/`, "Document", 20);
+  }
+
+  // 1b. Read subfolders (coach/, dataroom/, etc.)
+  const subfolders = (files || []).filter((f: any) => f.id === null || f.name === ".emptyFolderPlaceholder" === false);
+  const knownSubfolders = ["coach", "dataroom", "supplementary"];
+  for (const subfolder of knownSubfolders) {
+    try {
+      const { data: subFiles } = await supabase.storage.from("documents").list(`${enterprise_id}/${subfolder}`, { limit: 50 });
+      if (subFiles && subFiles.length > 0) {
+        // Recursively list one more level deep (e.g. coach/inputs/, dataroom/finance/)
+        for (const subItem of subFiles) {
+          const subPath = `${enterprise_id}/${subfolder}/${subItem.name}`;
+          if (subItem.metadata) {
+            // It's a file
+            if (!processedPaths.has(subPath)) {
+              processedPaths.add(subPath);
+              const ext = subItem.name.split(".").pop()?.toLowerCase();
+              const { data: fileData } = await supabase.storage.from("documents").download(subPath);
+              if (fileData) await parseAndAppend(fileData, subItem.name, ext || "", `Document (${subfolder})`);
+            }
+          } else {
+            // It's a nested folder — list its contents
+            const { data: nestedFiles } = await supabase.storage.from("documents").list(subPath, { limit: 20 });
+            if (nestedFiles) {
+              await processStorageFiles(nestedFiles, `${subPath}/`, `Document (${subfolder}/${subItem.name})`, 20);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`[verifyAndGetContext] Error reading subfolder ${subfolder}:`, e);
     }
   }
 
