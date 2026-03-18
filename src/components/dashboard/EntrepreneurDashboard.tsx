@@ -1384,7 +1384,11 @@ export default function EntrepreneurDashboard() {
               </div>
             )}
 
-            {selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
+            {selectedModule === 'screening' && selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
+              <div className="p-6">
+                <ScreeningReportViewer data={selectedDeliv.data as Record<string, any>} />
+              </div>
+            ) : selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
               <div className="p-6">
                 {selectedModule === 'bmc' ? (
                   <BmcViewer data={selectedDeliv.data} />
