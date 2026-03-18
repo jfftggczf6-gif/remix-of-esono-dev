@@ -1466,6 +1466,16 @@ export default function EntrepreneurDashboard() {
                 </p>
               </div>
             )}
+
+            {/* Activity Timeline */}
+            {enterprise && selectedModule !== 'dataroom' && (
+              <div className="border-t border-border p-4">
+                <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Activité récente
+                </h4>
+                <ActivityTimeline enterpriseId={enterprise.id} limit={10} />
+              </div>
+            )}
           </div>
         </div>
       </div>
