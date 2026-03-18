@@ -541,7 +541,7 @@ export async function saveDeliverable(supabase: any, enterprise_id: string, type
 
   // 2. Archive previous version if exists
   if (existing?.data && typeof existing.data === 'object' && Object.keys(existing.data).length > 0) {
-    await supabase.from("deliverable_versions").insert({
+    const { error: archiveError } = await supabase.from("deliverable_versions").insert({
       deliverable_id: existing.id,
       enterprise_id,
       type,
@@ -551,7 +551,11 @@ export async function saveDeliverable(supabase: any, enterprise_id: string, type
       validation_report: existing.data?._validation || null,
       generated_by: existing.data?._metadata?.generated_by || 'ai',
       trigger_reason: triggerReason || 'regeneration',
-    }).catch((e: any) => console.warn("[saveDeliverable] version archive failed:", e));
+    });
+
+    if (archiveError) {
+      console.warn("[saveDeliverable] version archive failed:", archiveError);
+    }
 
     // Purge old versions (keep last 10)
     const { data: versions } = await supabase
@@ -559,9 +563,17 @@ export async function saveDeliverable(supabase: any, enterprise_id: string, type
       .select("id")
       .eq("deliverable_id", existing.id)
       .order("version", { ascending: false });
+
     if (versions && versions.length > 10) {
       const toDelete = versions.slice(10).map((v: any) => v.id);
-      await supabase.from("deliverable_versions").delete().in("id", toDelete).catch(() => {});
+      const { error: purgeError } = await supabase
+        .from("deliverable_versions")
+        .delete()
+        .in("id", toDelete);
+
+      if (purgeError) {
+        console.warn("[saveDeliverable] old versions purge failed:", purgeError);
+      }
     }
   }
 
@@ -591,7 +603,7 @@ export async function saveDeliverable(supabase: any, enterprise_id: string, type
     .eq("module", moduleCode);
 
   // 5. Activity log (non-blocking)
-  await supabase.from("activity_log").insert({
+  const { error: activityError } = await supabase.from("activity_log").insert({
     enterprise_id,
     actor_role: 'ai',
     action: 'generate',
@@ -605,7 +617,11 @@ export async function saveDeliverable(supabase: any, enterprise_id: string, type
       validation_errors: data._validation?.errors || 0,
       trigger_reason: triggerReason,
     },
-  }).then(() => {}).catch(() => {});
+  });
+
+  if (activityError) {
+    console.warn("[saveDeliverable] activity log failed:", activityError);
+  }
 
   // 6. Recalculate global score_ir
   try {
