@@ -128,7 +128,7 @@ ${OUTPUT_SCHEMA}`;
     // Save as inputs_data deliverable (same format as generate-inputs)
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", normalizedData, "inputs");
 
-    return new Response(JSON.stringify({ success: true, data: rawData, score: rawData.score || rawData.score_confiance || 0 }), {
+    return new Response(JSON.stringify({ success: true, data: normalizedData, score: normalizedData.score || normalizedData.score_confiance || 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {

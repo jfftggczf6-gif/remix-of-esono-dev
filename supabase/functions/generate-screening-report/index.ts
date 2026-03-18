@@ -191,14 +191,14 @@ ${SCREENING_SCHEMA}`;
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "screening_report", normalizedData, "diagnostic");
 
     // Update enterprise score_ir
-    if (rawData.screening_score) {
+    if (normalizedData.screening_score) {
       await ctx.supabase.from("enterprises").update({
-        score_ir: rawData.screening_score,
+        score_ir: normalizedData.screening_score,
         last_activity: new Date().toISOString(),
       }).eq("id", ctx.enterprise_id);
     }
 
-    return jsonResponse({ success: true, data: rawData, score: rawData.screening_score || 0 });
+    return jsonResponse({ success: true, data: normalizedData, score: normalizedData.screening_score || 0 });
   } catch (e: any) {
     console.error("generate-screening-report error:", e);
     return errorResponse(e.message || "Erreur", e.status || 500);

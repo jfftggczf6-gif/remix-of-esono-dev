@@ -163,13 +163,14 @@ serve(async (req) => {
     // RAG: enrichir avec données ODD
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs"]);
 
+    const donorCriteria = getDonorCriteriaPrompt();
     const userPrompt = buildUserPrompt(
       ent.name,
       ent.sector || "PME",
       ent.country || "Côte d'Ivoire",
       bmcData,
       sicData
-    ) + ragContext;
+    ) + `\n\n══════ CRITÈRES ESG DES BAILLEURS ══════\n${donorCriteria}` + ragContext;
 
     console.log("[generate-odd] Calling Claude API via callAI (max_tokens: 16384)...");
     const rawData = await callAI(SYSTEM_PROMPT, userPrompt, 16384);
