@@ -166,19 +166,119 @@ export async function verifyAndGetContext(req: Request) {
     if (ext === "docx" || ext === "doc") {
       const buffer = await fileData.arrayBuffer();
       const text = await parseDocx(buffer);
-      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 20000)}`;
+      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 25000)}`;
     } else if (ext === "xlsx" || ext === "xls") {
       const buffer = await fileData.arrayBuffer();
       const text = await parseXlsx(buffer);
-      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 20000)}`;
+      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 25000)}`;
     } else if (ext === "csv") {
       const text = await fileData.text();
-      documentContent += `\n\n--- CSV: ${fileName} ---\n${text.substring(0, 20000)}`;
+      documentContent += `\n\n--- CSV: ${fileName} ---\n${text.substring(0, 25000)}`;
     } else if (ext === "txt" || ext === "md") {
       const text = await fileData.text();
-      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 15000)}`;
+      documentContent += `\n\n--- ${label}: ${fileName} ---\n${text.substring(0, 20000)}`;
     } else if (ext === "pdf") {
-      documentContent += `\n\n--- ${label}: ${fileName} (PDF) ---`;
+      // Parse PDF via Claude Vision API
+      const buffer = await fileData.arrayBuffer();
+      if (buffer.byteLength > 20 * 1024 * 1024) {
+        documentContent += `\n\n--- PDF: ${fileName} (trop volumineux: ${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB) ---`;
+      } else {
+        try {
+          const uint8 = new Uint8Array(buffer);
+          let binary = "";
+          for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+          const base64 = btoa(binary);
+          const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
+          const pdfResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "x-api-key": anthropicApiKey,
+              "anthropic-version": "2023-06-01",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 4096,
+              messages: [{
+                role: "user",
+                content: [
+                  {
+                    type: "document",
+                    source: { type: "base64", media_type: "application/pdf", data: base64 },
+                  },
+                  {
+                    type: "text",
+                    text: "Extrais TOUT le contenu textuel et les données chiffrées de ce document. Si c'est un relevé bancaire, liste chaque transaction. Si c'est une facture, extrais montant, date, fournisseur/client. Si c'est un bilan ou compte de résultat, extrais tous les postes avec leurs valeurs. Réponds en texte brut structuré."
+                  }
+                ]
+              }]
+            }),
+          });
+          if (pdfResponse.ok) {
+            const pdfResult = await pdfResponse.json();
+            const extractedText = pdfResult.content?.[0]?.text || "";
+            documentContent += `\n\n--- PDF analysé: ${fileName} ---\n${extractedText.substring(0, 25000)}`;
+          } else {
+            console.error(`PDF extraction error for ${fileName}: status ${pdfResponse.status}`);
+            documentContent += `\n\n--- PDF: ${fileName} (erreur extraction: ${pdfResponse.status}) ---`;
+          }
+        } catch (e) {
+          console.error(`PDF extraction error for ${fileName}:`, e);
+          documentContent += `\n\n--- PDF: ${fileName} (erreur extraction) ---`;
+        }
+      }
+    } else if (["jpg", "jpeg", "png", "webp"].includes(ext || "")) {
+      // Parse images via Claude Vision API (OCR)
+      const buffer = await fileData.arrayBuffer();
+      if (buffer.byteLength > 10 * 1024 * 1024) {
+        documentContent += `\n\n--- Image: ${fileName} (trop volumineuse: ${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB) ---`;
+      } else {
+        try {
+          const uint8 = new Uint8Array(buffer);
+          let binary = "";
+          for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+          const base64 = btoa(binary);
+          const mimeMap: Record<string, string> = {
+            jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp"
+          };
+          const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
+          const imgResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "x-api-key": anthropicApiKey,
+              "anthropic-version": "2023-06-01",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 4096,
+              messages: [{
+                role: "user",
+                content: [
+                  {
+                    type: "image",
+                    source: { type: "base64", media_type: mimeMap[ext || ""] || "image/jpeg", data: base64 },
+                  },
+                  {
+                    type: "text",
+                    text: "Cette image est un document d'entreprise (facture, relevé, reçu, tableau). Extrais TOUT le texte visible, les montants, dates, noms. Si l'image est illisible, indique-le."
+                  }
+                ]
+              }]
+            }),
+          });
+          if (imgResponse.ok) {
+            const imgResult = await imgResponse.json();
+            const extractedText = imgResult.content?.[0]?.text || "";
+            documentContent += `\n\n--- Image OCR: ${fileName} ---\n${extractedText.substring(0, 15000)}`;
+          } else {
+            documentContent += `\n\n--- Image: ${fileName} (erreur OCR: ${imgResponse.status}) ---`;
+          }
+        } catch (e) {
+          console.error(`Image OCR error for ${fileName}:`, e);
+          documentContent += `\n\n--- Image: ${fileName} (erreur OCR) ---`;
+        }
+      }
     } else {
       documentContent += `\n\n--- ${label}: ${fileName} (format non supporté) ---`;
     }
