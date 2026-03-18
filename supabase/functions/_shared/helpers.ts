@@ -726,7 +726,8 @@ export async function buildRAGContext(
   supabase: any,
   country: string,
   sector: string,
-  categories: string[]
+  categories: string[],
+  deliverableType?: string
 ): Promise<string> {
   try {
     const queryText = `PME ${sector || "entreprise"} en ${country || "Afrique"} : benchmarks financiers, conditions bancaires, fiscalité, bailleurs de fonds, cours matières premières, réglementation`;
@@ -782,6 +783,32 @@ export async function buildRAGContext(
       if (entry.similarity) ragText += `(Pertinence: ${Math.round(entry.similarity * 100)}%)\n`;
     }
     ragText += "══════════════════════════════════════════\n";
+
+    // ── Feedback loop: inject recent corrections as few-shot examples ──
+    if (deliverableType) {
+      try {
+        const { data: recentCorrections } = await supabase
+          .from("deliverable_corrections")
+          .select("field_path, original_value, corrected_value, correction_reason, deliverable_type")
+          .eq("deliverable_type", deliverableType)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (recentCorrections && recentCorrections.length > 0) {
+          ragText += "\n\n══════ CORRECTIONS HISTORIQUES (apprends de ces erreurs) ══════\n";
+          ragText += "Des analystes humains ont corrigé ces erreurs dans des générations précédentes du même type.\n";
+          ragText += "ÉVITE de reproduire ces erreurs :\n";
+          for (const c of recentCorrections) {
+            ragText += `\n- Champ "${c.field_path}" : l'IA avait généré ${JSON.stringify(c.original_value)} → corrigé en ${JSON.stringify(c.corrected_value)}`;
+            if (c.correction_reason) ragText += ` (Raison : ${c.correction_reason})`;
+            ragText += "\n";
+          }
+          ragText += "══════════════════════════════════════════\n";
+        }
+      } catch (e) {
+        console.warn("Feedback loop query failed (non-blocking):", e);
+      }
+    }
 
     return ragText;
   } catch (e) {

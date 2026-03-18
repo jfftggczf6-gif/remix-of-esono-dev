@@ -186,6 +186,13 @@ const PRE_SCREENING_SCHEMA = `{
     "criteres_ko": [{ "critere": "string", "detail": "string", "comment_corriger": "string" }],
     "criteres_partiels": [{ "critere": "string", "detail": "string", "manque": "string" }],
     "recommandation": "string"
+  },
+
+  "_confidence": {
+    "ca_estime": { "level": <0-100>, "source": "string" },
+    "marge_brute": { "level": <0-100>, "source": "string" },
+    "sante_financiere": { "level": <0-100>, "source": "string" },
+    "qualite_dossier": { "level": <0-100>, "source": "string" }
   }
 }`;
 
@@ -218,7 +225,7 @@ serve(async (req) => {
     const validationRules = getValidationRulesPrompt();
 
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "pre_screening"
     );
 
     const programmeSection = programmeCriteria

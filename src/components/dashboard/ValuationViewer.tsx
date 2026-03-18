@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle } from 'lucide-react';
+import ConfidenceIndicator from './ConfidenceIndicator';
 
 interface Props {
   data: Record<string, any>;
@@ -57,7 +58,7 @@ export default function ValuationViewer({ data, onRegenerate }: Props) {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Valeur Médiane</p>
-              <p className="text-3xl font-bold text-violet-700">{fmt(synthese.valeur_mediane, devise)}</p>
+              <p className="text-3xl font-bold text-violet-700">{fmt(synthese.valeur_mediane, devise)}<ConfidenceIndicator field="valeur_mediane" confidence={data._confidence} /></p>
               <p className="text-xs text-muted-foreground mt-1">Méthode : {synthese.methode_privilegiee || '—'}</p>
             </div>
             <div>
@@ -79,8 +80,8 @@ export default function ValuationViewer({ data, onRegenerate }: Props) {
             <CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4 text-blue-600" /> DCF</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">WACC</span><span className="font-semibold">{dcf.wacc_pct || '—'}%</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Valeur Terminale</span><span className="font-semibold">{fmt(dcf.terminal_value, devise)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted-foreground">WACC</span><span className="font-semibold">{dcf.wacc_pct || '—'}%<ConfidenceIndicator field="wacc" confidence={data._confidence} /></span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Valeur Terminale</span><span className="font-semibold">{fmt(dcf.terminal_value, devise)}<ConfidenceIndicator field="terminal_value" confidence={data._confidence} /></span></div>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Enterprise Value</span><span className="font-semibold">{fmt(dcf.enterprise_value, devise)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Equity Value</span><span className="font-bold text-blue-600">{fmt(dcf.equity_value, devise)}</span></div>
             {dcf.projections_cashflow && (

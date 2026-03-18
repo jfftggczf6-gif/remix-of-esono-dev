@@ -113,6 +113,15 @@ const VALUATION_SCHEMA = `{
     "si_levee_500m": "string",
     "multiple_sortie_estime": "string",
     "irr_investisseur_estime": "string"
+  },
+
+  "_confidence": {
+    "ca_dernier_exercice": { "level": <0-100>, "source": "string" },
+    "ebitda_dernier_exercice": { "level": <0-100>, "source": "string" },
+    "wacc": { "level": <0-100>, "source": "string — ex: Calcul CAPM avec ERP Afrique standard" },
+    "multiple_ebitda": { "level": <0-100>, "source": "string — ex: Benchmark I&P/Partech 2023-2024" },
+    "valeur_mediane": { "level": <0-100>, "source": "string" },
+    "terminal_value": { "level": <0-100>, "source": "string" }
   }
 }`;
 
@@ -140,7 +149,7 @@ serve(async (req) => {
     const diagnosticData = getDelivData("diagnostic_data");
 
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "valuation"
     );
 
     const knowledgeBase = getFinancialKnowledgePrompt(ent.country || "cote_d_ivoire", ent.sector || "services_b2b", false);
@@ -178,6 +187,15 @@ Applique les 3 méthodes de valorisation (DCF, multiples EBITDA, multiples CA).
 Utilise les cashflows du Plan OVO pour le DCF. Si pas de Plan OVO, estime à partir des inputs/framework.
 Applique les décotes/primes appropriées au profil de l'entreprise.
 Produis une fourchette de valorisation réaliste pour le contexte PME Afrique.
+
+CONFIDENCE PAR CHAMP :
+Pour CHAQUE valeur financière clé, évalue ta confiance (0-100) dans le champ _confidence :
+- 80-100 : donnée directement extraite d'un document fiable
+- 60-79 : donnée extraite d'un document non certifié
+- 40-59 : donnée estimée à partir de données partielles + benchmarks
+- 20-39 : donnée largement estimée
+- 0-19 : hypothèse pure
+Indique la source de chaque valeur.
 
 Réponds en JSON selon ce schéma :
 ${VALUATION_SCHEMA}`;

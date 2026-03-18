@@ -5,6 +5,8 @@ import {
 } from "../_shared/helpers.ts";
 import { getFinancialKnowledgePrompt, getValuationBenchmarksPrompt, getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
 
+const OPUS_MODEL = "claude-opus-4-20250514";
+
 const MEMO_SYSTEM_PROMPT = `Tu es un analyste senior en Private Equity / Impact Investing avec 15+ ans d'expérience en Afrique subsaharienne.
 Tu rédiges des Investment Memorandums professionnels pour des comités d'investissement de fonds (BAD, IFC, Proparco, I&P, Partech Africa, BII).
 
@@ -168,7 +170,7 @@ serve(async (req) => {
     const valuationBenchmarks = getValuationBenchmarksPrompt();
     const donorCriteria = getDonorCriteriaPrompt();
     const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"]
+      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "investment_memo"
     );
 
     const delivSummary: string[] = [];
@@ -214,7 +216,7 @@ Réponds en JSON selon ce schéma :
 ${MEMO_SCHEMA_PART1}`;
 
     console.log("Investment Memo — Pass 1/2...");
-    const part1 = await callAI(MEMO_SYSTEM_PROMPT, prompt1, 16384, "claude-sonnet-4-20250514", 0.3);
+    const part1 = await callAI(MEMO_SYSTEM_PROMPT, prompt1, 16384, OPUS_MODEL, 0.3);
 
     // PASS 2: Sections 8-15
     const part1Summary = JSON.stringify({
@@ -237,7 +239,7 @@ Réponds en JSON selon ce schéma :
 ${MEMO_SCHEMA_PART2}`;
 
     console.log("Investment Memo — Pass 2/2...");
-    const part2 = await callAI(MEMO_SYSTEM_PROMPT, prompt2, 16384, "claude-sonnet-4-20250514", 0.3);
+    const part2 = await callAI(MEMO_SYSTEM_PROMPT, prompt2, 16384, OPUS_MODEL, 0.3);
 
     // Merge both passes
     const mergedMemo = { ...part1, ...part2 };

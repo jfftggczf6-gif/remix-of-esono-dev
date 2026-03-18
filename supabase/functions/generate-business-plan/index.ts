@@ -707,7 +707,7 @@ serve(async (req) => {
     console.log("[BP] Generating Business Plan for:", ent.name);
 
     // RAG: enrichir avec données bailleurs et benchmarks
-    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["bailleurs", "benchmarks", "secteurs", "reglementation"]);
+    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["bailleurs", "benchmarks", "secteurs", "reglementation"], "business_plan");
 
     // Financial knowledge (no examples to save tokens)
     const knowledgeBase = getFinancialKnowledgePrompt(
