@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building2, FileText, Trash2, UserCog, Search, RefreshCw } from 'lucide-react';
+import { Users, Building2, FileText, Trash2, UserCog, Search, RefreshCw, Target } from 'lucide-react';
 import CoachesTab from './CoachesTab';
+import ProgrammeCriteriaEditor from './ProgrammeCriteriaEditor';
+import ScreeningDashboard from './ScreeningDashboard';
 
 interface Profile {
   user_id: string;
