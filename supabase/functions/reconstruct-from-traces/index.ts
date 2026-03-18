@@ -126,6 +126,15 @@ Analyse TOUS les documents ci-dessus. Reconstitue un compte de résultat, un bil
 Pour chaque valeur, indique dans reconstruction_report.hypotheses si c'est une donnée extraite ou une estimation.
 Le score_confiance reflète le % de données réellement extraites vs estimées.
 
+CONFIDENCE PAR CHAMP :
+Pour CHAQUE valeur financière, évalue ta confiance (0-100) dans le champ _confidence :
+- 80-100 : donnée directement extraite d'un document fiable (bilan certifié, relevé bancaire officiel)
+- 60-79 : donnée extraite d'un document non certifié (facture, tableau Excel, photo)
+- 40-59 : donnée estimée à partir de données partielles + benchmarks sectoriels
+- 20-39 : donnée largement estimée, peu de base documentaire
+- 0-19 : hypothèse pure, aucune base documentaire
+Indique la source de chaque valeur (nom du document ou "estimation benchmark").
+
 Réponds en JSON selon ce schéma :
 ${OUTPUT_SCHEMA}`;
 
