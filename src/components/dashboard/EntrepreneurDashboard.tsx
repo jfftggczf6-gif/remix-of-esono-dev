@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Plus, Building2, Sparkles, Download,
   LogOut, Clock, CheckCircle2, Loader2,
-  FolderPlus, Pencil, Trash2, TrendingUp,
+  FolderPlus, Pencil, Trash2,
   FileText, BarChart3, Stethoscope, LayoutGrid, Globe, FileSpreadsheet, Target, Search, FileSearch
 } from 'lucide-react';
 import BmcViewer from './BmcViewer';
@@ -27,12 +26,12 @@ import ScreeningReportViewer from './ScreeningReportViewer';
 import PreScreeningViewer from './PreScreeningViewer';
 import ValuationViewer from './ValuationViewer';
 import OnePagerViewer from './OnePagerViewer';
-import PitchDeckViewer from './PitchDeckViewer';
 import InvestmentMemoViewer from './InvestmentMemoViewer';
 import DataRoomManager from './DataRoomManager';
 import ValidationBanner from './ValidationBanner';
 import VersionHistory from './VersionHistory';
-import ActivityTimeline from './ActivityTimeline';
+import DashboardSidebar from './DashboardSidebar';
+import DashboardOverview from './DashboardOverview';
 import {
   MODULE_CONFIG, PIPELINE, MODULE_FN_MAP,
   type Enterprise, type Deliverable, type EnterpriseModule, type UploadedFile,
@@ -47,8 +46,8 @@ export default function EntrepreneurDashboard() {
   const [enterprise, setEnterprise] = useState<Enterprise | null>(null);
   const [modules, setModules] = useState<EnterpriseModule[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [scoreHistory, setScoreHistory] = useState<Record<string, unknown>[]>([]);
-  const [showScoreChart, setShowScoreChart] = useState(false);
+  const [_scoreHistory, setScoreHistory] = useState<Record<string, unknown>[]>([]);
+  const [_showScoreChart] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -62,9 +61,9 @@ export default function EntrepreneurDashboard() {
   const [generating, setGenerating] = useState(false);
   const [generatingModule, setGeneratingModule] = useState<string | null>(null);
   const [generatingOvoPlan, setGeneratingOvoPlan] = useState(false);
-  const [generatingScreening, setGeneratingScreening] = useState(false);
+  const [_generatingScreening, setGeneratingScreening] = useState(false);
   const [ovoDownloadUrl, setOvoDownloadUrl] = useState<string | null>(null);
-  const [selectedModule, setSelectedModule] = useState<string>('business_plan');
+  const [selectedModule, setSelectedModule] = useState<string>('overview');
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editSector, setEditSector] = useState('');
@@ -76,7 +75,7 @@ export default function EntrepreneurDashboard() {
   const [extractedInfo, setExtractedInfo] = useState<{ name: string | null; country: string | null; sector: string | null } | null>(null);
   const [showExtractDialog, setShowExtractDialog] = useState(false);
   const [_extracting, setExtracting] = useState(false);
-  const [pipelineState, setPipelineState] = useState<PipelineState>('generate');
+  const [_pipelineState, setPipelineState] = useState<PipelineState>('generate');
   const docInputRef = useRef<HTMLInputElement>(null);
   const finInputRef = useRef<HTMLInputElement>(null);
   const extraInputRef = useRef<HTMLInputElement>(null);
@@ -406,15 +405,9 @@ export default function EntrepreneurDashboard() {
     }
   };
 
-  const getModuleData = (code: string) => {
-    const mod = modules.find((m: any) => m.module === code);
-    return { status: (mod?.status || 'not_started') as 'not_started' | 'in_progress' | 'completed', progress: mod?.progress || 0 };
-  };
-
   const getDeliverable = (type: string) => {
     const matches = deliverables.filter((d: any) => d.type === type);
     if (matches.length <= 1) return matches[0] || undefined;
-    // Return the most recently updated one
     return matches.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
   };
 
@@ -423,8 +416,6 @@ export default function EntrepreneurDashboard() {
   const globalScore = scoredDeliverables.length > 0
     ? Math.round(scoredDeliverables.reduce((sum, d) => sum + (d.score || 0), 0) / scoredDeliverables.length)
     : 0;
-
-  const maturityLabel = globalScore >= 80 ? 'Excellent' : globalScore >= 60 ? 'Très bien' : globalScore >= 40 ? 'Moyen' : globalScore > 0 ? 'À améliorer' : '—';
 
   const handleSignOut = async () => { await signOut(); navigate('/login'); };
 
@@ -768,8 +759,8 @@ export default function EntrepreneurDashboard() {
   const finFiles = uploadedFiles.filter(f => /\.(xlsx?|csv)$/i.test(f.name));
   const knownFiles = new Set([...docFiles.map(f => f.name), ...finFiles.map(f => f.name)]);
   const extraFiles = uploadedFiles.filter(f => !knownFiles.has(f.name));
-  const inputsCount = docFiles.length + finFiles.length;
-  const deliverablesCount = deliverables.length;
+  void (docFiles.length + finFiles.length); // inputsCount
+  void deliverables.length; // deliverablesCount
 
   // No enterprise yet
   if (initialLoading) {
@@ -940,476 +931,172 @@ export default function EntrepreneurDashboard() {
       </Dialog>
 
 
-      <div className="flex-none bg-[hsl(222,47%,15%)]">
-        <div className="h-12 flex items-center px-6 gap-6">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/60">Investment Readiness</span>
-          <span className="text-2xl font-display font-bold text-white">{globalScore > 0 ? `${globalScore}/100` : '—/100'}</span>
-          <div className="w-40 h-2 rounded-full bg-white/10 overflow-hidden">
-            <div className="h-full rounded-full bg-[hsl(var(--success))] transition-all duration-500" style={{ width: `${globalScore}%` }} />
-          </div>
-          <div className="flex items-center gap-2 text-white/60 text-xs">
-            <span>🏁 v{deliverablesCount}</span>
-            {/* M2: show count of scored deliverables contributing to global score */}
-            {scoredDeliverables.length > 0 && (
-              <span className="text-white/40 text-[10px]">({scoredDeliverables.length} noté{scoredDeliverables.length > 1 ? 's' : ''})</span>
-            )}
-            <span className="px-2 py-0.5 rounded bg-white/10 text-white/80 text-[10px] font-medium">🏆 {maturityLabel}</span>
-          </div>
-          {scoreHistory.length > 1 && (
-            <button
-              onClick={() => setShowScoreChart(!showScoreChart)}
-              className="ml-auto flex items-center gap-1.5 text-white/60 hover:text-white text-xs transition-colors"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              {showScoreChart ? 'Masquer' : 'Progression'}
-            </button>
-          )}
-        </div>
-        {showScoreChart && scoreHistory.length > 1 && (
-          <div className="px-6 pb-4">
-            <div className="bg-white/5 rounded-lg p-3" style={{ height: 120 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={scoreHistory.map((h: any, i: number) => ({
-                  label: `Gen ${i + 1}`,
-                  score: h.score,
-                  date: new Date(h.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-                }))}>
-                  <XAxis dataKey="date" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'hsl(222,47%,20%)', border: 'none', borderRadius: 8, color: 'white', fontSize: 12 }}
-                    labelStyle={{ color: 'rgba(255,255,255,0.7)' }}
-                  />
-                  <Line type="monotone" dataKey="score" stroke="hsl(var(--success))" strokeWidth={2} dot={{ fill: 'hsl(var(--success))', r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ===== MAIN AREA (sources left + content center) ===== */}
+      {/* ===== MAIN AREA: Sidebar + Content ===== */}
       <div className="flex-1 min-h-0 flex">
-        {/* LEFT PANEL: Sources */}
-        <div className="w-72 flex-none border-r border-border bg-card flex flex-col overflow-y-auto">
-          <div className="p-5 pb-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">📁</span>
-              <h2 className="font-display font-bold text-base">Sources</h2>
-            </div>
-            <p className="text-xs text-muted-foreground">Ajoutez vos documents d'inputs</p>
-          </div>
-
-          <div className="px-5 pb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Documents d'inputs ({inputsCount}/{docFiles.length + finFiles.length || inputsCount})
-            </p>
-          </div>
-
-          {/* Document card: BMC & Impact Social */}
-          <input ref={docInputRef} type="file" multiple accept=".docx,.doc,.pdf,.txt" className="hidden" onChange={e => handleFileUpload(e, 'doc')} />
-          <div
-            onClick={() => docInputRef.current?.click()}
-            className="mx-4 mb-3 p-3 rounded-xl border-2 border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/5 cursor-pointer hover:border-[hsl(var(--success))]/50 transition-colors"
-          >
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-none">
-                <FileText className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">BMC & Impact Social</p>
-                {docFiles.length > 0 ? (
-                  docFiles.map(f => (
-                    <div key={f.name} className="flex items-center gap-1.5 mt-1 group/file">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--success))] flex-none" />
-                      <span className="text-xs text-[hsl(var(--success))] truncate font-medium flex-1">{f.name}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }}
-                        className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">Cliquez pour uploader (.docx, .pdf)</p>
-                )}
-              </div>
-            </div>
-            {uploading === 'doc' && <Loader2 className="h-4 w-4 animate-spin text-primary mt-2" />}
-          </div>
-
-          {/* Document card: Inputs Financiers */}
-          <input ref={finInputRef} type="file" multiple accept=".xlsx,.xls,.csv" className="hidden" onChange={e => handleFileUpload(e, 'fin')} />
-          <div
-            onClick={() => finInputRef.current?.click()}
-            className="mx-4 mb-3 p-3 rounded-xl border-2 border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/5 cursor-pointer hover:border-[hsl(var(--success))]/50 transition-colors"
-          >
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center flex-none">
-                <BarChart3 className="h-5 w-5 text-green-600" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Inputs Financiers</p>
-                {finFiles.length > 0 ? (
-                  finFiles.map(f => (
-                    <div key={f.name} className="flex items-center gap-1.5 mt-1 group/file">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--success))] flex-none" />
-                      <span className="text-xs text-[hsl(var(--success))] truncate font-medium flex-1">{f.name}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }}
-                        className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">Cliquez pour uploader (.xlsx, .csv)</p>
-                )}
-              </div>
-            </div>
-            {uploading === 'fin' && <Loader2 className="h-4 w-4 animate-spin text-primary mt-2" />}
-          </div>
-
-          {/* Extra documents */}
-          <input ref={extraInputRef} type="file" multiple className="hidden" onChange={e => handleFileUpload(e, 'extra')} />
-          <button
-            onClick={() => extraInputRef.current?.click()}
-            className="mx-4 mb-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-2 border-t border-dashed border-border"
-          >
-            <FolderPlus className="h-3.5 w-3.5" />
-            Documents supplémentaires
-            {extraFiles.length > 0 && <span className="text-[10px] font-medium text-primary">({extraFiles.length})</span>}
-          </button>
-          {extraFiles.length > 0 && (
-            <div className="mx-4 mb-4 space-y-1">
-              {extraFiles.map(f => (
-                <div key={f.name} className="flex items-center gap-1.5 px-2 py-1 group/file">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground flex-none" />
-                  <span className="text-xs text-muted-foreground truncate font-medium flex-1">{f.name}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }}
-                    className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          {uploading === 'extra' && <div className="mx-4 mb-2"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>}
-
-          {/* Reconstruction uploader — always visible */}
-          <div className="mx-4 my-3">
-            <ReconstructionUploader
-              enterpriseId={enterprise.id}
-              session={authSession}
-              navigate={navigate}
-              onComplete={fetchData}
-              onPreScreeningDone={() => { fetchData(); setSelectedModule('pre_screening'); }}
-            />
-          </div>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-        </div>
+        {/* Sidebar */}
+        <DashboardSidebar
+          enterprise={enterprise}
+          deliverables={deliverables}
+          modules={modules}
+          selectedModule={selectedModule}
+          onSelectModule={setSelectedModule}
+          onGenerateAll={() => handleGenerate(false)}
+          generating={generating}
+          generationProgress={generationProgress}
+          globalScore={globalScore}
+        />
 
         {/* CENTER PANEL: Content */}
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Module title bar */}
-          <div className="flex-none h-12 border-b border-border bg-card/50 flex items-center px-6 gap-3">
-            {selectedModule === 'screening' ? (
-              <>
-                <Search className="h-5 w-5 text-muted-foreground" />
-                <h1 className="font-display font-semibold text-base">Diagnostic & Screening</h1>
-              </>
-            ) : selectedModule === 'pre_screening' ? (
-              <>
-                <Search className="h-5 w-5 text-muted-foreground" />
-                <h1 className="font-display font-semibold text-base">Pre-screening / Triage</h1>
-              </>
-            ) : selectedModule === 'dataroom' ? (
-              <>
-                <FolderPlus className="h-5 w-5 text-muted-foreground" />
-                <h1 className="font-display font-semibold text-base">Data Room</h1>
-              </>
-            ) : selectedMod && (
-              <>
-                <selectedMod.icon className="h-5 w-5 text-muted-foreground" />
-                <h1 className="font-display font-semibold text-base">{selectedMod.title}</h1>
-              </>
-            )}
-            <div className="ml-auto flex gap-2">
-              {deliverables.some(d => d.type === 'pre_screening') && (
-                <Button
-                  variant={selectedModule === 'pre_screening' ? 'default' : 'outline'}
-                  size="sm"
-                  className="gap-2 text-xs"
-                  onClick={() => setSelectedModule('pre_screening')}
-                >
-                  <FileSearch className="h-3.5 w-3.5" />
-                  {selectedModule === 'pre_screening' ? 'Triage' : 'Pre-screening'}
-                </Button>
+          {selectedModule !== 'overview' && (
+            <div className="flex-none h-12 border-b border-border bg-card/50 flex items-center px-6 gap-3">
+              {selectedMod && (
+                <>
+                  <selectedMod.icon className="h-5 w-5 text-muted-foreground" />
+                  <h1 className="font-display font-semibold text-base">{selectedMod.title}</h1>
+                </>
               )}
-              <Button
-                variant={selectedModule === 'dataroom' ? 'default' : 'outline'}
-                size="sm"
-                className="gap-2 text-xs"
-                onClick={() => setSelectedModule('dataroom')}
-              >
-                <FolderPlus className="h-3.5 w-3.5" /> Data Room
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 text-xs"
-                onClick={() => { if (selectedModule === 'screening') { handleGenerateScreening(); } else { setSelectedModule('screening'); } }}
-                disabled={generatingScreening}
-              >
-                {generatingScreening ? (
-                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Screening en cours…</>
-                ) : (
-                  <><Search className="h-3.5 w-3.5" /> {selectedModule === 'screening' ? 'Regénérer le screening' : '🔍 Screening'}</>
-                )}
-              </Button>
+              {selectedModule === 'screening' && (
+                <>
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                  <h1 className="font-display font-semibold text-base">Diagnostic & Screening</h1>
+                </>
+              )}
+              {selectedModule === 'pre_screening' && (
+                <>
+                  <FileSearch className="h-5 w-5 text-muted-foreground" />
+                  <h1 className="font-display font-semibold text-base">Pre-screening / Triage</h1>
+                </>
+              )}
+              {selectedModule === 'dataroom' && (
+                <>
+                  <FolderPlus className="h-5 w-5 text-muted-foreground" />
+                  <h1 className="font-display font-semibold text-base">Data Room</h1>
+                </>
+              )}
+              {(selectedModule === 'upload' || selectedModule === 'reconstruction') && (
+                <>
+                  <FolderPlus className="h-5 w-5 text-muted-foreground" />
+                  <h1 className="font-display font-semibold text-base">Documents & Sources</h1>
+                </>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
-            {/* Download bar for Diagnostic module */}
-            {selectedModule === 'diagnostic' && selectedDeliv && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                      <Stethoscope className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-orange-900">Diagnostic Expert Global</p>
-                      <p className="text-xs text-orange-600">Analyse complète de l'entreprise avec SWOT et recommandations</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDownload('diagnostic_data', 'html')}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition-colors shadow-sm"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Rapport HTML
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Overview / Home */}
+            {selectedModule === 'overview' ? (
+              <DashboardOverview
+                enterprise={enterprise}
+                deliverables={deliverables}
+                modules={modules}
+                globalScore={globalScore}
+                onSelectModule={setSelectedModule}
+              />
+            ) : (selectedModule === 'upload' || selectedModule === 'reconstruction') ? (
+              /* Upload / Sources panel */
+              <div className="p-6 max-w-2xl mx-auto space-y-4">
+                <h2 className="font-display font-bold text-lg mb-4">Documents d'inputs</h2>
 
-            {/* Download bar for BMC module */}
-            {selectedModule === 'bmc' && selectedDeliv && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                      <LayoutGrid className="h-5 w-5 text-emerald-600" />
+                {/* Document card: BMC & Impact Social */}
+                <input ref={docInputRef} type="file" multiple accept=".docx,.doc,.pdf,.txt" className="hidden" onChange={e => handleFileUpload(e, 'doc')} />
+                <div
+                  onClick={() => docInputRef.current?.click()}
+                  className="p-4 rounded-xl border-2 border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-none">
+                      <FileText className="h-5 w-5 text-blue-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-emerald-900">Business Model Canvas</p>
-                      <p className="text-xs text-emerald-600">Canvas complet avec analyse des 9 blocs</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">BMC & Impact Social</p>
+                      {docFiles.length > 0 ? (
+                        docFiles.map(f => (
+                          <div key={f.name} className="flex items-center gap-1.5 mt-1 group/file">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-none" />
+                            <span className="text-xs text-emerald-600 truncate font-medium flex-1">{f.name}</span>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }} className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">Cliquez pour uploader (.docx, .pdf)</p>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDownload('bmc_analysis', 'html')}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Rapport HTML
-                    </button>
-                  </div>
+                  {uploading === 'doc' && <Loader2 className="h-4 w-4 animate-spin text-primary mt-2" />}
                 </div>
-              </div>
-            )}
 
-            {/* Download bar for SIC module */}
-            {selectedModule === 'sic' && selectedDeliv && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-teal-100 flex items-center justify-center">
-                      <Globe className="h-5 w-5 text-teal-600" />
+                {/* Document card: Inputs Financiers */}
+                <input ref={finInputRef} type="file" multiple accept=".xlsx,.xls,.csv" className="hidden" onChange={e => handleFileUpload(e, 'fin')} />
+                <div
+                  onClick={() => finInputRef.current?.click()}
+                  className="p-4 rounded-xl border-2 border-dashed border-border bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center flex-none">
+                      <BarChart3 className="h-5 w-5 text-green-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-teal-900">Social Impact Canvas</p>
-                      <p className="text-xs text-teal-600">Analyse d'impact social avec scoring par dimension</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">Inputs Financiers</p>
+                      {finFiles.length > 0 ? (
+                        finFiles.map(f => (
+                          <div key={f.name} className="flex items-center gap-1.5 mt-1 group/file">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-none" />
+                            <span className="text-xs text-emerald-600 truncate font-medium flex-1">{f.name}</span>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }} className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">Cliquez pour uploader (.xlsx, .csv)</p>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDownload('sic_analysis', 'html')}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Rapport HTML
-                    </button>
-                  </div>
+                  {uploading === 'fin' && <Loader2 className="h-4 w-4 animate-spin text-primary mt-2" />}
                 </div>
-              </div>
-            )}
 
-            {/* Green download bar for Framework module */}
-            {selectedModule === 'framework' && selectedDeliv && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                      <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-emerald-900">Plan Financier Intermédiaire</p>
-                      <p className="text-xs text-emerald-600">Framework Analyse PME rempli avec les données réelles de votre entreprise</p>
-                    </div>
-                  </div>
-                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDownload('framework_data', 'html')}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Rapport HTML
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Green generation bar for Plan OVO module */}
-            {selectedModule === 'plan_ovo' && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                      <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-emerald-900">Plan Financier OVO (Excel)</p>
-                      <p className="text-xs text-emerald-600">Génère le fichier Excel .xlsm rempli avec vos données financières</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {generatingOvoPlan ? (
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-semibold">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération en cours… (30-60 secondes)
+                {/* Extra documents */}
+                <input ref={extraInputRef} type="file" multiple className="hidden" onChange={e => handleFileUpload(e, 'extra')} />
+                <button
+                  onClick={() => extraInputRef.current?.click()}
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                  Documents supplémentaires
+                  {extraFiles.length > 0 && <span className="text-[10px] font-medium text-primary">({extraFiles.length})</span>}
+                </button>
+                {extraFiles.length > 0 && (
+                  <div className="space-y-1">
+                    {extraFiles.map(f => (
+                      <div key={f.name} className="flex items-center gap-1.5 px-2 py-1 group/file">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground flex-none" />
+                        <span className="text-xs text-muted-foreground truncate font-medium flex-1">{f.name}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteFile(f.name); }} className="hidden group-hover/file:flex h-4 w-4 items-center justify-center rounded-sm hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-none">
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
-                    ) : ovoDownloadUrl || deliverables.find((d: any) => d.type === 'plan_ovo_excel')?.file_url ? (
-                      <>
-                        <button
-                          onClick={() => handleDownloadOvoFile(ovoDownloadUrl || deliverables.find((d: any) => d.type === 'plan_ovo_excel')?.file_url)}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-                        >
-                          <Download className="h-3.5 w-3.5" /> Télécharger mon Plan Financier Excel
-                        </button>
-                        <button
-                          onClick={handleGenerateOvoPlan}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 border border-emerald-300 text-xs font-semibold hover:bg-emerald-50 transition-colors"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" /> Regénérer
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={handleGenerateOvoPlan}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" /> Générer mon Plan Financier OVO
-                      </button>
-                    )}
+                    ))}
                   </div>
+                )}
+                {uploading === 'extra' && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+
+                {/* Reconstruction uploader */}
+                <div className="mt-4">
+                  <ReconstructionUploader
+                    enterpriseId={enterprise.id}
+                    session={authSession}
+                    navigate={navigate}
+                    onComplete={fetchData}
+                    onPreScreeningDone={() => { fetchData(); setSelectedModule('pre_screening'); }}
+                  />
                 </div>
               </div>
-            )}
-
-            {/* Green bar for Business Plan module */}
-            {selectedModule === 'business_plan' && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-indigo-900">Business Plan OVO (Word)</p>
-                      <p className="text-xs text-indigo-600">Génère un BP complet au format OVO avec fichier Word téléchargeable</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {generatingModule === 'business_plan' ? (
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-semibold">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération en cours… (30-90 secondes)
-                      </div>
-                    ) : (selectedDeliv?.data as any)?._meta?.download_url ? (
-                      <>
-                        <button
-                          onClick={() => handleDownloadBpWord()}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                        >
-                          <Download className="h-3.5 w-3.5" /> Télécharger Word (.docx)
-                        </button>
-                        <button
-                          onClick={() => handleGenerateModule('business_plan')}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-indigo-700 border border-indigo-300 text-xs font-semibold hover:bg-indigo-50 transition-colors"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" /> Regénérer
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleGenerateModule('business_plan')}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" /> Générer le Business Plan
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Green bar for ODD module */}
-            {selectedModule === 'odd' && (
-              <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                      <Target className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-emerald-900">Évaluation ODD (Excel)</p>
-                      <p className="text-xs text-emerald-600">Template ODD rempli avec les évaluations de votre entreprise</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {deliverables.find((d: any) => d.type === 'odd_excel') ? (
-                      <>
-                        <button
-                          onClick={() => handleDownload('odd_analysis', 'xlsx')}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-                        >
-                          <Download className="h-3.5 w-3.5" /> ODD Excel (.xlsx)
-                        </button>
-                        <button
-                          onClick={() => handleDownload('odd_analysis', 'html')}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 border border-emerald-300 text-xs font-semibold hover:bg-emerald-50 transition-colors"
-                        >
-                          <Download className="h-3.5 w-3.5" /> Rapport HTML
-                        </button>
-                      </>
-                    ) : selectedDeliv?.data ? (
-                      <Badge variant="outline" className="text-xs text-emerald-600">
-                        <Clock className="h-3 w-3 mr-1" /> Excel sera généré à la prochaine génération
-                      </Badge>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {selectedModule === 'dataroom' && enterprise && user ? (
+            ) : selectedModule === 'dataroom' && enterprise && user ? (
               <div className="p-6">
                 <DataRoomManager enterpriseId={enterprise.id} userId={user.id} dataRoomSlug={(enterprise as any).data_room_slug || ''} />
               </div>
@@ -1448,6 +1135,126 @@ export default function EntrepreneurDashboard() {
                     onRestore={() => fetchData()}
                   />
                 </div>
+
+                {/* Download bars */}
+                {selectedModule === 'diagnostic' && (
+                  <div className="mb-4 rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center"><Stethoscope className="h-5 w-5 text-orange-600" /></div>
+                        <div><p className="text-sm font-semibold text-orange-900">Diagnostic Expert</p></div>
+                      </div>
+                      <button onClick={() => handleDownload('diagnostic_data', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition-colors shadow-sm">
+                        <Download className="h-3.5 w-3.5" /> HTML
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {selectedModule === 'bmc' && (
+                  <div className="mb-4 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center"><LayoutGrid className="h-5 w-5 text-emerald-600" /></div>
+                        <div><p className="text-sm font-semibold text-emerald-900">Business Model Canvas</p></div>
+                      </div>
+                      <button onClick={() => handleDownload('bmc_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
+                        <Download className="h-3.5 w-3.5" /> HTML
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {selectedModule === 'sic' && (
+                  <div className="mb-4 rounded-xl border border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-teal-100 flex items-center justify-center"><Globe className="h-5 w-5 text-teal-600" /></div>
+                        <div><p className="text-sm font-semibold text-teal-900">Social Impact Canvas</p></div>
+                      </div>
+                      <button onClick={() => handleDownload('sic_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm">
+                        <Download className="h-3.5 w-3.5" /> HTML
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {selectedModule === 'framework' && (
+                  <div className="mb-4 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center"><FileSpreadsheet className="h-5 w-5 text-emerald-600" /></div>
+                        <div><p className="text-sm font-semibold text-emerald-900">Plan Financier Intermédiaire</p></div>
+                      </div>
+                      <button onClick={() => handleDownload('framework_data', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
+                        <Download className="h-3.5 w-3.5" /> HTML
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {selectedModule === 'plan_ovo' && (
+                  <div className="mb-4 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center"><FileSpreadsheet className="h-5 w-5 text-emerald-600" /></div>
+                        <div><p className="text-sm font-semibold text-emerald-900">Plan Financier OVO (Excel)</p></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {generatingOvoPlan ? (
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-semibold"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</div>
+                        ) : ovoDownloadUrl || deliverables.find((d: any) => d.type === 'plan_ovo_excel')?.file_url ? (
+                          <>
+                            <button onClick={() => handleDownloadOvoFile(ovoDownloadUrl || deliverables.find((d: any) => d.type === 'plan_ovo_excel')?.file_url)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"><Download className="h-3.5 w-3.5" /> Excel</button>
+                            <button onClick={handleGenerateOvoPlan} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 border border-emerald-300 text-xs font-semibold hover:bg-emerald-50 transition-colors"><Sparkles className="h-3.5 w-3.5" /> Regénérer</button>
+                          </>
+                        ) : (
+                          <button onClick={handleGenerateOvoPlan} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"><Sparkles className="h-3.5 w-3.5" /> Générer Excel OVO</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {selectedModule === 'business_plan' && (
+                  <div className="mb-4 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center"><FileText className="h-5 w-5 text-indigo-600" /></div>
+                        <div><p className="text-sm font-semibold text-indigo-900">Business Plan OVO</p></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {generatingModule === 'business_plan' ? (
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-semibold"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</div>
+                        ) : (selectedDeliv?.data as any)?._meta?.download_url ? (
+                          <>
+                            <button onClick={() => handleDownloadBpWord()} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"><Download className="h-3.5 w-3.5" /> Word</button>
+                            <button onClick={() => handleGenerateModule('business_plan')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-indigo-700 border border-indigo-300 text-xs font-semibold hover:bg-indigo-50 transition-colors"><Sparkles className="h-3.5 w-3.5" /> Regénérer</button>
+                          </>
+                        ) : (
+                          <button onClick={() => handleGenerateModule('business_plan')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"><Sparkles className="h-3.5 w-3.5" /> Générer</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {selectedModule === 'odd' && (
+                  <div className="mb-4 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center"><Target className="h-5 w-5 text-emerald-600" /></div>
+                        <div><p className="text-sm font-semibold text-emerald-900">ODD</p></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {deliverables.find((d: any) => d.type === 'odd_excel') ? (
+                          <>
+                            <button onClick={() => handleDownload('odd_analysis', 'xlsx')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"><Download className="h-3.5 w-3.5" /> Excel</button>
+                            <button onClick={() => handleDownload('odd_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 border border-emerald-300 text-xs font-semibold hover:bg-emerald-50 transition-colors"><Download className="h-3.5 w-3.5" /> HTML</button>
+                          </>
+                        ) : selectedDeliv?.data ? (
+                          <Badge variant="outline" className="text-xs text-emerald-600"><Clock className="h-3 w-3 mr-1" /> Excel à la prochaine génération</Badge>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Viewers */}
                 {selectedModule === 'bmc' ? (
                   <BmcViewer data={selectedDeliv.data} />
                 ) : selectedModule === 'sic' ? (
@@ -1458,8 +1265,6 @@ export default function EntrepreneurDashboard() {
                   <ValuationViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('valuation')} />
                 ) : selectedModule === 'onepager' ? (
                   <OnePagerViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('onepager')} />
-                ) : selectedModule === 'pitch_deck' ? (
-                  <PitchDeckViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('pitch_deck')} />
                 ) : selectedModule === 'investment_memo' ? (
                   <InvestmentMemoViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('investment_memo')} />
                 ) : (
@@ -1473,118 +1278,12 @@ export default function EntrepreneurDashboard() {
                 </div>
                 <h3 className="font-display font-semibold text-lg text-muted-foreground mb-2">Prêt à être généré</h3>
                 <p className="text-sm text-muted-foreground/70 max-w-sm">
-                  Cliquez sur "Générer les livrables" dans la barre latérale.
+                  Cliquez sur "Générer tout le pipeline" dans la sidebar.
                 </p>
-              </div>
-            )}
-
-            {/* Activity Timeline */}
-            {enterprise && selectedModule !== 'dataroom' && (
-              <div className="border-t border-border p-4">
-                <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" /> Activité récente
-                </h4>
-                <ActivityTimeline enterpriseId={enterprise.id} limit={10} />
               </div>
             )}
           </div>
         </div>
-      </div>
-
-      {/* ===== BOTTOM MODULE BAR ===== */}
-      <div className="flex-none border-t border-border bg-card px-6 py-3">
-        <div className="flex items-end justify-center gap-6">
-          {MODULE_CONFIG.map(mod => {
-            const data = getModuleData(mod.code);
-            const Icon = mod.icon;
-            const isSelected = selectedModule === mod.code;
-            const isCompleted = data.status === 'completed';
-
-            // Pipeline generation state for this module
-            const pipelineStepMap: Record<string, string> = {
-              'BMC': 'bmc', 'SIC': 'sic', 'Framework': 'framework',
-              'Plan OVO': 'plan_ovo', 'Sync Plan OVO': 'plan_ovo', 'Excel OVO': 'plan_ovo',
-              'Business Plan': 'business_plan', 'ODD': 'odd', 'Diagnostic': 'diagnostic',
-            };
-            const pipelineOrder = PIPELINE.map(p => pipelineStepMap[p.name]).filter(Boolean);
-            const currentPipelineModule = generating && generationProgress
-              ? pipelineStepMap[generationProgress.name?.replace(/[…(].*/, '').trim() ?? ''] ?? null
-              : null;
-            const currentPipelineIdx = generating && generationProgress ? generationProgress.current : -1;
-            const moduleFirstPipelineIdx = pipelineOrder.indexOf(mod.code);
-            const isGeneratingThis = generating && currentPipelineModule === mod.code;
-            const isPipelineDone = generating && generationProgress && moduleFirstPipelineIdx >= 0 && moduleFirstPipelineIdx < currentPipelineIdx;
-            const isPipelineWaiting = generating && generationProgress && moduleFirstPipelineIdx >= 0 && !isGeneratingThis && !isPipelineDone;
-
-            return (
-              <button
-                key={mod.code}
-                onClick={() => setSelectedModule(mod.code)}
-                className={`flex flex-col items-center gap-1.5 group relative transition-all ${
-                  isSelected ? '' : 'opacity-80 hover:opacity-100'
-                } ${isPipelineWaiting ? 'opacity-40' : ''}`}
-              >
-                {/* Overlay: spinner when generating this module */}
-                {isGeneratingThis && (
-                  <div className="absolute -top-1 -right-1 z-10">
-                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                  </div>
-                )}
-                {/* Overlay: checkmark when pipeline step done */}
-                {!isGeneratingThis && (isPipelineDone || (!generating && isCompleted)) && (
-                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))] absolute -top-1 -right-1 z-10" />
-                )}
-                {/* Icon circle */}
-                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
-                  isGeneratingThis
-                    ? `${mod.color} ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse`
-                    : isSelected
-                      ? `${mod.color} ring-2 ring-primary ring-offset-2 ring-offset-background`
-                      : `${mod.color} group-hover:scale-105`
-                }`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                {/* Label */}
-                <span className={`text-[10px] leading-tight text-center max-w-[90px] ${
-                  isGeneratingThis ? 'font-semibold text-primary' :
-                  isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'
-                }`}>
-                  {mod.shortTitle}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ===== BOTTOM-LEFT GENERATE BUTTON (overlay) ===== */}
-      <div className="fixed bottom-20 left-2 sm:left-4 z-50 flex gap-2">
-        <Button
-          size="lg"
-          onClick={() => handleGenerate(false)}
-          disabled={generating || pipelineState === 'up_to_date'}
-          className="gap-3 rounded-xl shadow-lg bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-white px-5 py-3 h-auto disabled:opacity-60"
-        >
-          {generating && generationProgress ? (
-            <><Loader2 className="h-5 w-5 animate-spin" /> {generationProgress.name} ({generationProgress.current}/{generationProgress.total})...</>
-          ) : pipelineState === 'up_to_date' ? (
-            <><CheckCircle2 className="h-5 w-5" /> Livrables à jour ✓</>
-          ) : pipelineState === 'update' ? (
-            <><Sparkles className="h-5 w-5" /> Mettre à jour les livrables</>
-          ) : (
-            <><Sparkles className="h-5 w-5" /> Générer les livrables</>
-          )}
-        </Button>
-        {pipelineState && !generating && (
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => handleGenerate(true)}
-            className="gap-2 rounded-xl px-4 py-3 h-auto text-xs"
-          >
-            <Sparkles className="h-4 w-4" /> Régénération complète
-          </Button>
-        )}
       </div>
 
       {/* ===== NON-BLOCKING GENERATION PROGRESS BANNER ===== */}
