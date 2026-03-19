@@ -819,7 +819,7 @@ export default function EntrepreneurDashboard() {
     bmc: 'bmc_analysis', sic: 'sic_analysis', inputs: 'inputs_data', framework: 'framework_data',
     diagnostic: 'diagnostic_data', plan_ovo: 'plan_ovo', business_plan: 'business_plan', odd: 'odd_analysis',
     screening: 'screening_report', pre_screening: 'pre_screening',
-    valuation: 'valuation', onepager: 'onepager', pitch_deck: 'pitch_deck', investment_memo: 'investment_memo',
+    valuation: 'valuation', onepager: 'onepager', investment_memo: 'investment_memo',
   };
   const selectedDelivType = delivTypeMap[selectedModule];
   const selectedDeliv = selectedDelivType ? getDeliverable(selectedDelivType) : null;
