@@ -8,6 +8,7 @@ const corsHeaders = {
 
 // Pipeline: sequential agents in order
 const PIPELINE_STEPS = [
+  { name: "Pre-screening", function: "generate-pre-screening" },
   { name: "BMC", function: "generate-bmc" },
   { name: "SIC", function: "generate-sic" },
   { name: "Inputs", function: "generate-inputs" },
@@ -17,6 +18,7 @@ const PIPELINE_STEPS = [
   { name: "Business Plan", function: "generate-business-plan" },
   { name: "ODD", function: "generate-odd" },
   { name: "Diagnostic", function: "generate-diagnostic" },
+  { name: "Screening", function: "generate-screening-report" },
 ];
 
 serve(async (req) => {
@@ -84,6 +86,7 @@ serve(async (req) => {
 
     // Map function names to deliverable types for skip check
     const fnToDelivType: Record<string, string> = {
+      "generate-pre-screening": "pre_screening",
       "generate-bmc": "bmc_analysis",
       "generate-sic": "sic_analysis",
       "generate-inputs": "inputs_data",
@@ -93,6 +96,7 @@ serve(async (req) => {
       "generate-ovo-plan": "plan_ovo_excel",
       "generate-business-plan": "business_plan",
       "generate-odd": "odd_analysis",
+      "generate-screening-report": "screening_report",
     };
 
     // Financial steps that require real inputs data (score > 0)
@@ -195,6 +199,7 @@ serve(async (req) => {
     
     // Map deliverable types to step names for merging
     const delivTypeToStep: Record<string, string> = {
+      "pre_screening": "Pre-screening",
       "bmc_analysis": "BMC",
       "sic_analysis": "SIC",
       "inputs_data": "Inputs",
@@ -203,6 +208,7 @@ serve(async (req) => {
       "business_plan": "Business Plan",
       "odd_analysis": "ODD",
       "diagnostic_data": "Diagnostic",
+      "screening_report": "Screening",
     };
     
     // Fill in scores from DB for steps not already in scoresDetail
