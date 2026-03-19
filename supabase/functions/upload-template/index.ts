@@ -63,26 +63,28 @@ Deno.serve(async (req: Request) => {
     const oddFound = oddExists?.some(f => f.name === ODD_FILE);
 
     if (!oddFound) {
-      const origin = req.headers.get("origin") || req.headers.get("referer") || "";
-      const baseUrl = origin ? new URL(origin).origin : "";
+      const supabaseUrl2 = Deno.env.get("SUPABASE_URL") || "";
 
-      if (baseUrl) {
-        const templateUrl = `${baseUrl}/templates/${ODD_FILE}`;
+      if (supabaseUrl2) {
+        const templateUrl = `${supabaseUrl2}/storage/v1/object/public/templates/${ODD_FILE}`;
         console.log(`[upload-template] Fetching ODD template from: ${templateUrl}`);
         const resp = await fetch(templateUrl);
         if (resp.ok) {
-          const blob = await resp.blob();
-          const buffer = await blob.arrayBuffer();
-          const { error } = await supabase.storage.from(ODD_BUCKET).upload(ODD_FILE, buffer, {
-            contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            upsert: true,
-          });
-          results.odd = error ? `error: ${error.message}` : "uploaded";
+          const buffer = await resp.arrayBuffer();
+          if (buffer.byteLength > 100 && new DataView(buffer).getUint32(0, true) === 0x04034b50) {
+            const { error } = await supabase.storage.from(ODD_BUCKET).upload(ODD_FILE, buffer, {
+              contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              upsert: true,
+            });
+            results.odd = error ? `error: ${error.message}` : "uploaded";
+          } else {
+            results.odd = "fetched_file_not_valid_zip";
+          }
         } else {
           results.odd = `fetch_failed: ${resp.status}`;
         }
       } else {
-        results.odd = "no_origin";
+        results.odd = "no_supabase_url";
       }
     } else {
       results.odd = "already_exists";
