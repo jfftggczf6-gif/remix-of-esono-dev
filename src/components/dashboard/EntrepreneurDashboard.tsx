@@ -405,7 +405,7 @@ export default function EntrepreneurDashboard() {
     }
   };
 
-  const getModuleData = (code: string) => {
+  const _getModuleData = (code: string) => {
     const mod = modules.find((m: any) => m.module === code);
     return { status: (mod?.status || 'not_started') as 'not_started' | 'in_progress' | 'completed', progress: mod?.progress || 0 };
   };
@@ -413,7 +413,6 @@ export default function EntrepreneurDashboard() {
   const getDeliverable = (type: string) => {
     const matches = deliverables.filter((d: any) => d.type === type);
     if (matches.length <= 1) return matches[0] || undefined;
-    // Return the most recently updated one
     return matches.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
   };
 
@@ -422,8 +421,6 @@ export default function EntrepreneurDashboard() {
   const globalScore = scoredDeliverables.length > 0
     ? Math.round(scoredDeliverables.reduce((sum, d) => sum + (d.score || 0), 0) / scoredDeliverables.length)
     : 0;
-
-  const maturityLabel = globalScore >= 80 ? 'Excellent' : globalScore >= 60 ? 'Très bien' : globalScore >= 40 ? 'Moyen' : globalScore > 0 ? 'À améliorer' : '—';
 
   const handleSignOut = async () => { await signOut(); navigate('/login'); };
 
