@@ -393,6 +393,20 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
           </div>
         )}
 
+        {/* Parsing summary */}
+        {parsingSummary.length > 0 && uploading && (
+          <div className="mt-4 space-y-1.5">
+            <p className="text-sm font-medium text-muted-foreground">Documents analysés :</p>
+            {parsingSummary.map((doc, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span>{doc.extractionQuality === 'high' || doc.extractionQuality === 'medium' ? '✅' : doc.extractionQuality === 'low' ? '⚠️' : '❌'}</span>
+                <span className="font-medium truncate">{doc.fileName}</span>
+                <span className="text-muted-foreground">— {doc.summary}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Progress */}
         {uploading && (
           <div className="mt-4 space-y-2">
