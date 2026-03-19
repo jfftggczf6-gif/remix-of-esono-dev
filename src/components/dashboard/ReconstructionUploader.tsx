@@ -14,7 +14,7 @@ import {
 
 const ACCEPTED_EXTENSIONS = '.csv,.txt,.md,.xlsx,.xls,.docx,.doc,.pdf,.jpg,.jpeg,.png,.webp';
 const MAX_FILES = 20;
-const MAX_VISION_FILES = 3;
+const MAX_VISION_FILES = 5;
 
 interface ReconstructionUploaderProps {
   enterpriseId: string;
@@ -44,6 +44,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [result, setResult] = useState<ReconstructionResult | null>(null);
+  const [parsingSummary, setParsingSummary] = useState<ParsedDocument[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -122,6 +123,9 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
           needsVision.push({ file: files[i], parsed });
         }
       }
+
+      // Show parsing summary to user
+      setParsingSummary([...parsedDocs]);
 
       // === STEP 3: Send scanned PDFs/images to Vision API (one by one) ===
       const visionCount = Math.min(needsVision.length, MAX_VISION_FILES);
@@ -260,6 +264,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
     setResult(null);
     setFiles([]);
     setProgress(0);
+    setParsingSummary([]);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -383,6 +388,20 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
                 <button onClick={() => removeFile(i)} className="text-muted-foreground hover:text-destructive ml-2">
                   <X className="h-3.5 w-3.5" />
                 </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Parsing summary */}
+        {parsingSummary.length > 0 && uploading && (
+          <div className="mt-4 space-y-1.5">
+            <p className="text-sm font-medium text-muted-foreground">Documents analysés :</p>
+            {parsingSummary.map((doc, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span>{doc.extractionQuality === 'high' || doc.extractionQuality === 'medium' ? '✅' : doc.extractionQuality === 'low' ? '⚠️' : '❌'}</span>
+                <span className="font-medium truncate">{doc.fileName}</span>
+                <span className="text-muted-foreground">— {doc.summary}</span>
               </div>
             ))}
           </div>
