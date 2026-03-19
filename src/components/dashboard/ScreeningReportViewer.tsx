@@ -23,10 +23,31 @@ export default function ScreeningReportViewer({ data, onRegenerate }: ScreeningR
   const verdict = data.verdict || 'INSUFFISANT';
   const summary = data.verdict_summary || '';
   const anomalies = (data.anomalies || []).map((a: any) => {
-    if (typeof a === 'string') {
-      try { return JSON.parse(a); } catch { return { title: a, severity: 'note', detail: '' }; }
+    let parsed = a;
+    // Handle string-wrapped anomalies (double-serialized JSON)
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch { return { title: parsed, severity: 'note', detail: '', category: 'general' }; }
     }
-    return a;
+    // Handle case where the object has a title that is itself a JSON string
+    if (parsed && typeof parsed === 'object' && typeof parsed.title === 'string' && parsed.title.startsWith('{')) {
+      try {
+        const inner = JSON.parse(parsed.title);
+        if (inner && typeof inner === 'object' && inner.title) return inner;
+      } catch { /* keep original */ }
+    }
+    // Handle case where the entire anomaly content is nested inside a single field
+    if (parsed && typeof parsed === 'object') {
+      // If title looks like a JSON blob, try to extract meaningful fields
+      for (const key of ['title', 'detail', 'description']) {
+        if (typeof parsed[key] === 'string' && parsed[key].startsWith('{') && parsed[key].includes('"title"')) {
+          try {
+            const inner = JSON.parse(parsed[key]);
+            if (inner && typeof inner === 'object' && inner.title) return inner;
+          } catch { /* continue */ }
+        }
+      }
+    }
+    return parsed;
   });
   const crossValidation = data.cross_validation || {};
   const docQuality = data.document_quality || {};
