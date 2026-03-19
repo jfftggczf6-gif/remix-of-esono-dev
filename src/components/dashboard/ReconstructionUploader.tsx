@@ -14,7 +14,7 @@ import {
 
 const ACCEPTED_EXTENSIONS = '.csv,.txt,.md,.xlsx,.xls,.docx,.doc,.pdf,.jpg,.jpeg,.png,.webp';
 const MAX_FILES = 20;
-const MAX_VISION_FILES = 3;
+const MAX_VISION_FILES = 5;
 
 interface ReconstructionUploaderProps {
   enterpriseId: string;

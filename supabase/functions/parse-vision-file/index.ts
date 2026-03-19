@@ -1,4 +1,4 @@
-// v4 — restore corsHeaders 2026-03-19
+// v5 — increased tokens + improved prompt 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/helpers_v5.ts";
 
@@ -30,7 +30,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{
           role: "user",
           content: [
@@ -40,7 +40,18 @@ serve(async (req) => {
             },
             {
               type: "text",
-              text: "Extrais TOUT le texte visible de ce document. Restitue les tableaux en format tabulaire. Inclus les en-têtes, les montants, les dates. Ne résume pas, extrais le contenu brut.",
+              text: `Tu es un OCR expert. Extrais TOUT le contenu de ce document avec précision.
+
+RÈGLES :
+- Restitue les TABLEAUX en format structuré avec | comme séparateur de colonnes
+- Préserve les EN-TÊTES et la hiérarchie (titres, sous-titres)
+- Inclus TOUS les chiffres, montants, dates, noms, références
+- Si c'est un état financier : extrais chaque ligne du bilan/compte de résultat avec son montant exact
+- Si c'est un relevé bancaire : extrais chaque transaction (date, libellé, débit, crédit, solde)
+- Ne résume JAMAIS — extrais le contenu intégralement
+- Si une partie est illisible, indique [illisible] à cet endroit
+
+FORMAT DE SORTIE : texte structuré avec des séparateurs visuels pour les tableaux.`,
             },
           ],
         }],
