@@ -438,6 +438,16 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
           </div>
         )}
 
+        {/* Progress */}
+        {uploading && (
+          <div className="mt-4 space-y-2">
+            <Progress value={progress} className="h-2" />
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> {progressLabel}
+            </p>
+          </div>
+        )}
+
         {/* Action button */}
         {files.length > 0 && !uploading && (
           <Button onClick={handleReconstruct} className="w-full mt-4" size="lg">
