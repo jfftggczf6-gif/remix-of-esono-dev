@@ -166,7 +166,10 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
         : 'Reconstruction terminée — ajoutez plus de documents pour améliorer la qualité.');
 
     } catch (err: any) {
-      toast.error(err.message || 'Erreur');
+      const message = err.name === 'AbortError'
+        ? 'La reconstruction a pris trop de temps. Essayez avec moins de fichiers (max 5 PDF/images).'
+        : (err.message || 'Erreur');
+      toast.error(message);
     } finally {
       setUploading(false);
     }
