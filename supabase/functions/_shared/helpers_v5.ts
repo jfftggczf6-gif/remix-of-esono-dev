@@ -1,6 +1,5 @@
-// helpers.ts — shared utilities for edge functions (v4 — restore corsHeaders 2026-03-19)
+// helpers_v5.ts — shared utilities for edge functions (v5 — cache-bust + lazy JSZip 2026-03-19)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import JSZip from "https://esm.sh/jszip@3.10.1";
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +22,7 @@ export function errorResponse(message: string, status = 500) {
 
 // ===== DOCX PARSER (used by extract-enterprise-info, extract-programme-criteria) =====
 export async function parseDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const JSZip = (await import("https://esm.sh/jszip@3.10.1")).default;
   try {
     const zip = await JSZip.loadAsync(arrayBuffer);
     const docXml = await zip.file("word/document.xml")?.async("string");
@@ -62,6 +62,7 @@ export async function parseDocx(arrayBuffer: ArrayBuffer): Promise<string> {
 
 // ===== XLSX PARSER (used by extract-enterprise-info) =====
 export async function parseXlsx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const JSZip = (await import("https://esm.sh/jszip@3.10.1")).default;
   try {
     const zip = await JSZip.loadAsync(arrayBuffer);
 
@@ -259,30 +260,30 @@ function tryParseAIJson(content: string): any | null {
       let openBraces = (cleaned.match(/{/g) || []).length;
       let closeBraces = (cleaned.match(/}/g) || []).length;
       let openBrackets = (cleaned.match(/\[/g) || []).length;
-      let closeBrackets = (cleaned.match(/\]/g) || []).length;
+      let closeBrackets = (cleaned.match(/]/g) || []).length;
 
       if (openBrackets > closeBrackets || openBraces > closeBraces) {
         console.warn("Truncated JSON detected, attempting deep repair...");
         
         // Close any open string value first
-        const quoteCount = (cleaned.match(/(?<!\\)"/g) || []).length;
+        const quoteCount = (cleaned.match(/(?<!\\)\"/g) || []).length;
         if (quoteCount % 2 !== 0) {
-          cleaned = cleaned.replace(/"[^"]*$/, '""');
+          cleaned = cleaned.replace(/\"[^"]*$/, '""');
         }
         
         // Remove trailing incomplete key-value pairs aggressively
         cleaned = cleaned
-          .replace(/,\s*"[^"]*"\s*:\s*"[^"]*$/, "")
-          .replace(/,\s*"[^"]*"\s*:\s*\[[^\]]*$/, "")
-          .replace(/,\s*"[^"]*"\s*:\s*\{[^}]*$/, "")
-          .replace(/,\s*"[^"]*"\s*:\s*$/, "")
-          .replace(/,\s*"[^"]*$/, "")
+          .replace(/,\s*\"[^\"]*\"\s*:\s*\"[^\"]*$/, "")
+          .replace(/,\s*\"[^\"]*\"\s*:\s*\[[^\]]*$/, "")
+          .replace(/,\s*\"[^\"]*\"\s*:\s*\{[^}]*$/, "")
+          .replace(/,\s*\"[^\"]*\"\s*:\s*$/, "")
+          .replace(/,\s*\"[^\"]*$/, "")
           .replace(/,\s*$/, "");
         
         openBraces = (cleaned.match(/{/g) || []).length;
         closeBraces = (cleaned.match(/}/g) || []).length;
         openBrackets = (cleaned.match(/\[/g) || []).length;
-        closeBrackets = (cleaned.match(/\]/g) || []).length;
+        closeBrackets = (cleaned.match(/]/g) || []).length;
         
         for (let i = 0; i < openBrackets - closeBrackets; i++) cleaned += "]";
         for (let i = 0; i < openBraces - closeBraces; i++) cleaned += "}";
@@ -295,17 +296,17 @@ function tryParseAIJson(content: string): any | null {
         let trimmed = cleaned;
         for (let i = 0; i < 50; i++) {
           trimmed = trimmed
-            .replace(/,?\s*"[^"]*"?\s*:\s*"[^"]*"?\s*$/, "")
-            .replace(/,?\s*"[^"]*"?\s*:\s*\[[^\]]*$/, "")
-            .replace(/,?\s*"[^"]*"?\s*:\s*\{[^}]*$/, "")
-            .replace(/,?\s*"[^"]*"?\s*:\s*[^{}\[\],"]*\s*$/, "")
+            .replace(/,?\s*\"[^\"]*\"?\s*:\s*\"[^\"]*\"?\s*$/, "")
+            .replace(/,?\s*\"[^\"]*\"?\s*:\s*\[[^\]]*$/, "")
+            .replace(/,?\s*\"[^\"]*\"?\s*:\s*\{[^}]*$/, "")
+            .replace(/,?\s*\"[^\"]*\"?\s*:\s*[^{}\[\],"\s]*\s*$/, "")
             .replace(/,\s*$/, "");
           const ob = (trimmed.match(/{/g) || []).length;
           const cb = (trimmed.match(/}/g) || []).length;
           const oq = (trimmed.match(/\[/g) || []).length;
-          const cq = (trimmed.match(/\]/g) || []).length;
-          const qc = (trimmed.match(/(?<!\\)"/g) || []).length;
-          if (qc % 2 !== 0) trimmed = trimmed.replace(/"[^"]*$/, '""');
+          const cq = (trimmed.match(/]/g) || []).length;
+          const qc = (trimmed.match(/(?<!\\)\"/g) || []).length;
+          if (qc % 2 !== 0) trimmed = trimmed.replace(/\"[^"]*$/, '""');
           let attempt = trimmed;
           for (let j = 0; j < oq - cq; j++) attempt += "]";
           for (let j = 0; j < ob - cb; j++) attempt += "}";

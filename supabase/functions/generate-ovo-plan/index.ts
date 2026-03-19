@@ -22,7 +22,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { type CellWrite, injectIntoXlsm, excelDateSerial, sanitize } from "../_shared/zip-utils.ts";
 import { expandCondensedData, validateAndFillVolumes, scaleToFrameworkTargets, scaleCOGSToFramework, normalizeRangeData, alignOpexToPlanOvo, alignStaffToTarget, alignTotalOpexToFramework, verifyExcelRevenue, getTotalVolume, reconcileWithPlanOvo } from "../_shared/ovo-data-expander.ts";
-import { getFiscalParamsForPrompt } from "../_shared/helpers.ts";
+import { getFiscalParamsForPrompt } from "../_shared/helpers_v5.ts";
 // enforceFrameworkConstraints removed — alignments handled by dedicated functions
 
 // ─────────────────────────────────────────────────────────────────────
