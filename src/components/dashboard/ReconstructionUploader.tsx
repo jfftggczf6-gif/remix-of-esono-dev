@@ -6,15 +6,14 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
-import { parseFile, buildDocumentContent, buildParsingReport, fileToBase64, type ParsedDocument, type ParsingReport } from '@/lib/document-parser';
+import { parseFile, buildDocumentContent, buildParsingReport, type ParsedDocument, type ParsingReport } from '@/lib/document-parser';
 import {
   Wand2, X, FileText, Loader2, CheckCircle2,
   AlertTriangle, RotateCcw
 } from 'lucide-react';
 
-const ACCEPTED_EXTENSIONS = '.csv,.txt,.md,.xlsx,.xls,.docx,.doc,.pdf,.jpg,.jpeg,.png,.webp';
+const ACCEPTED_EXTENSIONS = '.csv,.txt,.md,.xlsx,.xls,.docx,.doc,.pdf,.jpg,.jpeg,.png,.webp,.pptx,.ppt';
 const MAX_FILES = 20;
-const MAX_VISION_FILES = 5;
 
 interface ReconstructionUploaderProps {
   enterpriseId: string;
@@ -44,6 +43,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [result, setResult] = useState<ReconstructionResult | null>(null);
+  const [parsedDocs, setParsedDocs] = useState<ParsedDocument[]>([]);
   const [parsingSummary, setParsingSummary] = useState<ParsingReport | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -80,6 +80,8 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
     setProgress(0);
     setProgressLabel('Upload des fichiers…');
     setResult(null);
+    setParsedDocs([]);
+    setParsingSummary(null);
 
     try {
       // 0. Ensure valid auth session
@@ -107,87 +109,39 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
         setProgressLabel(`Upload ${i + 1}/${files.length}…`);
       }
 
-      // === STEP 2: Parse files client-side ===
+      // === STEP 2: Parse each file via Python micro-service ===
       setProgressLabel('Analyse des documents…');
-      const parsedDocs: ParsedDocument[] = [];
-      const needsVision: { file: File; parsed: ParsedDocument }[] = [];
+      const docs: ParsedDocument[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        setProgressLabel(`Lecture de ${files[i].name}…`);
-        setProgress(Math.round(40 + (i / files.length) * 20)); // 40-60%
+        setProgressLabel(`Lecture de ${files[i].name} (${i + 1}/${files.length})…`);
+        setProgress(Math.round(40 + (i / files.length) * 35)); // 40-75%
 
         const parsed = await parseFile(files[i]);
-        parsedDocs.push(parsed);
+        docs.push(parsed);
+        setParsedDocs([...docs]);
 
-        if (parsed.method === 'needs_vision') {
-          needsVision.push({ file: files[i], parsed });
-        }
+        console.log(`[parser] ${files[i].name}: ${parsed.quality} — ${parsed.summary}`);
       }
 
-      // Show initial parsing summary to user
-      setParsingSummary(buildParsingReport(parsedDocs, 0));
-
-      // === STEP 3: Send scanned PDFs/images to Vision API (one by one) ===
-      const visionCount = Math.min(needsVision.length, MAX_VISION_FILES);
-      for (let i = 0; i < visionCount; i++) {
-        const { file, parsed } = needsVision[i];
-        setProgressLabel(`OCR de ${file.name} (${i + 1}/${visionCount})…`);
-        setProgress(Math.round(60 + (i / visionCount) * 15)); // 60-75%
-
-        try {
-          const base64 = await fileToBase64(file);
-
-          const visionResp = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-vision-file`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({
-                file_base64: base64,
-                file_name: file.name,
-                media_type: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
-              }),
-            }
-          );
-
-          if (visionResp.ok) {
-            const visionData = await visionResp.json();
-            parsed.content = visionData.text || '';
-            parsed.method = 'client_pdf_text';
-          }
-        } catch (err) {
-          console.warn('Vision parsing failed for', file.name, err);
-          parsed.content = `[OCR échoué pour ${file.name}]`;
-        }
-      }
-
-      if (needsVision.length > MAX_VISION_FILES) {
-        for (let i = MAX_VISION_FILES; i < needsVision.length; i++) {
-          needsVision[i].parsed.content = `[OCR ignoré — limite de ${MAX_VISION_FILES} fichiers vision atteinte]`;
-        }
-      }
-
-      // === STEP 4: Build, classify, and cache document content ===
+      // === STEP 3: Build and cache document content ===
       setProgressLabel('Compilation du dossier…');
       setProgress(78);
 
-      // Update summaries after vision
-      setParsingSummary(buildParsingReport(parsedDocs, 0));
-
-      const documentContent = buildDocumentContent(parsedDocs);
-      const parsingReport = buildParsingReport(parsedDocs, documentContent.length);
+      const documentContent = buildDocumentContent(docs);
+      const parsingReport = buildParsingReport(docs, documentContent.length);
       setParsingSummary(parsingReport);
 
       await supabase.from('enterprises').update({
         document_content: documentContent,
         document_content_updated_at: new Date().toISOString(),
-        document_files_count: parsedDocs.length,
+        document_files_count: docs.filter(d => d.quality !== 'failed').length,
         document_parsing_report: parsingReport,
       } as any).eq('id', enterpriseId);
 
-      console.log('Document content cached:', documentContent.length, 'chars from', parsingReport.files_parsed_ok, 'files');
+      console.log('Document content cached:', documentContent.length, 'chars from', docs.length, 'files');
 
-      // === STEP 5: Reconstruction (reads cache — fast) ===
+      // === STEP 4: Reconstruction (reads cache — fast) ===
       setProgressLabel('Reconstruction IA en cours…');
       setProgress(82);
       const abortController = new AbortController();
@@ -221,7 +175,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
       }
       await supabase.from('enterprises').update(modeUpdates).eq('id', enterpriseId);
 
-      // === STEP 6: Auto-launch pre-screening ===
+      // === STEP 5: Auto-launch pre-screening ===
       setProgressLabel('Analyse du dossier en cours…');
       setProgress(90);
       try {
@@ -262,6 +216,8 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
     toast.success('Données intégrées au pipeline !');
     setResult(null);
     setFiles([]);
+    setParsedDocs([]);
+    setParsingSummary(null);
     onComplete();
   };
 
@@ -269,6 +225,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
     setResult(null);
     setFiles([]);
     setProgress(0);
+    setParsedDocs([]);
     setParsingSummary(null);
   };
 
@@ -368,7 +325,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
             Relevés bancaires, factures, listes clients, photos de documents…
           </p>
           <p className="text-xs text-muted-foreground/60 mt-2">
-            CSV, TXT, Excel, Word, PDF, Images — max {MAX_FILES} fichiers
+            CSV, TXT, Excel, Word, PDF, Images, PowerPoint — max {MAX_FILES} fichiers
           </p>
           <input
             ref={inputRef}
@@ -398,41 +355,35 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
           </div>
         )}
 
-        {/* Parsing report */}
-        {parsingSummary && uploading && (
-          <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold">Rapport d'extraction</h4>
-              <span className="text-xs text-muted-foreground">
-                {parsingSummary.total_chars_extracted > 0
-                  ? `${(parsingSummary.total_chars_extracted / 1000).toFixed(0)}K caractères`
-                  : 'Analyse en cours…'}
-              </span>
-            </div>
-
-            {parsingSummary.files.map((f, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs border-b border-border/50 pb-2">
-                <span className="mt-0.5">
-                  {f.extractionQuality === 'high' ? '✅' : f.extractionQuality === 'medium' ? '🟡' : f.extractionQuality === 'low' ? '⚠️' : '❌'}
+        {/* Parsing report — live during upload */}
+        {parsedDocs.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm font-medium">Documents analysés :</p>
+            {parsedDocs.map((doc, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs p-2 bg-muted/30 rounded">
+                <span className="mt-0.5 text-base">
+                  {doc.quality === 'high' ? '✅' : doc.quality === 'medium' ? '🟡' : doc.quality === 'low' ? '⚠️' : '❌'}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">{f.fileName}</span>
-                    <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] uppercase shrink-0">
-                      {f.category.replace(/_/g, ' ')}
-                    </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium truncate">{doc.fileName}</span>
+                    {doc.category !== 'autre' && (
+                      <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] uppercase font-medium">
+                        {doc.category.replace(/_/g, ' ')}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-muted-foreground">{f.summary}</p>
+                  <p className="text-muted-foreground mt-0.5">{doc.summary}</p>
                 </div>
-                <span className="text-muted-foreground whitespace-nowrap shrink-0">
-                  {f.charsExtracted > 0 ? `${(f.charsExtracted / 1000).toFixed(1)}K` : '—'}
+                <span className="text-muted-foreground whitespace-nowrap">
+                  {doc.charsExtracted > 0 ? `${(doc.charsExtracted / 1000).toFixed(1)}K` : '—'}
                 </span>
               </div>
             ))}
 
-            {parsingSummary.files_failed > 0 && (
-              <p className="text-xs text-destructive">
-                ⚠️ {parsingSummary.files_failed} fichier(s) n'ont pas pu être lu(s).
+            {parsedDocs.some(d => d.quality === 'failed') && (
+              <p className="text-xs text-destructive mt-2">
+                ⚠️ {parsedDocs.filter(d => d.quality === 'failed').length} fichier(s) n'ont pas pu être lu(s).
               </p>
             )}
           </div>
