@@ -1117,8 +1117,12 @@ export function normalizeScreeningReport(raw: any): any {
 
   d.verdict_summary = pick(d, 'verdict_summary', 'summary', 'resume', 'résumé') || '';
 
-  d.anomalies = toArray(pick(d, 'anomalies', 'anomalies_detectees', 'issues', 'red_flags')).map((a: any) => {
-    if (typeof a === 'string') return { severity: 'attention', category: 'general', title: a, detail: a, source_documents: [], recommendation: '' };
+  const rawScreenAnomalies = pick(d, 'anomalies', 'anomalies_detectees', 'issues', 'red_flags');
+  d.anomalies = (Array.isArray(rawScreenAnomalies) ? rawScreenAnomalies : []).map((a: any) => {
+    if (typeof a === 'string') {
+      try { const p = JSON.parse(a); if (p && typeof p === 'object') return { severity: p.severity || 'attention', category: p.category || 'general', title: p.title || '', detail: p.detail || '', source_documents: Array.isArray(p.source_documents) ? p.source_documents : [], recommendation: p.recommendation || '' }; } catch {}
+      return { severity: 'attention', category: 'general', title: a, detail: a, source_documents: [], recommendation: '' };
+    }
     return {
       severity: pick(a, 'severity', 'severite', 'level') || 'attention',
       category: pick(a, 'category', 'categorie', 'type') || 'general',
@@ -1286,8 +1290,12 @@ export function normalizePreScreening(raw: any): any {
   };
 
   // Anomalies
-  d.anomalies = toArray(pick(d, 'anomalies', 'issues', 'red_flags')).map((a: any) => {
-    if (typeof a === 'string') return { severity: 'attention', category: 'general', title: a, detail: a, impact_investisseur: '', recommendation: '', effort: 'moyen', responsable: 'entrepreneur' };
+  const rawPreAnomalies = pick(d, 'anomalies', 'issues', 'red_flags');
+  d.anomalies = (Array.isArray(rawPreAnomalies) ? rawPreAnomalies : []).map((a: any) => {
+    if (typeof a === 'string') {
+      try { const p = JSON.parse(a); if (p && typeof p === 'object') return { severity: p.severity || 'attention', category: p.category || 'general', title: p.title || '', detail: p.detail || '', impact_investisseur: p.impact_investisseur || p.impact || '', recommendation: p.recommendation || '', effort: p.effort || 'moyen', responsable: p.responsable || 'entrepreneur' }; } catch {}
+      return { severity: 'attention', category: 'general', title: a, detail: a, impact_investisseur: '', recommendation: '', effort: 'moyen', responsable: 'entrepreneur' };
+    }
     return {
       severity: pick(a, 'severity', 'severite') || 'attention',
       category: pick(a, 'category', 'categorie') || 'general',
