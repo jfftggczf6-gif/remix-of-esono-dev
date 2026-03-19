@@ -398,27 +398,43 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
           </div>
         )}
 
-        {/* Parsing summary */}
-        {parsingSummary.length > 0 && uploading && (
-          <div className="mt-4 space-y-1.5">
-            <p className="text-sm font-medium text-muted-foreground">Documents analysés :</p>
-            {parsingSummary.map((doc, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <span>{doc.extractionQuality === 'high' || doc.extractionQuality === 'medium' ? '✅' : doc.extractionQuality === 'low' ? '⚠️' : '❌'}</span>
-                <span className="font-medium truncate">{doc.fileName}</span>
-                <span className="text-muted-foreground">— {doc.summary}</span>
+        {/* Parsing report */}
+        {parsingSummary && uploading && (
+          <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Rapport d'extraction</h4>
+              <span className="text-xs text-muted-foreground">
+                {parsingSummary.total_chars_extracted > 0
+                  ? `${(parsingSummary.total_chars_extracted / 1000).toFixed(0)}K caractères`
+                  : 'Analyse en cours…'}
+              </span>
+            </div>
+
+            {parsingSummary.files.map((f, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs border-b border-border/50 pb-2">
+                <span className="mt-0.5">
+                  {f.extractionQuality === 'high' ? '✅' : f.extractionQuality === 'medium' ? '🟡' : f.extractionQuality === 'low' ? '⚠️' : '❌'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium truncate">{f.fileName}</span>
+                    <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] uppercase shrink-0">
+                      {f.category.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">{f.summary}</p>
+                </div>
+                <span className="text-muted-foreground whitespace-nowrap shrink-0">
+                  {f.charsExtracted > 0 ? `${(f.charsExtracted / 1000).toFixed(1)}K` : '—'}
+                </span>
               </div>
             ))}
-          </div>
-        )}
 
-        {/* Progress */}
-        {uploading && (
-          <div className="mt-4 space-y-2">
-            <Progress value={progress} className="h-2" />
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> {progressLabel}
-            </p>
+            {parsingSummary.files_failed > 0 && (
+              <p className="text-xs text-destructive">
+                ⚠️ {parsingSummary.files_failed} fichier(s) n'ont pas pu être lu(s).
+              </p>
+            )}
           </div>
         )}
 
