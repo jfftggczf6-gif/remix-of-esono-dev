@@ -199,6 +199,7 @@ serve(async (req) => {
     
     // Map deliverable types to step names for merging
     const delivTypeToStep: Record<string, string> = {
+      "pre_screening": "Pre-screening",
       "bmc_analysis": "BMC",
       "sic_analysis": "SIC",
       "inputs_data": "Inputs",
@@ -207,6 +208,7 @@ serve(async (req) => {
       "business_plan": "Business Plan",
       "odd_analysis": "ODD",
       "diagnostic_data": "Diagnostic",
+      "screening_report": "Screening",
     };
     
     // Fill in scores from DB for steps not already in scoresDetail
