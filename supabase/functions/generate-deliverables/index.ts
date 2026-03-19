@@ -86,6 +86,7 @@ serve(async (req) => {
 
     // Map function names to deliverable types for skip check
     const fnToDelivType: Record<string, string> = {
+      "generate-pre-screening": "pre_screening",
       "generate-bmc": "bmc_analysis",
       "generate-sic": "sic_analysis",
       "generate-inputs": "inputs_data",
@@ -95,6 +96,7 @@ serve(async (req) => {
       "generate-ovo-plan": "plan_ovo_excel",
       "generate-business-plan": "business_plan",
       "generate-odd": "odd_analysis",
+      "generate-screening-report": "screening_report",
     };
 
     // Financial steps that require real inputs data (score > 0)
