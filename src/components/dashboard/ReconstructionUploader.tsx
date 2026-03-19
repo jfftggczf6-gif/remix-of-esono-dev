@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
-import { parseFile, buildDocumentContent, buildParsingReport, fileToBase64, CATEGORY_LABELS, type ParsedDocument, type ParsingReport } from '@/lib/document-parser';
+import { parseFile, buildDocumentContent, buildParsingReport, fileToBase64, type ParsedDocument, type ParsingReport } from '@/lib/document-parser';
 import {
   Wand2, X, FileText, Loader2, CheckCircle2,
   AlertTriangle, RotateCcw
