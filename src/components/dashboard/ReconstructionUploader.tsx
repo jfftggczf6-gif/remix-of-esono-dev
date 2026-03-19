@@ -124,6 +124,9 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
         }
       }
 
+      // Show parsing summary to user
+      setParsingSummary([...parsedDocs]);
+
       // === STEP 3: Send scanned PDFs/images to Vision API (one by one) ===
       const visionCount = Math.min(needsVision.length, MAX_VISION_FILES);
       for (let i = 0; i < visionCount; i++) {
