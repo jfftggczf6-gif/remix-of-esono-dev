@@ -1,57 +1,77 @@
 
 
-## Diagnostic complet
+## Correction : restaurer les 3 exports manquants + version bump sur 24 fichiers
 
-### Parsing client-side : EN PLACE et fonctionnel
+### Problème
+`corsHeaders`, `jsonResponse`, `errorResponse` ont été supprimés de `helpers.ts`. Les 22 edge functions qui les importent crashent au boot (`worker boot error`).
 
-Le flow actuel quand l'utilisateur clique "Analyser" est correct :
-
-```text
-Step 1: Upload fichiers → Storage (lignes 98-107)
-Step 2: parseFile() client-side via mammoth/xlsx-js-style (lignes 109-124)
-Step 3: parse-vision-file serveur, 1 par 1, max 3 (lignes 126-164)
-Step 4: buildDocumentContent() → save dans enterprises.document_content (lignes 166-179)
-Step 5: reconstruct-from-traces lit le cache depuis la BDD (lignes 181-203)
-Step 6: generate-pre-screening (lignes 215-230)
-```
-
-`verifyAndGetContext` est bien simplifié (38 lignes, lit `ent.document_content` depuis la BDD, aucun parsing).
-
-### Probleme restant
-
-`reconstruct-from-traces` injecte `ctx.documentContent` **sans cap** dans le prompt (ligne 121). Si le client a stocké 200k+ caractères, le prompt explose la mémoire Deno. De plus `buildRAGContext` peut crasher sans protection, et `helpers.ts` contient encore 110 lignes de dead code (`parseDocx`/`parseXlsx` serveur).
-
-### Plan de correction (4 changements)
+### Plan
 
 | # | Fichier | Action |
 |---|---------|--------|
-| 1 | `supabase/functions/reconstruct-from-traces/index.ts` | Capper `ctx.documentContent` a 80 000 caracteres avant injection dans le prompt |
-| 2 | `supabase/functions/reconstruct-from-traces/index.ts` | Entourer `buildRAGContext` d'un try/catch avec fallback vide |
-| 3 | `supabase/functions/_shared/helpers.ts` | Supprimer les fonctions `parseDocx` (lignes 24-61) et `parseXlsx` (lignes 63-135) — dead code jamais appele |
-| 4 | Redeployer `reconstruct-from-traces` | Pour que les changements soient live |
+| 1 | `_shared/helpers.ts` | Ajouter `corsHeaders`, `jsonResponse`, `errorResponse` en ligne 4 (après imports, avant parseDocx). Mettre à jour le commentaire version en ligne 1 → `v4` |
+| 2-23 | 22 fichiers `index.ts` | Ajouter `// v4 — restore corsHeaders 2026-03-19` en première ligne de chaque fichier qui importe depuis helpers.ts |
 
-### Details techniques
+### Fichiers impactés (22 edge functions)
 
-**Changement 1+2** dans `reconstruct-from-traces/index.ts` :
-```typescript
-// Après ctx = await verifyAndGetContext(req)
-const MAX_PROMPT_CHARS = 80_000;
-const docContent = ctx.documentContent.length > MAX_PROMPT_CHARS
-  ? ctx.documentContent.substring(0, MAX_PROMPT_CHARS) + "\n[... contenu tronqué à 80K caractères]"
-  : ctx.documentContent;
-
-// RAG protégé
-let ragContext = "";
-try {
-  ragContext = await buildRAGContext(
-    ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "inputs_data"
-  );
-} catch (e) {
-  console.warn("[reconstruct] RAG context failed, continuing without:", e);
-}
-
-// Utiliser docContent (cappé) au lieu de ctx.documentContent dans le prompt
+```text
+reconstruct-from-traces    generate-pre-screening
+generate-screening-report  generate-bmc
+generate-sic               generate-diagnostic
+generate-pitch-deck        generate-onepager
+generate-valuation         generate-investment-memo
+generate-business-plan     generate-framework
+generate-plan-ovo          generate-inputs
+generate-odd               generate-coach-report
+generate-embeddings        parse-vision-file
+access-data-room           extract-enterprise-info
+extract-programme-criteria ingest-knowledge
+seed-knowledge-base        refresh-macro-data
 ```
 
-**Changement 3** dans `helpers.ts` : supprimer lignes 24-135 (parseDocx + parseXlsx + import JSZip inutile).
+### Fichiers NON impactés (corsHeaders local, pas d'import helpers.ts)
+- `generate-deliverables` — définit son propre corsHeaders
+- `download-deliverable` — idem
+- `upload-template` — idem
+- `reconcile-plan-ovo` — idem
+- `generate-ovo-plan` — idem
+
+### Détail technique — helpers.ts
+
+Ajouter après ligne 3 (`import JSZip...`) :
+
+```typescript
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+export function jsonResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+export function errorResponse(message: string, status = 500) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+```
+
+### Détail technique — version bump (exemple)
+
+Pour `generate-bmc/index.ts` actuellement :
+```typescript
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+```
+Devient :
+```typescript
+// v4 — restore corsHeaders 2026-03-19
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+```
+
+Note : `generate-investment-memo` a déjà un commentaire `// v3` en ligne 1 — il passera à `// v4`.
 
