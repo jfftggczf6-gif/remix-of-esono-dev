@@ -1,77 +1,67 @@
 
 
-## Correction : restaurer les 3 exports manquants + version bump sur 24 fichiers
+## Cache-bust : helpers.ts → helpers_v5.ts
 
 ### Problème
-`corsHeaders`, `jsonResponse`, `errorResponse` ont été supprimés de `helpers.ts`. Les 22 edge functions qui les importent crashent au boot (`worker boot error`).
+Le cache Deno ignore les commentaires de version. Le module `_shared/helpers.ts` compilé ne contient toujours pas `corsHeaders`. Seul un changement de **chemin** force une recompilation.
 
-### Plan
+### Plan (5 étapes)
 
-| # | Fichier | Action |
-|---|---------|--------|
-| 1 | `_shared/helpers.ts` | Ajouter `corsHeaders`, `jsonResponse`, `errorResponse` en ligne 4 (après imports, avant parseDocx). Mettre à jour le commentaire version en ligne 1 → `v4` |
-| 2-23 | 22 fichiers `index.ts` | Ajouter `// v4 — restore corsHeaders 2026-03-19` en première ligne de chaque fichier qui importe depuis helpers.ts |
+**Étape 1** — Créer `supabase/functions/_shared/helpers_v5.ts`
+- Copie intégrale de `helpers.ts` (628 lignes)
+- JSZip transformé en import dynamique (lazy) dans `parseDocx` et `parseXlsx`
+- Suppression de `import JSZip from "https://esm.sh/jszip@3.10.1"` en top-level
 
-### Fichiers impactés (22 edge functions)
+**Étape 2** — Mettre à jour les imports dans **24 fichiers**
+
+| # | Fichier | Import modifié |
+|---|---------|---------------|
+| 1 | `_shared/normalizers.ts` | `./helpers.ts` → `./helpers_v5.ts` |
+| 2-24 | 23 edge functions `index.ts` | `../_shared/helpers.ts` → `../_shared/helpers_v5.ts` |
+
+Les 23 edge functions (le user en listait 22, mais `generate-ovo-plan` importe aussi `getFiscalParamsForPrompt` depuis helpers) :
 
 ```text
-reconstruct-from-traces    generate-pre-screening
-generate-screening-report  generate-bmc
-generate-sic               generate-diagnostic
-generate-pitch-deck        generate-onepager
-generate-valuation         generate-investment-memo
-generate-business-plan     generate-framework
-generate-plan-ovo          generate-inputs
-generate-odd               generate-coach-report
-generate-embeddings        parse-vision-file
-access-data-room           extract-enterprise-info
-extract-programme-criteria ingest-knowledge
-seed-knowledge-base        refresh-macro-data
+reconstruct-from-traces     generate-pre-screening
+generate-screening-report   generate-bmc
+generate-sic                generate-diagnostic
+generate-pitch-deck         generate-onepager
+generate-valuation          generate-investment-memo
+generate-business-plan      generate-framework
+generate-plan-ovo           generate-inputs
+generate-odd                generate-coach-report
+generate-embeddings         parse-vision-file
+access-data-room            extract-enterprise-info
+extract-programme-criteria  ingest-knowledge
+seed-knowledge-base         refresh-macro-data
+generate-ovo-plan (AJOUTÉ — le user l'avait omis)
 ```
 
-### Fichiers NON impactés (corsHeaders local, pas d'import helpers.ts)
-- `generate-deliverables` — définit son propre corsHeaders
-- `download-deliverable` — idem
-- `upload-template` — idem
-- `reconcile-plan-ovo` — idem
-- `generate-ovo-plan` — idem
+**Étape 3** — Supprimer `supabase/functions/_shared/helpers.ts`
 
-### Détail technique — helpers.ts
+**Étape 4** — Redéployer toutes les fonctions
 
-Ajouter après ligne 3 (`import JSZip...`) :
+**Étape 5** — Vérifier les logs de `reconstruct-from-traces` : le boot doit être OK
+
+### Fichiers NON impactés
+- `post-validator.ts` — n'importe pas depuis helpers
+- `financial-knowledge.ts` — n'importe pas depuis helpers
+- `generate-deliverables`, `download-deliverable`, `upload-template`, `reconcile-plan-ovo` — corsHeaders local
+- `zip-utils.ts`, `ovo-data-expander.ts`, `framework-excel-template.ts`, `odd-excel-template.ts` — n'importent pas helpers
+
+### Détail technique — lazy JSZip dans helpers_v5.ts
 
 ```typescript
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+// Ligne 3 supprimée : import JSZip from "https://esm.sh/jszip@3.10.1";
 
-export function jsonResponse(data: any, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+// Dans parseDocx (ligne ~25) :
+export async function parseDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const JSZip = (await import("https://esm.sh/jszip@3.10.1")).default;
+  // ... reste identique
 
-export function errorResponse(message: string, status = 500) {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+// Dans parseXlsx (ligne ~70) :
+export async function parseXlsx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const JSZip = (await import("https://esm.sh/jszip@3.10.1")).default;
+  // ... reste identique
 ```
-
-### Détail technique — version bump (exemple)
-
-Pour `generate-bmc/index.ts` actuellement :
-```typescript
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-```
-Devient :
-```typescript
-// v4 — restore corsHeaders 2026-03-19
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-```
-
-Note : `generate-investment-memo` a déjà un commentaire `// v3` en ligne 1 — il passera à `// v4`.
 
