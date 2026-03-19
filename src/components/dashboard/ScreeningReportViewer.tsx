@@ -22,7 +22,12 @@ export default function ScreeningReportViewer({ data, onRegenerate }: ScreeningR
   const score = data.screening_score ?? 0;
   const verdict = data.verdict || 'INSUFFISANT';
   const summary = data.verdict_summary || '';
-  const anomalies = data.anomalies || [];
+  const anomalies = (data.anomalies || []).map((a: any) => {
+    if (typeof a === 'string') {
+      try { return JSON.parse(a); } catch { return { title: a, severity: 'note', detail: '' }; }
+    }
+    return a;
+  });
   const crossValidation = data.cross_validation || {};
   const docQuality = data.document_quality || {};
   const financialHealth = data.financial_health || {};

@@ -28,7 +28,12 @@ export default function PreScreeningViewer({ data, onRegenerate, onLaunchPipelin
   const classDetail = data.classification_detail || '';
   const resumeExecutif = data.resume_executif || null;
   const qualiteDossier = data.qualite_dossier || {};
-  const anomalies = data.anomalies || [];
+  const anomalies = (data.anomalies || []).map((a: any) => {
+    if (typeof a === 'string') {
+      try { return JSON.parse(a); } catch { return { title: a, severity: 'note', detail: '' }; }
+    }
+    return a;
+  });
   const crossValidation = data.cross_validation || {};
   const santeFinanciere = data.sante_financiere || {};
   const potentiel = data.potentiel_et_reconstructibilite || null;
