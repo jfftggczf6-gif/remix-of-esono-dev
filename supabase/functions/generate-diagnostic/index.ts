@@ -4,7 +4,7 @@ import {
   corsHeaders, errorResponse, jsonResponse,
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
   getFiscalParams
-} from "../_shared/helpers.ts";
+} from "../_shared/helpers_v5.ts";
 import { normalizeDiagnostic } from "../_shared/normalizers.ts";
 import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
