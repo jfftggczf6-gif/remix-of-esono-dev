@@ -19,9 +19,9 @@ const trunc = (s: string, max = 280): string => (s && s.length > max ? s.substri
 function addTitleSlide(pres: PptxGenJS, title: string, subtitle: string, date: string) {
   const slide = pres.addSlide();
   slide.background = { fill: NAVY };
-  slide.addText('INVESTMENT MEMORANDUM', { x: 0.8, y: 1.2, w: 8.4, h: 0.6, fontSize: 14, color: GOLD, fontFace: 'Calibri', letterSpacing: 6, bold: true });
+  slide.addText('INVESTMENT MEMORANDUM', { x: 0.8, y: 1.2, w: 8.4, h: 0.6, fontSize: 14, color: GOLD, fontFace: 'Calibri', bold: true });
   slide.addShape(pres.ShapeType.rect, { x: 0.8, y: 1.9, w: 2.5, h: 0.04, fill: { color: GOLD } });
-  slide.addText(title, { x: 0.8, y: 2.2, w: 8.4, h: 1.2, fontSize: 32, color: WHITE, fontFace: 'Georgia', bold: true, breakType: 'none' });
+  slide.addText(title, { x: 0.8, y: 2.2, w: 8.4, h: 1.2, fontSize: 32, color: WHITE, fontFace: 'Georgia', bold: true });
   slide.addText(subtitle, { x: 0.8, y: 3.5, w: 8.4, h: 0.6, fontSize: 14, color: LIGHT, fontFace: 'Calibri' });
   slide.addText(`Date : ${date}`, { x: 0.8, y: 4.5, w: 4, h: 0.4, fontSize: 10, color: GRAY, fontFace: 'Calibri' });
   slide.addText('CONFIDENTIEL', { x: 7.0, y: 4.8, w: 2.5, h: 0.35, fontSize: 9, color: WHITE, fontFace: 'Calibri', bold: true, fill: { color: RED }, align: 'center', rectRadius: 0.05 });
