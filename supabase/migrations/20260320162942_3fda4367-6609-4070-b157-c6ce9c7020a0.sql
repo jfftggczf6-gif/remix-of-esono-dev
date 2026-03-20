@@ -1,0 +1,1 @@
+ALTER TABLE public.enterprise_modules ADD CONSTRAINT enterprise_modules_enterprise_module_unique UNIQUE (enterprise_id, module);
