@@ -787,11 +787,14 @@ export default function EntrepreneurDashboard({
     }
   };
 
-  // Classify uploaded files
-  const docFiles = uploadedFiles.filter(f => /\.(docx?|pdf|txt)$/i.test(f.name));
-  const finFiles = uploadedFiles.filter(f => /\.(xlsx?|csv)$/i.test(f.name));
+  // Classify uploaded files — exclude reconstruction subfolder from manual upload sections
+  const isReconstructionFile = (f: { name: string }) => f.name.startsWith('reconstruction/');
+  const manualFiles = uploadedFiles.filter(f => !isReconstructionFile(f));
+  void uploadedFiles.filter(f => isReconstructionFile(f)).length; // reconstruction files count
+  const docFiles = manualFiles.filter(f => /\.(docx?|pdf|txt)$/i.test(f.name));
+  const finFiles = manualFiles.filter(f => /\.(xlsx?|csv)$/i.test(f.name));
   const knownFiles = new Set([...docFiles.map(f => f.name), ...finFiles.map(f => f.name)]);
-  const extraFiles = uploadedFiles.filter(f => !knownFiles.has(f.name));
+  const extraFiles = manualFiles.filter(f => !knownFiles.has(f.name));
   void (docFiles.length + finFiles.length); // inputsCount
   void deliverables.length; // deliverablesCount
 

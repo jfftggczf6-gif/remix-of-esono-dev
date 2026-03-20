@@ -102,7 +102,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const filePath = `${enterpriseId}/${Date.now()}_${safeName}`;
+        const filePath = `${enterpriseId}/reconstruction/${Date.now()}_${safeName}`;
         const { error } = await supabase.storage.from('documents').upload(filePath, file, { upsert: true });
         if (error) throw error;
         setProgress(Math.round(((i + 1) / files.length) * 40));
