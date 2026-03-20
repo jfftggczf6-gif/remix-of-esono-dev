@@ -39,7 +39,19 @@ import {
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
 import { runPipelineFromClient, getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
 
-export default function EntrepreneurDashboard() {
+interface EntrepreneurDashboardProps {
+  enterpriseId?: string;
+  showBackButton?: boolean;
+  onBack?: () => void;
+  coachMode?: boolean;
+}
+
+export default function EntrepreneurDashboard({
+  enterpriseId,
+  showBackButton = false,
+  onBack,
+  coachMode = false,
+}: EntrepreneurDashboardProps = {}) {
   const { user, profile, session: authSession, signOut } = useAuth();
   const navigate = useNavigate();
   const [initialLoading, setInitialLoading] = useState(true);
