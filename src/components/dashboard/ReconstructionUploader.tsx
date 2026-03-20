@@ -45,6 +45,8 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
   const [result, setResult] = useState<ReconstructionResult | null>(null);
   const [parsedDocs, setParsedDocs] = useState<ParsedDocument[]>([]);
   const [, setParsingSummary] = useState<ParsingReport | null>(null);
+  const [preScreeningFailed, setPreScreeningFailed] = useState(false);
+  const [retryingPreScreening, setRetryingPreScreening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
