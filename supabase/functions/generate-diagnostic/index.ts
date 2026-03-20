@@ -1,11 +1,11 @@
-// v4 — restore corsHeaders 2026-03-19
+// v5 — diagnostic business expert 2026-03-20
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
   getFiscalParams, getDocumentContentForAgent
 } from "../_shared/helpers_v5.ts";
-import { normalizeDiagnostic } from "../_shared/normalizers.ts";
+import { normalizeDiagnostic, getFinancialTruth } from "../_shared/normalizers.ts";
 import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 // ── Helpers locaux ──────────────────────────────────────────────────────────
