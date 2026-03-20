@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Briefcase, Download, Copy, CheckCircle2, FileText, Presentation, Loader2, TrendingUp, Users, Shield, Target } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateMemoPptx, SLIDE_TITLES } from '@/lib/memo-pptx-generator';
 import { generateMemoHtml } from '@/lib/memo-html-generator';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   data: Record<string, any>;
