@@ -142,9 +142,9 @@ const PRE_SCREENING_SCHEMA = `{
   },
 
   "potentiel_et_reconstructibilite": {
-    "donnees_fiables": ["string — données extraites des documents, utilisables en confiance"],
-    "donnees_estimables_ia": ["string — données que l'IA peut estimer avec confiance raisonnable"],
-    "donnees_non_reconstituables": ["string — données nécessitant un document réel"],
+    "donnees_fiables": ["string"],
+    "donnees_estimables_ia": ["string"],
+    "donnees_non_reconstituables": ["string"],
     "fiabilite_pipeline_estimee": <0-100>,
     "fiabilite_detail": "string",
     "signaux_positifs": ["string"],
@@ -167,7 +167,7 @@ const PRE_SCREENING_SCHEMA = `{
   "plan_action": [
     {
       "priorite": 1|2|3|4|5,
-      "action": "string — action concrète et précise",
+      "action": "string",
       "responsable": "entrepreneur | coach | ia",
       "delai": "string",
       "effort": "facile | moyen | difficile",
@@ -199,6 +199,95 @@ const PRE_SCREENING_SCHEMA = `{
     "criteres_ko": [{ "critere": "string", "detail": "string", "comment_corriger": "string" }],
     "criteres_partiels": [{ "critere": "string", "detail": "string", "manque": "string" }],
     "recommandation": "string"
+  },
+
+  "analyse_narrative": {
+    "histoire_entreprise": "string — 4-5 paragraphes racontant l'histoire financière et stratégique complète. Écris comme un analyste PE qui présente à son comité. Inclus : origines, évolution du CA sur 3 ans avec CAUSES, événements marquants, situation actuelle, perspectives. Cite des chiffres précis de chaque document lu.",
+    "analyse_tendance": {
+      "tendance_ca": "string — 1 paragraphe",
+      "tendance_rentabilite": "string — 1 paragraphe",
+      "tendance_tresorerie": "string — 1 paragraphe",
+      "tendance_endettement": "string — 1 paragraphe"
+    },
+    "analyse_commerciale": {
+      "produits_services_identifies": ["string — chaque produit/service avec détails"],
+      "clients_identifies": ["string — chaque client ou segment"],
+      "modele_revenus": "string — 1 paragraphe décrivant comment l'entreprise génère ses revenus",
+      "avantages_concurrentiels": ["string"],
+      "risques_commerciaux": ["string"],
+      "donnees_manquantes_commerciales": ["string"]
+    },
+    "analyse_operationnelle": {
+      "chaine_valeur": "string",
+      "capacite_production": "string",
+      "fournisseurs_cles": ["string"],
+      "processus_cles": ["string"],
+      "risques_operationnels": ["string"]
+    },
+    "analyse_equipe": {
+      "dirigeant": "string",
+      "effectifs_estimes": "string",
+      "competences_cles": ["string"],
+      "gaps_critiques": ["string"],
+      "masse_salariale_analyse": "string",
+      "donnees_manquantes_rh": ["string"]
+    },
+    "analyse_legale": {
+      "forme_juridique": "string",
+      "immatriculation": "string",
+      "conformite_fiscale": "string",
+      "conformite_sociale": "string",
+      "documents_legaux_presents": ["string"],
+      "documents_legaux_manquants": ["string"],
+      "risques_juridiques": ["string"]
+    },
+    "comparaison_sectorielle": {
+      "positionnement_global": "string — 2-3 phrases",
+      "benchmark_detail": [
+        {
+          "indicateur": "string",
+          "valeur_entreprise": "string",
+          "mediane_secteur": "string",
+          "top_quartile": "string",
+          "bottom_quartile": "string",
+          "position": "top | above_median | median | below_median | bottom",
+          "commentaire": "string"
+        }
+      ],
+      "avantages_vs_pairs": ["string"],
+      "handicaps_vs_pairs": ["string"]
+    },
+    "scenarios_prospectifs": {
+      "scenario_pessimiste": { "description": "string", "ca_estime": "string", "probabilite": "string", "facteurs_declencheurs": ["string"] },
+      "scenario_base": { "description": "string", "ca_estime": "string", "probabilite": "string", "hypotheses": ["string"] },
+      "scenario_optimiste": { "description": "string", "ca_estime": "string", "probabilite": "string", "facteurs_declencheurs": ["string"] },
+      "facteurs_cles_succes": ["string"]
+    },
+    "scoring_granulaire": {
+      "score_global_calcule": <0-100>,
+      "dimensions": [
+        { "dimension": "Finance", "score": <0-100>, "poids": 20, "justification": "string" },
+        { "dimension": "Commercial", "score": <0-100>, "poids": 15, "justification": "string" },
+        { "dimension": "Marché", "score": <0-100>, "poids": 10, "justification": "string" },
+        { "dimension": "Opérationnel", "score": <0-100>, "poids": 10, "justification": "string" },
+        { "dimension": "Équipe & RH", "score": <0-100>, "poids": 10, "justification": "string" },
+        { "dimension": "Légal & Conformité", "score": <0-100>, "poids": 10, "justification": "string" },
+        { "dimension": "ESG & Impact", "score": <0-100>, "poids": 10, "justification": "string" },
+        { "dimension": "Gouvernance", "score": <0-100>, "poids": 15, "justification": "string" }
+      ]
+    },
+    "timeline_evenements": [
+      { "date": "string", "evenement": "string", "impact": "positif | neutre | negatif", "source": "string" }
+    ],
+    "verdict_analyste": {
+      "synthese_pour_comite": "string — 3-4 paragraphes argumentés et chiffrés",
+      "niveau_conviction": "fort | modere | faible",
+      "deal_breakers": ["string"],
+      "conditions_sine_qua_non": ["string"],
+      "quick_wins": ["string"],
+      "questions_ouvertes": ["string"],
+      "prochaines_etapes_recommandees": ["string"]
+    }
   },
 
   "_confidence": {

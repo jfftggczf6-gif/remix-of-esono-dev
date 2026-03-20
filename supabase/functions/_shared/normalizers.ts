@@ -1395,6 +1395,22 @@ export function normalizePreScreening(raw: any): any {
   // Programme match
   d.programme_match = pick(d, 'programme_match') || null;
 
+  // Analyse narrative (new enriched sections)
+  const an = pick(d, 'analyse_narrative') || {};
+  d.analyse_narrative = {
+    histoire_entreprise: an.histoire_entreprise || '',
+    analyse_tendance: an.analyse_tendance || {},
+    analyse_commerciale: an.analyse_commerciale || {},
+    analyse_operationnelle: an.analyse_operationnelle || {},
+    analyse_equipe: an.analyse_equipe || {},
+    analyse_legale: an.analyse_legale || {},
+    comparaison_sectorielle: an.comparaison_sectorielle || {},
+    scenarios_prospectifs: an.scenarios_prospectifs || {},
+    scoring_granulaire: an.scoring_granulaire || {},
+    timeline_evenements: Array.isArray(an.timeline_evenements) ? an.timeline_evenements : [],
+    verdict_analyste: an.verdict_analyste || {},
+  };
+
   return d;
 }
 
