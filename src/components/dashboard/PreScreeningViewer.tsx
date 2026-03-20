@@ -380,7 +380,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
       </Card>
 
       {/* ═══ ROW: Cross-validation + Santé financière ═══ */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-4 items-start">
         {/* Cross-validation */}
         <Card>
           <CardHeader className="pb-3">
