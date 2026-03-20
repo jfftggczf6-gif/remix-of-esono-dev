@@ -300,7 +300,7 @@ Rédige un résumé exécutif détaillé comme un analyste le ferait pour son di
 Réponds en JSON selon ce schéma :
 ${SCREENING_SCHEMA}`;
 
-    const rawData = await callAI(SYSTEM_PROMPT, prompt, 16384);
+    const rawData = await callAI(SYSTEM_PROMPT, prompt, 32768);
     const normalizedData = normalizeScreeningReport(rawData);
     const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 

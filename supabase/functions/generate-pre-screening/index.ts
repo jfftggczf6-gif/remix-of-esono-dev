@@ -296,7 +296,7 @@ Le plan d'action doit être concret — pas "améliorer la gouvernance" mais "r�
 Réponds en JSON selon ce schéma :
 ${PRE_SCREENING_SCHEMA}`;
 
-    const rawData = await callAI(SYSTEM_PROMPT, prompt, 8192);
+    const rawData = await callAI(SYSTEM_PROMPT, prompt, 32768);
     const normalizedData = normalizePreScreening(rawData);
     const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 
