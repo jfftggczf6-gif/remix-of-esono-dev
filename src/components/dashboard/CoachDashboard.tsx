@@ -98,8 +98,8 @@ export default function CoachDashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ name: '', contact_name: '', contact_email: '', contact_phone: '', sector: '', country: "Côte d'Ivoire" });
   const [addLoading, setAddLoading] = useState(false);
-  const [mirrorPipelineState, setMirrorPipelineState] = useState<PipelineState>('generate');
-  const [generatingOvoPlanMirror, setGeneratingOvoPlanMirror] = useState(false);
+  const [_mirrorPipelineState, setMirrorPipelineState] = useState<PipelineState>('generate');
+  const [_generatingOvoPlanMirror, setGeneratingOvoPlanMirror] = useState(false);
   const [reportPreview, setReportPreview] = useState<{ html: string; enterpriseName: string } | null>(null);
 
   // Enterprise info extraction states
