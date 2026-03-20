@@ -189,8 +189,9 @@ serve(async (req) => {
     // RAG: enrichir avec données ODD et impact social
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs", "secteurs"], "sic_analysis");
 
+    const agentDocs = getDocumentContentForAgent(ent, "sic", 80_000);
     const rawAiData = await callAI(SYSTEM_PROMPT, userPrompt(
-      ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData
+      ent.name, ent.sector || "", ent.country || "", agentDocs, bmcData
     ) + ragContext);
 
     // Normalize AI response

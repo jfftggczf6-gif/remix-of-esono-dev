@@ -411,8 +411,9 @@ serve(async (req) => {
       equipeContext = `\n\nÉQUIPE DÉTAILLÉE (source documents) :\n${inputsData.equipe.map((e: any) => `  - ${e.poste}: ${e.nombre} personne(s), salaire ${e.salaire_mensuel || 'N/A'} ${fiscalParams.devise}/mois`).join('\n')}`;
     }
 
+    const agentDocs = getDocumentContentForAgent(ent, "framework", 100_000);
     const enrichedPrompt = userPrompt(
-      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData, fiscalParams.devise
+      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", agentDocs, inputsData, bmcData, fiscalParams.devise
     ) + produitsContext + historiqueContext + capexContext + financementContext + bfrContext + hypothesesContext + coutsContext + equipeContext + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
 
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;
