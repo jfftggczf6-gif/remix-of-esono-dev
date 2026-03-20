@@ -142,7 +142,7 @@ const MEMO_SCHEMA_PART2 = `{
   }
 }`;
 
-/** Update the enterprise_modules row for investment_memo with checkpoint data */
+/** Upsert the enterprise_modules row for investment_memo with checkpoint data */
 async function updateMemoModuleState(
   enterpriseId: string,
   moduleData: Record<string, any>,
@@ -152,11 +152,17 @@ async function updateMemoModuleState(
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const svc = createClient(supabaseUrl, serviceKey);
-  await svc.from("enterprise_modules").update({
+
+  const mappedStatus = status === "completed" ? "completed"
+    : status === "not_started" ? "not_started" : "in_progress";
+
+  await svc.from("enterprise_modules").upsert({
+    enterprise_id: enterpriseId,
+    module: "investment_memo",
     data: moduleData,
     progress,
-    status: status === "completed" ? "completed" : status === "not_started" ? "not_started" : "in_progress",
-  }).eq("enterprise_id", enterpriseId).eq("module", "investment_memo");
+    status: mappedStatus,
+  }, { onConflict: "enterprise_id,module" });
 }
 
 serve(async (req) => {
