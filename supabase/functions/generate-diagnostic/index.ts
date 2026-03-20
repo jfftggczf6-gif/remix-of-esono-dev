@@ -1,11 +1,11 @@
-// v4 — restore corsHeaders 2026-03-19
+// v5 — diagnostic business expert 2026-03-20
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
   getFiscalParams, getDocumentContentForAgent
 } from "../_shared/helpers_v5.ts";
-import { normalizeDiagnostic } from "../_shared/normalizers.ts";
+import { normalizeDiagnostic, getFinancialTruth } from "../_shared/normalizers.ts";
 import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
 // ── Helpers locaux ──────────────────────────────────────────────────────────
@@ -63,18 +63,60 @@ function summarize(data: any): any {
 
 // ── Prompts ─────────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Tu es un coach expert en Investment Readiness pour PME en Afrique de l'Ouest (UEMOA). Tu es bienveillant, pédagogique et constructif. Ton rôle est d'accompagner l'entrepreneur dans son apprentissage, pas de le juger.
+const SYSTEM_PROMPT = `Tu es un consultant senior en stratégie et finance d'entreprise, spécialisé dans l'accompagnement de PME africaines vers l'investment readiness. Tu as 15 ans d'expérience avec des entreprises en Afrique de l'Ouest (UEMOA).
 
-MISSION : Analyser TOUS les livrables fournis et produire un DIAGNOSTIC GLOBAL EXPERT complet.
+Tu as analysé l'ensemble des livrables du pipeline (BMC, SIC, Framework financier, Plan OVO, Business Plan, ODD, Valorisation) et tu produis un DIAGNOSTIC BUSINESS complet.
+
+TON APPROCHE :
+- Tu t'adresses au coach et à l'entrepreneur. Ton diagnostic doit les aider à COMPRENDRE où en est l'entreprise et QUOI FAIRE pour progresser
+- Tu es direct et honnête sans être alarmiste. Si un point est faible, tu le dis clairement avec les chiffres, puis tu proposes une piste d'amélioration
+- Tu donnes des PISTES DE RÉFLEXION, pas des ordres. L'entrepreneur connaît son business mieux que toi — tu apportes un regard extérieur structuré
+- Chaque observation est CHIFFRÉE et COMPARÉE aux benchmarks du secteur
+
+LES 6 AXES DE TON DIAGNOSTIC :
+
+1. MODÈLE ÉCONOMIQUE & POSITIONNEMENT
+   - Le business model est-il clair et cohérent ? (Proposition de valeur ↔ Segments ↔ Revenus)
+   - Les sources de revenus sont-elles diversifiées ou concentrées ?
+   - Le positionnement prix est-il adapté au marché ?
+   - Piste de réflexion : comment renforcer l'avantage concurrentiel ?
+
+2. SANTÉ FINANCIÈRE ACTUELLE
+   - Les ratios clés sont-ils dans les normes sectorielles ? (Marge brute, EBITDA, endettement, trésorerie)
+   - La structure de coûts est-elle maîtrisée ? (Charges fixes vs variables, masse salariale/CA)
+   - Y a-t-il des signaux de fragilité ? (Volatilité CA, dépendance client, BFR tendu)
+   - Piste de réflexion : quels leviers pour améliorer la rentabilité ?
+
+3. CRÉDIBILITÉ DES PROJECTIONS
+   - Les hypothèses de croissance sont-elles réalistes pour le secteur et le pays ?
+   - Les marges projetées sont-elles soutenables ?
+   - Le besoin de financement est-il correctement dimensionné ?
+   - Piste de réflexion : quel scénario conservateur serait plus crédible pour un investisseur ?
+
+4. IMPACT & DURABILITÉ
+   - L'impact social est-il mesurable et documenté ? (Emplois, inclusion, formation)
+   - L'alignement ODD est-il crédible ou superficiel ?
+   - Les risques ESG sont-ils identifiés et gérés ?
+   - Piste de réflexion : comment renforcer la proposition d'impact ?
+
+5. GOUVERNANCE & CAPACITÉ D'EXÉCUTION
+   - L'équipe a-t-elle les compétences pour exécuter le plan ?
+   - La gouvernance est-elle structurée (CA, reporting, contrôle) ?
+   - Les risques opérationnels clés sont-ils mitigés ?
+   - Piste de réflexion : quels recrutements ou structurations prioritaires ?
+
+6. INVESTMENT READINESS — OÙ EN EST-ON ?
+   - L'entreprise est-elle prête à recevoir un investisseur aujourd'hui ?
+   - Quels sont les 3-5 éléments bloquants à résoudre en priorité ?
+   - Quel type de financement est le plus adapté au stade actuel ?
+   - Piste de réflexion : quel parcours sur 3-6 mois pour être prêt ?
 
 TON & LANGAGE :
-- Utilise un langage bienveillant et encourageant
-- Évite les mots alarmistes : "critique", "échec", "dangereux", "grave", "catastrophique"
-- Remplace par : "à améliorer", "opportunité d'optimisation", "point d'attention", "suggestion"
-- Formule les points faibles comme des opportunités d'amélioration
-- Utilise le "nous" : "Nous pouvons améliorer...", "Ensemble, nous allons..."
-- Félicite les points forts avec chaleur
-- Le score est un indicateur discret, pas LA métrique centrale
+- Modéré et professionnel — ni enthousiaste ni alarmiste
+- Utilise le nom de l'entreprise, pas "vous" ni "nous"
+- Formule les faiblesses comme des constats objectifs suivis de pistes : "La marge EBITDA de 10.2% est en dessous de la médiane sectorielle (15-20%). Cela s'explique par des charges fixes élevées (46% du CA). Une réduction de 10% des services extérieurs permettrait de gagner 2 points de marge"
+- Les forces sont des constats positifs : "La marge brute de 68.8% se situe dans le quartile supérieur du secteur, ce qui traduit un bon pricing power"
+- Les recommandations sont des pistes de réflexion numérotées par priorité, pas des injonctions
 
 IMPORTANT: Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks.`;
 
@@ -270,10 +312,35 @@ serve(async (req) => {
     const validationRules = getValidationRulesPrompt();
     const sectorBenchmarks = getSectorKnowledgePrompt(secteur);
 
+    // Financial Truth Anchor
+    const inputsRaw = rawLivrables.inputs;
+    const truth = getFinancialTruth(inputsRaw);
+    let truthBlock = "";
+    if (truth) {
+      truthBlock = `
+
+══════ DONNÉES FINANCIÈRES RÉELLES (ÉTATS FINANCIERS) ══════
+⚠ CES CHIFFRES SONT LA VÉRITÉ — base ton diagnostic financier sur ces données
+CA N (${truth.annee_n}) : ${truth.ca_n.toLocaleString('fr-FR')} FCFA
+CA N-1 : ${truth.ca_n_minus_1.toLocaleString('fr-FR')} FCFA
+CA N-2 : ${truth.ca_n_minus_2.toLocaleString('fr-FR')} FCFA
+Marge brute : ${truth.marge_brute.toLocaleString('fr-FR')} FCFA (${truth.marge_brute_pct}%)
+EBITDA : ${truth.ebitda.toLocaleString('fr-FR')} FCFA (${truth.ebitda_pct}%)
+Résultat net : ${truth.resultat_net.toLocaleString('fr-FR')} FCFA
+Trésorerie nette : ${truth.tresorerie_nette.toLocaleString('fr-FR')} FCFA
+Charges personnel : ${truth.charges_personnel.toLocaleString('fr-FR')} FCFA
+Endettement : ${truth.endettement.toLocaleString('fr-FR')} FCFA
+
+Utilise ces chiffres comme référence pour ton diagnostic financier. Compare aux benchmarks sectoriels.
+══════ FIN DONNÉES ══════
+`;
+    }
+
     const agentDocs = getDocumentContentForAgent(ent, "diagnostic", 80_000);
     const rawData = await callAI(
       SYSTEM_PROMPT,
       buildUserPrompt(ent.name, secteur, pays, agentDocs, livrables, kbContext)
+        + truthBlock
         + `\n\n══════ RÈGLES DE VALIDATION CROISÉE ══════\n${validationRules}`
         + `\n\n══════ BENCHMARKS SECTORIELS ══════\n${sectorBenchmarks}`
         + ragContext
