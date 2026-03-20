@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,8 +37,14 @@ interface ReconstructionResult {
   };
 }
 
+interface StorageFile {
+  name: string;
+  metadata?: { size?: number };
+}
+
 export default function ReconstructionUploader({ enterpriseId, session, navigate, onComplete, onPreScreeningDone }: ReconstructionUploaderProps) {
   const [files, setFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<StorageFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
@@ -50,6 +56,17 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  const fetchExistingFiles = useCallback(async () => {
+    const { data } = await supabase.storage.from('documents').list(`${enterpriseId}/reconstruction/`);
+    if (data && data.length > 0) {
+      setExistingFiles(data.filter(f => f.name !== '.emptyFolderPlaceholder'));
+    }
+  }, [enterpriseId]);
+
+  useEffect(() => {
+    fetchExistingFiles();
+  }, [fetchExistingFiles]);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const arr = Array.from(newFiles);
@@ -209,6 +226,7 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
       setProgress(100);
       setProgressLabel('Terminé !');
       setResult(resultData);
+      await fetchExistingFiles();
       toast.success(confidence >= 70
         ? 'Données solides — mode Due Diligence activé !'
         : 'Reconstruction terminée — ajoutez plus de documents pour améliorer la qualité.');
@@ -370,6 +388,26 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
   return (
     <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
       <CardContent className="py-6">
+        {/* Existing files from storage */}
+        {existingFiles.length > 0 && files.length === 0 && !uploading && (
+          <div className="mb-4 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" /> {existingFiles.length} document(s) déjà uploadé(s)
+            </p>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {existingFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs bg-muted/40 rounded-lg px-3 py-1.5">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate">{f.name.replace(/^\d+_/, '')}</span>
+                  {f.metadata?.size && (
+                    <span className="text-muted-foreground/50 shrink-0">{formatFileSize(f.metadata.size)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Drop zone */}
         <div
           ref={dropRef}
