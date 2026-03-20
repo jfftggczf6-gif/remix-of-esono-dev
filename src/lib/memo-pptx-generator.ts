@@ -165,7 +165,7 @@ function addExecSummarySlide(pres: PptxGenJS, re: Record<string, any>, score: nu
   addFooter(slide, pres, companyName, slideNum);
 }
 
-function addVerdictSlide(pres: PptxGenJS, verdict: string, justification: string, conditions: string[], nextSteps: string[], score: number, companyName: string, slideNum: number) {
+function addVerdictSlide(pres: PptxGenJS, verdict: string, justification: string, conditions: string[], nextSteps: string[], score: number, _companyName: string, _slideNum: number) {
   const slide = pres.addSlide();
   slide.background = { fill: NAVY };
   const vColor = verdict === 'INVESTIR' ? TEAL : verdict === 'APPROFONDIR' ? GOLD : RED;
