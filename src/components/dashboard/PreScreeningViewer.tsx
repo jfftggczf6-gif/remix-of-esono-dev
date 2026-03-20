@@ -16,11 +16,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface PreScreeningViewerProps {
   data: Record<string, any>;
+  enterprise?: Record<string, any> | null;
   onRegenerate?: (programmeId?: string | null) => void;
   onLaunchPipeline?: () => void;
 }
 
-export default function PreScreeningViewer({ data, onRegenerate, onLaunchPipeline }: PreScreeningViewerProps) {
+export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate, onLaunchPipeline }: PreScreeningViewerProps) {
   const [anomalyFilter, setAnomalyFilter] = useState<string>('all');
   const [expandedCV, setExpandedCV] = useState<Record<string, boolean>>({});
   const [programmes, setProgrammes] = useState<any[]>([]);
@@ -144,8 +145,8 @@ export default function PreScreeningViewer({ data, onRegenerate, onLaunchPipelin
     return c;
   };
 
-  // Enterprise info from data (if available)
-  const entInfo = data._enterprise_info || {};
+  // Enterprise info: prefer passed enterprise prop, fallback to data
+  const entInfo = ent || data._enterprise_info || {};
 
   return (
     <div className="space-y-6">
@@ -217,8 +218,9 @@ export default function PreScreeningViewer({ data, onRegenerate, onLaunchPipelin
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {[
-              { icon: Building2, label: 'Secteur', value: entInfo.sector || data._sector },
-              { icon: Globe, label: 'Pays', value: entInfo.country || data._country },
+              { icon: Building2, label: 'Nom', value: entInfo.name },
+              { icon: Building2, label: 'Secteur', value: entInfo.sector },
+              { icon: Globe, label: 'Pays', value: entInfo.country },
               { icon: Users, label: 'Effectifs', value: entInfo.employees_count },
               { icon: Scale, label: 'Forme juridique', value: entInfo.legal_form },
               { icon: Calendar, label: 'Création', value: entInfo.creation_date },
