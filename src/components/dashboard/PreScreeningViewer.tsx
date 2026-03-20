@@ -225,6 +225,11 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
               { icon: Scale, label: 'Forme juridique', value: entInfo.legal_form },
               { icon: Calendar, label: 'Création', value: entInfo.creation_date },
               { icon: TrendingUp, label: 'CA estimé', value: santeFinanciere.ca_estime ? formatAmount(santeFinanciere.ca_estime) + ' FCFA' : null },
+              { icon: TrendingUp, label: 'Marge brute', value: santeFinanciere.marge_brute_pct != null ? santeFinanciere.marge_brute_pct + ' %' : null },
+              { icon: TrendingUp, label: 'Marge nette', value: santeFinanciere.marge_nette_pct != null ? santeFinanciere.marge_nette_pct + ' %' : null },
+              { icon: Scale, label: 'Endettement', value: santeFinanciere.ratio_endettement_pct != null ? santeFinanciere.ratio_endettement_pct + ' %' : null },
+              { icon: TrendingUp, label: 'Trésorerie nette', value: santeFinanciere.tresorerie_nette != null ? formatAmount(santeFinanciere.tresorerie_nette) + ' FCFA' : null },
+              { icon: AlertTriangle, label: 'Santé', value: santeFinanciere.health_label },
             ].filter(r => r.value).map(row => (
               <div key={row.label} className="flex items-center justify-between py-1">
                 <span className="text-muted-foreground flex items-center gap-1.5">
@@ -233,6 +238,12 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                 <span className="font-medium">{row.value}</span>
               </div>
             ))}
+            {entInfo.description && (
+              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border leading-relaxed line-clamp-4">{entInfo.description}</p>
+            )}
+            {!entInfo.description && resumeExecutif?.synthese && (
+              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border leading-relaxed line-clamp-4">{resumeExecutif.synthese}</p>
+            )}
           </CardContent>
         </Card>
 
