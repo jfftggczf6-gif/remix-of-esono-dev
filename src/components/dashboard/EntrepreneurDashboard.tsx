@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Plus, Building2, Sparkles, Download,
   LogOut, Clock, CheckCircle2, Loader2,
-  FolderPlus, Pencil, Trash2,
+  FolderPlus, Pencil, Trash2, ArrowLeft,
   FileText, BarChart3, Stethoscope, LayoutGrid, Globe, FileSpreadsheet, Target, Search, FileSearch
 } from 'lucide-react';
 import BmcViewer from './BmcViewer';
