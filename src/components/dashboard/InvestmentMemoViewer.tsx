@@ -91,9 +91,24 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
   const handleDownloadPptx = async () => {
     setGeneratingPptx(true);
     try {
-      await generateMemoPptx(data);
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await supabase.functions.invoke('generate-memo-pptx', {
+        body: { data },
+      });
+      if (resp.error) throw new Error(resp.error.message || 'PPTX generation failed');
+      
+      const blob = new Blob([resp.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' 
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Investment_Memo_${data.page_de_garde?.titre?.replace(/[^a-zA-Z0-9]/g, '_') || 'ESONO'}.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
       toast.success('PPTX téléchargé !');
     } catch (err: any) {
+      console.error('PPTX error:', err);
       toast.error(err.message || 'Erreur génération PPTX');
     } finally {
       setGeneratingPptx(false);
