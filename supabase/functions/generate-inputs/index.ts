@@ -1,6 +1,6 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
 import { normalizeInputs } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { getExtractionKnowledgePrompt } from "../_shared/financial-knowledge.ts";
@@ -323,23 +323,24 @@ serve(async (req) => {
       .select("category, filename")
       .eq("enterprise_id", ctx.enterprise_id);
 
+    const agentDocs = getDocumentContentForAgent(ent, "inputs", 100_000);
     const financialDetected = hasFinancialContent(
-      ctx.documentContent || "",
+      agentDocs,
       coachUploads || [],
     );
 
     if (!financialDetected) {
-      console.log("generate-inputs: No financial documents detected — saving empty skeleton with score 0");
-      const emptyData = { score: 0, donnees_manquantes: ["Aucun document financier réel détecté. Uploadez le template Analyse Financière Excel pour débloquer les modules financiers."] };
-      await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", emptyData, "inputs");
-      return jsonResponse({ success: true, data: emptyData, score: 0 });
+      console.log("[inputs] No financial content detected — returning score 0");
+      await saveDeliverable(ctx.supabase, ctx.enterprise_id, "inputs_data", {
+        compte_resultat: {},
+        bilan: {},
+        metadata: { no_financial_data: true },
+      }, "inputs");
+      return jsonResponse({ success: true, score: 0 });
     }
 
-    // ── Financial docs found — proceed with AI extraction ──
-    const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal"], "inputs_data");
-
     const enrichedPrompt = userPrompt(
-      ent.name, ent.sector || "", ent.country || "", ctx.documentContent, bmcData, fiscalParams.devise
+      ent.name, ent.sector || "", ent.country || "", agentDocs, bmcData, fiscalParams.devise
     ) + ragContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
 
     const rawData = await callAI(buildSystemPrompt(fiscalParams.devise), enrichedPrompt, 16384);

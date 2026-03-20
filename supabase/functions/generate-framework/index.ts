@@ -1,6 +1,6 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
 import { normalizeFramework } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { fillFrameworkExcelTemplate } from "../_shared/framework-excel-template.ts";
@@ -411,8 +411,9 @@ serve(async (req) => {
       equipeContext = `\n\nÉQUIPE DÉTAILLÉE (source documents) :\n${inputsData.equipe.map((e: any) => `  - ${e.poste}: ${e.nombre} personne(s), salaire ${e.salaire_mensuel || 'N/A'} ${fiscalParams.devise}/mois`).join('\n')}`;
     }
 
+    const agentDocs = getDocumentContentForAgent(ent, "framework", 100_000);
     const enrichedPrompt = userPrompt(
-      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", ctx.documentContent, inputsData, bmcData, fiscalParams.devise
+      ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", agentDocs, inputsData, bmcData, fiscalParams.devise
     ) + produitsContext + historiqueContext + capexContext + financementContext + bfrContext + hypothesesContext + coutsContext + equipeContext + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
 
     const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;

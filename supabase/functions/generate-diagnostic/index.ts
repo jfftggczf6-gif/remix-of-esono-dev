@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  getFiscalParams
+  getFiscalParams, getDocumentContentForAgent
 } from "../_shared/helpers_v5.ts";
 import { normalizeDiagnostic } from "../_shared/normalizers.ts";
 import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
@@ -270,9 +270,10 @@ serve(async (req) => {
     const validationRules = getValidationRulesPrompt();
     const sectorBenchmarks = getSectorKnowledgePrompt(secteur);
 
+    const agentDocs = getDocumentContentForAgent(ent, "diagnostic", 80_000);
     const rawData = await callAI(
       SYSTEM_PROMPT,
-      buildUserPrompt(ent.name, secteur, pays, ctx.documentContent, livrables, kbContext)
+      buildUserPrompt(ent.name, secteur, pays, agentDocs, livrables, kbContext)
         + `\n\n══════ RÈGLES DE VALIDATION CROISÉE ══════\n${validationRules}`
         + `\n\n══════ BENCHMARKS SECTORIELS ══════\n${sectorBenchmarks}`
         + ragContext

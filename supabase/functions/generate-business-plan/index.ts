@@ -1,6 +1,6 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
 import { syncBusinessPlanWithPlanOvo } from "../_shared/normalizers.ts";
 import { getFinancialKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle, ShadingType, LevelFormat, PageBreak, Header, Footer } from "npm:docx@8";
@@ -108,7 +108,7 @@ DIAGNOSTIC : ${JSON.stringify(diag).substring(0, 500)}
 
 PLAN OVO : ${plan ? JSON.stringify(plan).substring(0, 800) : "Non disponible"}
 
-${ctx.documentContent ? `DOCUMENTS:\n${ctx.documentContent.substring(0, 2000)}` : ""}`;
+${ctx._agentDocs ? `DOCUMENTS:\n${ctx._agentDocs.substring(0, 2000)}` : ""}`;
 }
 
 function buildPromptPart1(ctx: any): string {
@@ -704,6 +704,7 @@ serve(async (req) => {
   try {
     const ctx = await verifyAndGetContext(req);
     const ent = ctx.enterprise;
+    (ctx as any)._agentDocs = getDocumentContentForAgent(ent, "business_plan", 100_000);
 
     console.log("[BP] Generating Business Plan for:", ent.name);
 

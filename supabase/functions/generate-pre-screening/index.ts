@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  jsonResponse, errorResponse,
+  jsonResponse, errorResponse, getDocumentContentForAgent,
 } from "../_shared/helpers_v5.ts";
 import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 import { normalizePreScreening } from "../_shared/normalizers.ts";
@@ -269,7 +269,7 @@ DATE CRÉATION : ${ent.creation_date || "Non spécifié"}
 DESCRIPTION : ${ent.description || "Non spécifié"}
 
 ══════ DOCUMENTS UPLOADÉS (MATIÈRE BRUTE) ══════
-${ctx.documentContent || "(Aucun document uploadé)"}
+${getDocumentContentForAgent(ent, "pre_screening", 100_000) || "(Aucun document uploadé)"}
 
 ══════ DONNÉES RECONSTITUÉES PAR L'IA ══════
 ${inputsData ? JSON.stringify(inputsData).substring(0, 8000) : "(Pas encore de reconstruction — analyse uniquement les documents bruts)"}

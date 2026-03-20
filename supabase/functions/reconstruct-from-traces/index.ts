@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
+  getDocumentContentForAgent,
 } from "../_shared/helpers_v5.ts";
 import { normalizeReconstruction } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
@@ -104,12 +105,8 @@ serve(async (req) => {
       throw { status: 400, message: "Aucun contenu documentaire. Veuillez d'abord uploader et analyser des documents." };
     }
 
-    // Cap document content to 80K chars to avoid Deno memory limits
-    const MAX_PROMPT_CHARS = 80_000;
-    const docContent = ctx.documentContent.length > MAX_PROMPT_CHARS
-      ? ctx.documentContent.substring(0, MAX_PROMPT_CHARS) + "\n[... contenu tronqué à 80K caractères]"
-      : ctx.documentContent;
-
+    // Use agent-prioritized document content
+    const docContent = getDocumentContentForAgent(ent, "reconstruct", 80_000);
     console.log("[reconstruct] Docs cache length:", ctx.documentContent.length, "→ prompt length:", docContent.length);
 
     // Build RAG context for sector benchmarks (protected)

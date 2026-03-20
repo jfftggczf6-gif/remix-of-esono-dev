@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  jsonResponse, errorResponse,
+  jsonResponse, errorResponse, getDocumentContentForAgent,
 } from "../_shared/helpers_v5.ts";
 import { normalizeScreeningReport } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
@@ -272,7 +272,7 @@ DATE CRÉATION : ${ent.creation_date || "Non spécifié"}
 DESCRIPTION : ${ent.description || "Non spécifié"}
 
 ══════ DOCUMENTS UPLOADÉS ══════
-${ctx.documentContent || "(Aucun document uploadé)"}
+${getDocumentContentForAgent(ent, "screening", 80_000) || "(Aucun document uploadé)"}
 
 ══════ LIVRABLES EXISTANTS ══════
 ${delivSummary.length > 0 ? delivSummary.join("\n\n") : "(Aucun livrable généré)"}

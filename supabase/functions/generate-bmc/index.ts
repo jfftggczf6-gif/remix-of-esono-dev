@@ -1,6 +1,6 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
 import { normalizeBmc } from "../_shared/normalizers.ts";
 import { getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
 
@@ -118,8 +118,9 @@ serve(async (req) => {
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "secteurs"], "bmc_analysis");
 
     const sectorBenchmarks = getSectorKnowledgePrompt(ent.sector || "services_b2b");
+    const agentDocs = getDocumentContentForAgent(ent, "bmc", 100_000);
     const rawBmcData = await callAI(BMC_SYSTEM_PROMPT, BMC_USER_PROMPT(
-      ent.name, ent.sector || "", ent.country || "", ent.city || "", ctx.documentContent
+      ent.name, ent.sector || "", ent.country || "", ent.city || "", agentDocs
     ) + `\n\n══════ BENCHMARKS SECTORIELS ══════\n${sectorBenchmarks}` + ragContext, 32768, undefined, 0.2);
 
     // Normalize AI response
