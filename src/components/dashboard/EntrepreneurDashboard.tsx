@@ -1334,7 +1334,7 @@ export default function EntrepreneurDashboard({
               </div>
             ) : selectedModule === 'investment_memo' ? (
               <div className="flex flex-col items-center justify-center h-64 text-center px-6">
-                <Briefcase className="h-16 w-16 text-muted-foreground/20 mb-4" />
+                <FileText className="h-16 w-16 text-muted-foreground/20 mb-4" />
                 <h3 className="font-semibold text-lg mb-2">Mémo d'Investissement</h3>
                 <p className="text-sm text-muted-foreground/70 max-w-sm mb-6">
                   Génération en 2 passes (~6 min chacune).
