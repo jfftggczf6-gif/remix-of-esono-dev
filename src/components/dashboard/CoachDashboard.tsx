@@ -820,7 +820,7 @@ export default function CoachDashboard() {
     const ent = selectedEnt;
     const entDelivs = deliverablesMap[ent.id] || [];
     const entUploads = uploadsMap[ent.id] || [];
-    const entMods = modulesMap[ent.id] || [];
+    const _entMods = modulesMap[ent.id] || [];
 
     const uploadsByCategory = {
       bmc: entUploads.filter((u) => u.category === 'bmc'),
