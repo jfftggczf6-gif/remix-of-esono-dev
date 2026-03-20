@@ -1577,3 +1577,98 @@ export function normalizeByType(type: string, data: any): any {
   const normalizer = normalizers[type];
   return normalizer ? normalizer(data) : data;
 }
+
+// ===== CROSS-DELIVERABLE VALIDATOR =====
+/**
+ * Validates financial coherence across ALL deliverables.
+ * Called AFTER each deliverable generation to detect inter-agent inconsistencies.
+ */
+export function validateCrossDeliverables(
+  inputsData: any,
+  frameworkData: any,
+  planOvoData: any,
+  preScreeningData: any,
+  onePagerData: any,
+): { valid: boolean; errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const truth = getFinancialTruth(inputsData);
+  if (!truth) return { valid: true, errors: [], warnings: ["Pas d'inputs data — validation impossible"] };
+
+  // 1. CA cohérent entre tous les livrables
+  const checkCA = (label: string, value: any) => {
+    const v = toNumber(value, 0);
+    if (v > 0 && Math.abs(v - truth.ca_n) / truth.ca_n > 0.05) {
+      errors.push(`${label} CA (${v}) dévie de >5% du CA réel (${truth.ca_n})`);
+    }
+  };
+  checkCA("Framework", frameworkData?.kpis?.ca_annee_n);
+  checkCA("Plan OVO", planOvoData?.revenue?.current_year);
+  checkCA("Pre-screening", preScreeningData?.sante_financiere?.ca_estime);
+
+  // Parse onePager CA from traction
+  if (onePagerData?.traction?.ca_y0) {
+    const opCAStr = String(onePagerData.traction.ca_y0).replace(/[^\d]/g, '');
+    const opCA = parseFloat(opCAStr);
+    if (opCA > 0 && Math.abs(opCA - truth.ca_n) / truth.ca_n > 0.10) {
+      warnings.push(`One-Pager CA (${opCA}) dévie de >10% du CA réel (${truth.ca_n})`);
+    }
+  }
+
+  // 2. Trésorerie cohérente
+  const psTreso = toNumber(preScreeningData?.sante_financiere?.tresorerie_nette, 0);
+  const fwTreso = toNumber(frameworkData?.tresorerie_bfr?.tresorerie_nette, 0);
+  if (psTreso > 0 && fwTreso > 0 && Math.abs(psTreso - fwTreso) / Math.max(psTreso, fwTreso) > 0.15) {
+    warnings.push(`Trésorerie pre-screening (${psTreso}) vs framework (${fwTreso}) — écart >15%`);
+  }
+
+  // 3. Chaîne comptable vérifiable dans le Framework
+  if (frameworkData?.projection_5ans?.lignes && Array.isArray(frameworkData.projection_5ans.lignes)) {
+    const lignes = frameworkData.projection_5ans.lignes;
+    const findLine = (...patterns: string[]) => lignes.find((l: any) => {
+      const lb = (l.poste || l.libelle || '').toLowerCase();
+      return patterns.some(p => lb.includes(p)) && !lb.includes('%');
+    });
+    const caLine = findLine('ca total', 'revenue', 'chiffre');
+    const mbLine = findLine('marge brute', 'gross');
+    const ebitdaLine = findLine('ebitda');
+    const rnLine = findLine('résultat net', 'resultat net');
+
+    for (const yr of ['an1', 'an2', 'an3', 'an4', 'an5']) {
+      const ca = toNumber(caLine?.[yr], 0);
+      const mb = toNumber(mbLine?.[yr], 0);
+      const ebitda = toNumber(ebitdaLine?.[yr], 0);
+      const rn = toNumber(rnLine?.[yr], 0);
+      if (ca > 0) {
+        if (mb > ca) errors.push(`Framework ${yr}: Marge Brute (${mb}) > CA (${ca})`);
+        if (ebitda > mb) errors.push(`Framework ${yr}: EBITDA (${ebitda}) > Marge Brute (${mb})`);
+        if (rn > ebitda) warnings.push(`Framework ${yr}: Résultat Net (${rn}) > EBITDA (${ebitda})`);
+      }
+    }
+  }
+
+  // 4. Plan OVO chaîne P&L
+  if (planOvoData?.revenue) {
+    const YEAR_KEYS = ['current_year', 'year2', 'year3', 'year4', 'year5', 'year6'];
+    for (const yk of YEAR_KEYS) {
+      const rev = toNumber(planOvoData.revenue[yk], 0);
+      const gp = toNumber(planOvoData.gross_profit?.[yk], 0);
+      const ebitda = toNumber(planOvoData.ebitda?.[yk], 0);
+      const rn = toNumber(planOvoData.net_profit?.[yk], 0);
+      if (rev > 0) {
+        if (gp > rev) errors.push(`Plan OVO ${yk}: gross_profit (${gp}) > revenue (${rev})`);
+        if (ebitda > gp) errors.push(`Plan OVO ${yk}: ebitda (${ebitda}) > gross_profit (${gp})`);
+        if (rn > ebitda) warnings.push(`Plan OVO ${yk}: net_profit (${rn}) > ebitda (${ebitda})`);
+      }
+    }
+  }
+
+  // 5. Historique cohérent entre Plan OVO et Inputs
+  if (planOvoData?.revenue?.year_minus_1 && truth.ca_n_minus_1 > 0) {
+    if (Math.abs(planOvoData.revenue.year_minus_1 - truth.ca_n_minus_1) / truth.ca_n_minus_1 > 0.10) {
+      errors.push(`Plan OVO CA N-1 (${planOvoData.revenue.year_minus_1}) ≠ historique réel (${truth.ca_n_minus_1})`);
+    }
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
