@@ -218,8 +218,9 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {[
-              { icon: Building2, label: 'Secteur', value: entInfo.sector || data._sector },
-              { icon: Globe, label: 'Pays', value: entInfo.country || data._country },
+              { icon: Building2, label: 'Nom', value: entInfo.name },
+              { icon: Building2, label: 'Secteur', value: entInfo.sector },
+              { icon: Globe, label: 'Pays', value: entInfo.country },
               { icon: Users, label: 'Effectifs', value: entInfo.employees_count },
               { icon: Scale, label: 'Forme juridique', value: entInfo.legal_form },
               { icon: Calendar, label: 'Création', value: entInfo.creation_date },
