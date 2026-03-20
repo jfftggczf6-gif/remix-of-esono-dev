@@ -223,12 +223,43 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
     }
   };
 
+  const handleRetryPreScreening = async () => {
+    setRetryingPreScreening(true);
+    try {
+      const token = await getValidAccessToken(session, navigate);
+      const abortCtrl = new AbortController();
+      const timeout = setTimeout(() => abortCtrl.abort(), 180000);
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pre-screening`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ enterprise_id: enterpriseId }),
+          signal: abortCtrl.signal,
+        }
+      );
+      clearTimeout(timeout);
+      if (resp.ok) {
+        setPreScreeningFailed(false);
+        toast.success('Pre-screening généré !');
+        onPreScreeningDone?.(null);
+      } else {
+        toast.error('Le pre-screening a échoué. Réessayez plus tard.');
+      }
+    } catch (err: any) {
+      toast.error(err.name === 'AbortError' ? 'Timeout — réessayez plus tard.' : 'Erreur réseau.');
+    } finally {
+      setRetryingPreScreening(false);
+    }
+  };
+
   const handleUseData = async () => {
     toast.success('Données intégrées au pipeline !');
     setResult(null);
     setFiles([]);
     setParsedDocs([]);
     setParsingSummary(null);
+    setPreScreeningFailed(false);
     onComplete();
   };
 
