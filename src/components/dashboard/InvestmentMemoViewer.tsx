@@ -5,8 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Briefcase, Download, Copy, CheckCircle2, FileText, Presentation, Loader2, TrendingUp, Users, Shield, Target } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateMemoPptx, SLIDE_TITLES } from '@/lib/memo-pptx-generator';
 import { generateMemoHtml } from '@/lib/memo-html-generator';
+import { supabase } from '@/integrations/supabase/client';
+
+const SLIDE_TITLES = [
+  'Page de Garde',
+  'Table des Matières',
+  'Résumé Exécutif',
+  'Présentation de l\'Entreprise',
+  'Analyse de Marché',
+  'Modèle Économique',
+  'Analyse Financière',
+  'Projections Financières',
+  'Valorisation',
+  'Besoins de Financement',
+  'Équipe & Gouvernance',
+  'ESG & Impact',
+  'Analyse des Risques',
+  'Thèse d\'Investissement',
+  'Structure Proposée',
+  'Recommandation Finale',
+  'Annexes',
+];
 
 interface Props {
   data: Record<string, any>;
@@ -71,9 +91,24 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
   const handleDownloadPptx = async () => {
     setGeneratingPptx(true);
     try {
-      await generateMemoPptx(data);
+      // Auth is handled automatically by supabase.functions.invoke
+      const resp = await supabase.functions.invoke('generate-memo-pptx', {
+        body: { data },
+      });
+      if (resp.error) throw new Error(resp.error.message || 'PPTX generation failed');
+      
+      const blob = new Blob([resp.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' 
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Investment_Memo_${data.page_de_garde?.titre?.replace(/[^a-zA-Z0-9]/g, '_') || 'ESONO'}.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
       toast.success('PPTX téléchargé !');
     } catch (err: any) {
+      console.error('PPTX error:', err);
       toast.error(err.message || 'Erreur génération PPTX');
     } finally {
       setGeneratingPptx(false);
