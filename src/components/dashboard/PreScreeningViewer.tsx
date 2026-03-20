@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   AlertTriangle, CheckCircle2, XCircle, Info, FileSearch, Heart, Shield, Copy,
   Download, Target, TrendingUp, Banknote, RefreshCw, ChevronDown, ChevronUp,
-  Wand2, Rocket, Zap, Building2, Globe, Users, Calendar, Scale
+  Wand2, Rocket, Zap, Building2, Globe, Users, Calendar, Scale, Briefcase,
+  Factory, Gavel, BarChart3, Clock, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +55,19 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
   const pathway = data.pathway_financement || null;
   const recommandationPipeline = data.recommandation_pipeline || null;
   const programmeMatch = data.programme_match || null;
+
+  // New enriched sections
+  const analyseNarrative = data.analyse_narrative || null;
+  const analyseTendance = analyseNarrative?.analyse_tendance || null;
+  const analyseCommerciale = analyseNarrative?.analyse_commerciale || null;
+  const analyseOperationnelle = analyseNarrative?.analyse_operationnelle || null;
+  const analyseEquipe = analyseNarrative?.analyse_equipe || null;
+  const analyseLegale = analyseNarrative?.analyse_legale || null;
+  const comparaisonSectorielle = analyseNarrative?.comparaison_sectorielle || null;
+  const scenariosProspectifs = analyseNarrative?.scenarios_prospectifs || null;
+  const scoringGranulaire = analyseNarrative?.scoring_granulaire || null;
+  const timelineEvenements = analyseNarrative?.timeline_evenements || [];
+  const verdictAnalyste = analyseNarrative?.verdict_analyste || null;
 
   const classConfig: Record<string, { color: string; bg: string; border: string; ring: string; icon: any }> = {
     AVANCER_DIRECTEMENT: { color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-300', ring: 'ring-emerald-500', icon: CheckCircle2 },
@@ -145,16 +159,29 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
     return c;
   };
 
-  // Enterprise info: prefer passed enterprise prop, fallback to data
   const entInfo = ent || data._enterprise_info || {};
+
+  const positionColor = (pos: string) => {
+    if (pos === 'top') return 'text-emerald-700 bg-emerald-50';
+    if (pos === 'above_median') return 'text-emerald-600 bg-emerald-50/50';
+    if (pos === 'median') return 'text-muted-foreground bg-muted/50';
+    if (pos === 'below_median') return 'text-amber-700 bg-amber-50';
+    if (pos === 'bottom') return 'text-red-700 bg-red-50';
+    return 'text-muted-foreground bg-muted/50';
+  };
+
+  const dimensionColor = (score: number) => {
+    if (score >= 70) return 'bg-emerald-500';
+    if (score >= 40) return 'bg-amber-500';
+    return 'bg-red-500';
+  };
 
   return (
     <div className="space-y-6">
 
-      {/* ═══ HEADER — Score + Classification + Actions ═══ */}
+      {/* ═══ 1. HEADER — Score + Classification + Actions ═══ */}
       <Card className={`p-6 ${cc.bg} border-2 ${cc.border}`}>
         <div className="flex items-start gap-5">
-          {/* Score circle */}
           <div className={`w-20 h-20 rounded-full flex items-center justify-center ring-4 ${scoreBg} flex-none`}>
             <span className={`text-3xl font-bold font-display ${scoreColor}`}>{score}</span>
           </div>
@@ -167,12 +194,11 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
             </div>
             <p className="text-sm leading-relaxed">{classDetail}</p>
             {resumeExecutif?.synthese && (
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{resumeExecutif.synthese}</p>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed whitespace-pre-line">{resumeExecutif.synthese}</p>
             )}
           </div>
         </div>
 
-        {/* Actions bar */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/30">
           <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopySummary}>
             <Copy className="h-3.5 w-3.5" /> Copier
@@ -183,21 +209,17 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           <div className="flex-1" />
           {onRegenerate && (
             <div className="flex items-center gap-2">
-              {programmes.length > 0 && (
-                <Select value={selectedProgrammeId || 'none'} onValueChange={(v) => setSelectedProgrammeId(v === 'none' ? null : v)}>
-                  <SelectTrigger className="w-[240px] h-8 text-xs">
-                    <SelectValue placeholder="Critères programme (optionnel)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucun programme</SelectItem>
-                    {programmes.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={selectedProgrammeId || 'none'} onValueChange={(v) => setSelectedProgrammeId(v === 'none' ? null : v)}>
+                <SelectTrigger className="w-[240px] h-8 text-xs">
+                  <SelectValue placeholder="Critères programme (optionnel)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun programme</SelectItem>
+                  {programmes.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => onRegenerate(selectedProgrammeId)}>
                 <RefreshCw className="h-3.5 w-3.5" /> Regénérer
               </Button>
@@ -206,9 +228,37 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </div>
       </Card>
 
-      {/* ═══ ROW: Fiche Entreprise + Qualité Dossier ═══ */}
+      {/* ═══ 2. SCORING GRANULAIRE ═══ */}
+      {scoringGranulaire?.dimensions?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Scoring multi-dimensionnel</CardTitle>
+              {scoringGranulaire.score_global_calcule != null && (
+                <Badge variant="outline" className="ml-auto text-xs">{scoringGranulaire.score_global_calcule}/100</Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {scoringGranulaire.dimensions.map((dim: any, i: number) => (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">{dim.dimension} <span className="text-muted-foreground">({dim.poids}%)</span></span>
+                  <span className="text-xs font-bold">{dim.score}/100</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className={`h-2 rounded-full ${dimensionColor(dim.score)}`} style={{ width: `${dim.score}%` }} />
+                </div>
+                {dim.justification && <p className="text-[10px] text-muted-foreground mt-0.5">{dim.justification}</p>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 3. Fiche Entreprise + Qualité Dossier ═══ */}
       <div className="grid md:grid-cols-2 gap-4 items-start">
-        {/* Fiche entreprise */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -241,13 +291,9 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
             {entInfo.description && (
               <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border leading-relaxed line-clamp-4">{entInfo.description}</p>
             )}
-            {!entInfo.description && resumeExecutif?.synthese && (
-              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border leading-relaxed line-clamp-4">{resumeExecutif.synthese}</p>
-            )}
           </CardContent>
         </Card>
 
-        {/* Qualité du dossier */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -291,7 +337,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </Card>
       </div>
 
-      {/* ═══ Forces & Faiblesses ═══ */}
+      {/* ═══ 4. Forces & Faiblesses ═══ */}
       {resumeExecutif && (resumeExecutif.points_forts?.length > 0 || resumeExecutif.points_faibles?.length > 0) && (
         <Card>
           <CardHeader className="pb-3">
@@ -333,7 +379,332 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </Card>
       )}
 
-      {/* ═══ Anomalies & Red Flags ═══ */}
+      {/* ═══ 5. ANALYSE NARRATIVE — Histoire + Tendances ═══ */}
+      {analyseNarrative?.histoire_entreprise && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" /> Analyse narrative
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Histoire de l'entreprise</h4>
+              <p className="text-sm leading-relaxed whitespace-pre-line">{analyseNarrative.histoire_entreprise}</p>
+            </div>
+            {analyseTendance && Object.values(analyseTendance).some((v: any) => v) && (
+              <div className="grid md:grid-cols-2 gap-3 pt-3 border-t border-border">
+                {[
+                  { key: 'tendance_ca', label: 'Tendance CA', icon: TrendingUp },
+                  { key: 'tendance_rentabilite', label: 'Rentabilité', icon: BarChart3 },
+                  { key: 'tendance_tresorerie', label: 'Trésorerie', icon: Banknote },
+                  { key: 'tendance_endettement', label: 'Endettement', icon: Scale },
+                ].map(t => {
+                  const val = analyseTendance[t.key];
+                  if (!val) return null;
+                  return (
+                    <div key={t.key} className="p-3 rounded-lg bg-muted/30 border border-border">
+                      <h5 className="text-xs font-medium mb-1 flex items-center gap-1.5">
+                        <t.icon className="h-3 w-3 text-primary" /> {t.label}
+                      </h5>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{val}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 6. ANALYSE COMMERCIALE ═══ */}
+      {analyseCommerciale && (analyseCommerciale.modele_revenus || analyseCommerciale.produits_services_identifies?.length > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Analyse commerciale</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {analyseCommerciale.produits_services_identifies?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Produits & services identifiés</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {analyseCommerciale.produits_services_identifies.map((p: string, i: number) => (
+                    <div key={i} className="text-xs p-2 bg-muted/30 rounded border border-border">{p}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {analyseCommerciale.modele_revenus && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Modèle de revenus</h4>
+                <p className="text-sm text-muted-foreground">{analyseCommerciale.modele_revenus}</p>
+              </div>
+            )}
+            {analyseCommerciale.clients_identifies?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Clients identifiés</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {analyseCommerciale.clients_identifies.map((c: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-[10px]">{c}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {analyseCommerciale.avantages_concurrentiels?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Avantages concurrentiels</h4>
+                {analyseCommerciale.avantages_concurrentiels.map((a: string, i: number) => (
+                  <p key={i} className="text-xs text-emerald-600 mb-0.5">✓ {a}</p>
+                ))}
+              </div>
+            )}
+            {analyseCommerciale.risques_commerciaux?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Risques commerciaux</h4>
+                {analyseCommerciale.risques_commerciaux.map((r: string, i: number) => (
+                  <p key={i} className="text-xs text-red-600 mb-0.5">⚠ {r}</p>
+                ))}
+              </div>
+            )}
+            {analyseCommerciale.donnees_manquantes_commerciales?.length > 0 && (
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <h4 className="text-xs font-medium text-amber-700 mb-1">Données commerciales manquantes</h4>
+                {analyseCommerciale.donnees_manquantes_commerciales.map((d: string, i: number) => (
+                  <p key={i} className="text-xs text-amber-600">• {d}</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 7. ANALYSE OPÉRATIONNELLE ═══ */}
+      {analyseOperationnelle && (analyseOperationnelle.chaine_valeur || analyseOperationnelle.processus_cles?.length > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Factory className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Analyse opérationnelle</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {analyseOperationnelle.chaine_valeur && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Chaîne de valeur</h4>
+                <p className="text-sm text-muted-foreground">{analyseOperationnelle.chaine_valeur}</p>
+              </div>
+            )}
+            {analyseOperationnelle.capacite_production && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Capacité de production</h4>
+                <p className="text-xs text-muted-foreground">{analyseOperationnelle.capacite_production}</p>
+              </div>
+            )}
+            {analyseOperationnelle.fournisseurs_cles?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Fournisseurs clés</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {analyseOperationnelle.fournisseurs_cles.map((f: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-[10px]">{f}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {analyseOperationnelle.risques_operationnels?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Risques opérationnels</h4>
+                {analyseOperationnelle.risques_operationnels.map((r: string, i: number) => (
+                  <p key={i} className="text-xs text-red-600 mb-0.5">⚠ {r}</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 8. ANALYSE ÉQUIPE & RH ═══ */}
+      {analyseEquipe && (analyseEquipe.dirigeant || analyseEquipe.effectifs_estimes || analyseEquipe.competences_cles?.length > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Équipe & RH</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {analyseEquipe.dirigeant && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Dirigeant</h4>
+                <p className="text-sm">{analyseEquipe.dirigeant}</p>
+              </div>
+            )}
+            {analyseEquipe.effectifs_estimes && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Effectifs estimés</h4>
+                <p className="text-xs text-muted-foreground">{analyseEquipe.effectifs_estimes}</p>
+              </div>
+            )}
+            {analyseEquipe.masse_salariale_analyse && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Masse salariale</h4>
+                <p className="text-xs text-muted-foreground">{analyseEquipe.masse_salariale_analyse}</p>
+              </div>
+            )}
+            <div className="grid md:grid-cols-2 gap-3">
+              {analyseEquipe.competences_cles?.length > 0 && (
+                <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200">
+                  <h5 className="text-xs font-medium text-emerald-700 mb-1">Compétences clés</h5>
+                  {analyseEquipe.competences_cles.map((c: string, i: number) => (
+                    <p key={i} className="text-xs text-emerald-600">✓ {c}</p>
+                  ))}
+                </div>
+              )}
+              {analyseEquipe.gaps_critiques?.length > 0 && (
+                <div className="p-3 rounded-lg bg-red-50/50 border border-red-200">
+                  <h5 className="text-xs font-medium text-red-700 mb-1">Gaps critiques</h5>
+                  {analyseEquipe.gaps_critiques.map((g: string, i: number) => (
+                    <p key={i} className="text-xs text-red-600">✗ {g}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+            {analyseEquipe.donnees_manquantes_rh?.length > 0 && (
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <h4 className="text-xs font-medium text-amber-700 mb-1">Données RH manquantes</h4>
+                {analyseEquipe.donnees_manquantes_rh.map((d: string, i: number) => (
+                  <p key={i} className="text-xs text-amber-600">• {d}</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 9. ANALYSE LÉGALE ═══ */}
+      {analyseLegale && (analyseLegale.forme_juridique || analyseLegale.documents_legaux_presents?.length > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Gavel className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Analyse légale & conformité</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              {analyseLegale.forme_juridique && (
+                <div><span className="text-xs text-muted-foreground">Forme juridique :</span> <span className="text-xs font-medium">{analyseLegale.forme_juridique}</span></div>
+              )}
+              {analyseLegale.immatriculation && (
+                <div><span className="text-xs text-muted-foreground">Immatriculation :</span> <span className="text-xs font-medium">{analyseLegale.immatriculation}</span></div>
+              )}
+            </div>
+            {analyseLegale.conformite_fiscale && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Conformité fiscale</h4>
+                <p className="text-xs text-muted-foreground">{analyseLegale.conformite_fiscale}</p>
+              </div>
+            )}
+            {analyseLegale.conformite_sociale && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Conformité sociale</h4>
+                <p className="text-xs text-muted-foreground">{analyseLegale.conformite_sociale}</p>
+              </div>
+            )}
+            <div className="grid md:grid-cols-2 gap-3">
+              {analyseLegale.documents_legaux_presents?.length > 0 && (
+                <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200">
+                  <h5 className="text-xs font-medium text-emerald-700 mb-1">Documents présents</h5>
+                  {analyseLegale.documents_legaux_presents.map((d: string, i: number) => (
+                    <p key={i} className="text-xs text-emerald-600">✓ {d}</p>
+                  ))}
+                </div>
+              )}
+              {analyseLegale.documents_legaux_manquants?.length > 0 && (
+                <div className="p-3 rounded-lg bg-red-50/50 border border-red-200">
+                  <h5 className="text-xs font-medium text-red-700 mb-1">Documents manquants</h5>
+                  {analyseLegale.documents_legaux_manquants.map((d: string, i: number) => (
+                    <p key={i} className="text-xs text-red-600">✗ {d}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+            {analyseLegale.risques_juridiques?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Risques juridiques</h4>
+                {analyseLegale.risques_juridiques.map((r: string, i: number) => (
+                  <p key={i} className="text-xs text-red-600">⚠ {r}</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 10. COMPARAISON SECTORIELLE ═══ */}
+      {comparaisonSectorielle && (comparaisonSectorielle.positionnement_global || comparaisonSectorielle.benchmark_detail?.length > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Comparaison sectorielle</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {comparaisonSectorielle.positionnement_global && (
+              <p className="text-sm text-muted-foreground leading-relaxed">{comparaisonSectorielle.positionnement_global}</p>
+            )}
+            {comparaisonSectorielle.benchmark_detail?.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Indicateur</TableHead>
+                    <TableHead className="text-xs">Entreprise</TableHead>
+                    <TableHead className="text-xs">Médiane</TableHead>
+                    <TableHead className="text-xs">Top 25%</TableHead>
+                    <TableHead className="text-xs">Position</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comparaisonSectorielle.benchmark_detail.map((b: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-xs font-medium">{b.indicateur}</TableCell>
+                      <TableCell className="text-xs">{b.valeur_entreprise}</TableCell>
+                      <TableCell className="text-xs">{b.mediane_secteur}</TableCell>
+                      <TableCell className="text-xs">{b.top_quartile}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[10px] ${positionColor(b.position)}`}>{b.position}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            <div className="grid md:grid-cols-2 gap-3">
+              {comparaisonSectorielle.avantages_vs_pairs?.length > 0 && (
+                <div>
+                  <h5 className="text-xs font-medium text-emerald-700 mb-1">Avantages vs pairs</h5>
+                  {comparaisonSectorielle.avantages_vs_pairs.map((a: string, i: number) => (
+                    <p key={i} className="text-xs text-emerald-600">↑ {a}</p>
+                  ))}
+                </div>
+              )}
+              {comparaisonSectorielle.handicaps_vs_pairs?.length > 0 && (
+                <div>
+                  <h5 className="text-xs font-medium text-red-700 mb-1">Handicaps vs pairs</h5>
+                  {comparaisonSectorielle.handicaps_vs_pairs.map((h: string, i: number) => (
+                    <p key={i} className="text-xs text-red-600">↓ {h}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 11. Anomalies & Red Flags ═══ */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3 flex-wrap">
@@ -390,9 +761,8 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </CardContent>
       </Card>
 
-      {/* ═══ ROW: Cross-validation + Santé financière ═══ */}
+      {/* ═══ 12. Cross-validation + Santé financière ═══ */}
       <div className="grid md:grid-cols-2 gap-4 items-start">
-        {/* Cross-validation */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -424,7 +794,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           </CardContent>
         </Card>
 
-        {/* Santé financière */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -490,7 +859,58 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </Card>
       </div>
 
-      {/* ═══ Potentiel & Reconstructibilité IA ═══ */}
+      {/* ═══ 13. SCÉNARIOS PROSPECTIFS ═══ */}
+      {scenariosProspectifs && (scenariosProspectifs.scenario_base || scenariosProspectifs.scenario_pessimiste || scenariosProspectifs.scenario_optimiste) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" /> Scénarios prospectifs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-3">
+              {(['pessimiste', 'base', 'optimiste'] as const).map(type => {
+                const s = scenariosProspectifs?.[`scenario_${type}`];
+                if (!s) return null;
+                const colors = {
+                  pessimiste: { bg: 'bg-red-50', border: 'border-red-200', title: 'text-red-700', text: 'text-red-600' },
+                  base: { bg: 'bg-slate-50', border: 'border-slate-200', title: 'text-slate-700', text: 'text-slate-600' },
+                  optimiste: { bg: 'bg-emerald-50', border: 'border-emerald-200', title: 'text-emerald-700', text: 'text-emerald-600' },
+                }[type];
+                return (
+                  <div key={type} className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className={`text-xs font-medium ${colors.title} capitalize`}>{type}</h5>
+                      {s.probabilite && <Badge variant="outline" className="text-[9px]">{s.probabilite}</Badge>}
+                    </div>
+                    <p className={`text-xs ${colors.text} mb-2`}>{s.description}</p>
+                    {s.ca_estime && <p className={`text-xs font-medium ${colors.title}`}>CA : {s.ca_estime}</p>}
+                    {(s.facteurs_declencheurs || s.hypotheses)?.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border/30">
+                        {(s.facteurs_declencheurs || s.hypotheses).map((f: string, i: number) => (
+                          <p key={i} className={`text-[10px] ${colors.text}`}>• {f}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {scenariosProspectifs.facteurs_cles_succes?.length > 0 && (
+              <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-border">
+                <p className="text-xs font-medium mb-1">Facteurs clés de succès</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scenariosProspectifs.facteurs_cles_succes.map((f: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-[10px]">{f}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 14. Potentiel & Reconstructibilité IA ═══ */}
       {potentiel && (
         <Card className="border-teal-200 bg-teal-50/30">
           <CardHeader className="pb-3">
@@ -510,7 +930,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                 {potentiel.fiabilite_detail && <p className="text-xs text-teal-600 mt-1">{potentiel.fiabilite_detail}</p>}
               </div>
             )}
-
             <div className="grid md:grid-cols-3 gap-4 mb-4">
               {potentiel.donnees_fiables?.length > 0 && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
@@ -537,7 +956,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                 </div>
               )}
             </div>
-
             <div className="grid md:grid-cols-2 gap-4">
               {potentiel.signaux_positifs?.length > 0 && (
                 <div>
@@ -560,7 +978,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </Card>
       )}
 
-      {/* ═══ Profil de risque ═══ */}
+      {/* ═══ 15. Profil de risque ═══ */}
       {profilRisque && profilRisque.risques?.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -590,7 +1008,39 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </Card>
       )}
 
-      {/* ═══ Plan d'action prioritaire ═══ */}
+      {/* ═══ 16. TIMELINE ÉVÉNEMENTS ═══ */}
+      {timelineEvenements.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Chronologie des événements</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="relative pl-6 space-y-3">
+              <div className="absolute left-2 top-1 bottom-1 w-0.5 bg-border" />
+              {timelineEvenements.map((evt: any, i: number) => {
+                const impactColor = evt.impact === 'positif' ? 'bg-emerald-500' : evt.impact === 'negatif' ? 'bg-red-500' : 'bg-muted-foreground';
+                return (
+                  <div key={i} className="relative">
+                    <div className={`absolute -left-4 top-1.5 w-3 h-3 rounded-full ${impactColor} border-2 border-background`} />
+                    <div className="flex items-start gap-2">
+                      <Badge variant="outline" className="text-[10px] flex-none">{evt.date}</Badge>
+                      <div>
+                        <p className="text-xs">{evt.evenement}</p>
+                        {evt.source && <p className="text-[10px] text-muted-foreground italic">Source : {evt.source}</p>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 17. Plan d'action prioritaire ═══ */}
       {planAction.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -633,9 +1083,76 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         </Card>
       )}
 
-      {/* ═══ ROW: Pipeline recommendation + Pathway financement ═══ */}
+      {/* ═══ 18. VERDICT DE L'ANALYSTE ═══ */}
+      {verdictAnalyste && verdictAnalyste.synthese_pour_comite && (
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Verdict de l'analyste</CardTitle>
+              {verdictAnalyste.niveau_conviction && (
+                <Badge variant={verdictAnalyste.niveau_conviction === 'fort' ? 'default' : verdictAnalyste.niveau_conviction === 'modere' ? 'secondary' : 'destructive'}>
+                  Conviction : {verdictAnalyste.niveau_conviction}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-relaxed whitespace-pre-line">{verdictAnalyste.synthese_pour_comite}</p>
+
+            <div className="grid md:grid-cols-3 gap-3">
+              {verdictAnalyste.deal_breakers?.length > 0 && (
+                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <h5 className="text-xs font-medium text-red-700 mb-2">Deal breakers</h5>
+                  {verdictAnalyste.deal_breakers.map((d: string, i: number) => (
+                    <p key={i} className="text-xs text-red-600 mb-1">• {d}</p>
+                  ))}
+                </div>
+              )}
+              {verdictAnalyste.conditions_sine_qua_non?.length > 0 && (
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <h5 className="text-xs font-medium text-amber-700 mb-2">Conditions sine qua non</h5>
+                  {verdictAnalyste.conditions_sine_qua_non.map((c: string, i: number) => (
+                    <p key={i} className="text-xs text-amber-600 mb-1">• {c}</p>
+                  ))}
+                </div>
+              )}
+              {verdictAnalyste.quick_wins?.length > 0 && (
+                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <h5 className="text-xs font-medium text-emerald-700 mb-2">Quick wins</h5>
+                  {verdictAnalyste.quick_wins.map((q: string, i: number) => (
+                    <p key={i} className="text-xs text-emerald-600 mb-1">• {q}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {verdictAnalyste.questions_ouvertes?.length > 0 && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <h5 className="text-xs font-medium text-blue-700 mb-2">Questions pour le dirigeant</h5>
+                {verdictAnalyste.questions_ouvertes.map((q: string, i: number) => (
+                  <p key={i} className="text-xs text-blue-600 mb-1">{i+1}. {q}</p>
+                ))}
+              </div>
+            )}
+
+            {verdictAnalyste.prochaines_etapes_recommandees?.length > 0 && (
+              <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                <h5 className="text-xs font-medium mb-2">Prochaines étapes recommandées</h5>
+                {verdictAnalyste.prochaines_etapes_recommandees.map((e: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2 mb-1.5">
+                    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] flex items-center justify-center font-medium">{i+1}</span>
+                    <p className="text-xs">{e}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ 19. Pipeline recommendation + Pathway financement ═══ */}
       <div className="grid md:grid-cols-2 gap-4 items-start">
-        {/* Recommandation pipeline */}
         {recommandationPipeline && (
           <Card className={`border ${recommandationPipeline.lancer_pipeline ? 'border-emerald-300 bg-emerald-50/30' : 'border-amber-300 bg-amber-50/30'}`}>
             <CardHeader className="pb-3">
@@ -648,13 +1165,11 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
             </CardHeader>
             <CardContent>
               <p className="text-xs mb-3">{recommandationPipeline.raison}</p>
-
               {recommandationPipeline.avertissement && (
                 <div className="p-2 rounded bg-amber-100 border border-amber-200 mb-3">
                   <p className="text-[10px] text-amber-700">⚠️ {recommandationPipeline.avertissement}</p>
                 </div>
               )}
-
               {recommandationPipeline.modules_pertinents?.length > 0 && (
                 <div className="mb-3">
                   <p className="text-[10px] font-semibold mb-1">Modules pertinents :</p>
@@ -675,7 +1190,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                   </div>
                 </div>
               )}
-
               {onLaunchPipeline && (
                 <div className="pt-2">
                   {recommandationPipeline.lancer_pipeline ? (
@@ -693,7 +1207,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           </Card>
         )}
 
-        {/* Pathway financement */}
         {pathway && (
           <Card>
             <CardHeader className="pb-3">
@@ -743,7 +1256,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
         )}
       </div>
 
-      {/* ═══ Matching Programme ═══ */}
+      {/* ═══ 20. Matching Programme ═══ */}
       {programmeMatch && (
         <Card>
           <CardHeader className="pb-3">
@@ -758,7 +1271,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-4">
-              {/* Critères OK */}
               {programmeMatch.criteres_ok?.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-emerald-700 mb-2 uppercase tracking-wide">Critères remplis</h4>
@@ -773,8 +1285,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                   ))}
                 </div>
               )}
-
-              {/* Critères KO */}
               {programmeMatch.criteres_ko?.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-red-700 mb-2 uppercase tracking-wide">Critères non remplis</h4>
@@ -790,8 +1300,6 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                   ))}
                 </div>
               )}
-
-              {/* Critères partiels */}
               {programmeMatch.criteres_partiels?.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-amber-700 mb-2 uppercase tracking-wide">Critères partiels</h4>
