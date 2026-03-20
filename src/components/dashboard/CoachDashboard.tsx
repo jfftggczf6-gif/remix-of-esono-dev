@@ -24,7 +24,7 @@ import {
   Upload, X, FileText, ListChecks
 } from 'lucide-react';
 import {
-  MODULE_CONFIG_COACH as MODULE_CONFIG, MODULE_CONFIG as MIRROR_MODULES, PIPELINE,
+  MODULE_CONFIG_COACH as MODULE_CONFIG, PIPELINE,
   type Enterprise, type Deliverable, type EnterpriseModule, type CoachUpload,
 } from '@/lib/dashboard-config';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
