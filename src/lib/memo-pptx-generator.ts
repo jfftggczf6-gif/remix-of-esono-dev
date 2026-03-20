@@ -2,7 +2,7 @@ import PptxGenJS from 'pptxgenjs';
 
 // ── Colors ──
 const NAVY = '0F2B46';
-const BLUE = '1B5E8A';
+// const BLUE = '1B5E8A'; // reserved for future use
 const TEAL = '0E7C6B';
 const GOLD = 'C4841D';
 const RED = '9B2C2C';
