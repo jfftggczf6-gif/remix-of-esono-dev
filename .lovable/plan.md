@@ -1,58 +1,64 @@
 
 
-## Diagnostic : Pourquoi le Mémo d'Investissement a échoué
+## Diagnostic : "Load failed" sur le Mémo d'Investissement
 
-### Ce qui s'est passé
+### Problème
 
-1. **Pass 1 a réussi** — les logs confirment : "Pass 1 completed, checkpoint saved. Returning 202."
-2. **Mais le checkpoint n'a PAS été sauvegardé** — la table `enterprise_modules` est **vide** pour cette entreprise (aucune ligne, pas seulement pour investment_memo).
-3. **Cause racine** : la fonction `updateMemoModuleState` fait un `UPDATE` sur une ligne qui n'existe pas. Un UPDATE sur 0 lignes = opération silencieuse sans erreur, sans insertion.
-4. **Conséquence en cascade** : la connexion HTTP s'est fermée avant que le 202 n'arrive au client → le frontend n'a jamais reçu la réponse → pas de chaînage automatique de la Pass 2.
+L'edge function `generate-investment-memo` prend ~2.5 minutes pour la Passe 1 (appel AI). La connexion HTTP se ferme avant que la réponse 202 ne soit envoyée (`Http: connection closed before message completed`). Le navigateur reçoit `TypeError: Load failed`.
 
-### Correction — `supabase/functions/generate-investment-memo/index.ts`
+Les logs montrent que le checkpoint `updateMemoModuleState` à la ligne 331 s'exécute **juste avant** le `return`, mais la connexion est déjà morte → le navigateur ne reçoit jamais le 202 → le frontend ne chaîne pas la Passe 2.
 
-Remplacer `UPDATE` par un **UPSERT** dans `updateMemoModuleState` :
+La DB confirme : aucun `enterprise_modules` n'a été mis à jour (tous `phase: nil, progress: 0`). Cela signifie que même l'upsert échoue — probablement parce que le runtime Deno tue le processus avant que l'upsert ne se complète.
+
+### Solution : Frontend resilient + polling
+
+Au lieu de compter sur la réponse HTTP, le frontend doit **poller** la table `enterprise_modules` après un échec réseau pour détecter si la Passe 1 a réussi malgré tout.
+
+### Changements
+
+**1. `src/components/dashboard/EntrepreneurDashboard.tsx` — `handleGenerateModule`**
+
+Dans le `catch` pour `investment_memo`, au lieu de juste afficher l'erreur :
+- Poller `enterprise_modules` pendant 30 secondes pour vérifier si `phase = 'part1_completed'`
+- Si oui, afficher un toast info et lancer la Passe 2 automatiquement
+- Si non, vérifier si `phase = 'part1'` (en cours) et attendre plus longtemps (poller 2 min)
+- Si toujours rien, afficher l'erreur classique
+
+**2. `supabase/functions/generate-investment-memo/index.ts` — Sauvegarder le checkpoint AVANT l'appel AI**
+
+Déplacer le `updateMemoModuleState` avec `phase: "part1"` **avant** `callAI`, et ajouter un `try/finally` pour s'assurer que le résultat de la Passe 1 est sauvegardé même si la connexion HTTP est coupée. Utiliser `waitUntil` ou un pattern fire-and-forget pour le checkpoint final.
+
+Concrètement :
+- Ligne 317-326 : Wraper le `callAI` dans un try/catch qui sauvegarde le résultat dans la DB **immédiatement** après l'appel AI, **avant** d'essayer de retourner la réponse HTTP
+- Le `return` de la 202 reste en fin mais n'est plus critique — le frontend pollera la DB
+
+**3. Logique de polling (nouveau helper dans EntrepreneurDashboard)**
 
 ```typescript
-async function updateMemoModuleState(
-  enterpriseId: string,
-  moduleData: Record<string, any>,
-  progress: number,
-  status: string,
-) {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const svc = createClient(supabaseUrl, serviceKey);
-  
-  const mappedStatus = status === "completed" ? "completed" 
-    : status === "not_started" ? "not_started" : "in_progress";
-
-  await svc.from("enterprise_modules").upsert({
-    enterprise_id: enterpriseId,
-    module: "investment_memo",
-    data: moduleData,
-    progress,
-    status: mappedStatus,
-  }, { onConflict: "enterprise_id,module" });
-}
+const pollMemoCheckpoint = async (enterpriseId: string, maxWaitMs = 120000) => {
+  const interval = 5000;
+  const maxAttempts = Math.ceil(maxWaitMs / interval);
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, interval));
+    const { data } = await supabase
+      .from('enterprise_modules')
+      .select('data, status, progress')
+      .eq('enterprise_id', enterpriseId)
+      .eq('module', 'investment_memo')
+      .single();
+    const phase = (data?.data as any)?.phase;
+    if (phase === 'part1_completed') return 'checkpoint_ready';
+    if (phase === 'completed') return 'fully_done';
+    if (phase === 'failed') return 'failed';
+  }
+  return 'timeout';
+};
 ```
 
-### Pré-requis DB
-
-Il faut ajouter une contrainte UNIQUE sur `(enterprise_id, module)` dans `enterprise_modules` pour que le `onConflict` fonctionne :
-
-```sql
-ALTER TABLE public.enterprise_modules 
-ADD CONSTRAINT enterprise_modules_enterprise_module_unique 
-UNIQUE (enterprise_id, module);
-```
-
-### Résumé des changements
+### Résumé des fichiers modifiés
 
 | Fichier | Modification |
 |---|---|
-| Migration SQL | Ajouter contrainte UNIQUE `(enterprise_id, module)` |
-| `generate-investment-memo/index.ts` | `update()` → `upsert()` avec `onConflict` |
-
-Après ce fix, relancer la génération du mémo fonctionnera : le checkpoint sera sauvé, le 202 retourné, et le frontend chaînera automatiquement la Pass 2.
+| `generate-investment-memo/index.ts` | S'assurer que le checkpoint est sauvé AVANT le return HTTP |
+| `EntrepreneurDashboard.tsx` | Ajouter polling après échec réseau pour investment_memo, puis chaîner Passe 2 |
 
