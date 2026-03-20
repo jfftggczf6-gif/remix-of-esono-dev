@@ -29,7 +29,7 @@ function addFooter(slide: PptxGenJS.Slide, pres: PptxGenJS, companyName: string,
   });
 }
 
-function addTitleSlide(pres: PptxGenJS, title: string, subtitle: string, date: string, meta: Record<string, string>) {
+function addTitleSlide(pres: PptxGenJS, _title: string, subtitle: string, date: string, meta: Record<string, string>) {
   const slide = pres.addSlide();
   slide.background = { fill: NAVY };
 
