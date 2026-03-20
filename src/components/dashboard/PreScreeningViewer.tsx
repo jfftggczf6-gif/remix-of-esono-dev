@@ -16,11 +16,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface PreScreeningViewerProps {
   data: Record<string, any>;
+  enterprise?: Record<string, any> | null;
   onRegenerate?: (programmeId?: string | null) => void;
   onLaunchPipeline?: () => void;
 }
 
-export default function PreScreeningViewer({ data, onRegenerate, onLaunchPipeline }: PreScreeningViewerProps) {
+export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate, onLaunchPipeline }: PreScreeningViewerProps) {
   const [anomalyFilter, setAnomalyFilter] = useState<string>('all');
   const [expandedCV, setExpandedCV] = useState<Record<string, boolean>>({});
   const [programmes, setProgrammes] = useState<any[]>([]);
