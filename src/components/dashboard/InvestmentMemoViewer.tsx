@@ -91,7 +91,7 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
   const handleDownloadPptx = async () => {
     setGeneratingPptx(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
       const resp = await supabase.functions.invoke('generate-memo-pptx', {
         body: { data },
       });
