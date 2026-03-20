@@ -207,7 +207,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
       </Card>
 
       {/* ═══ ROW: Fiche Entreprise + Qualité Dossier ═══ */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-4 items-start">
         {/* Fiche entreprise */}
         <Card>
           <CardHeader className="pb-3">
