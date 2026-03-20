@@ -151,12 +151,16 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
       const parsingReport = buildParsingReport(docs, documentContent.length);
       setParsingSummary(parsingReport);
 
-      await supabase.from('enterprises').update({
+      const { error: updateErr } = await supabase.from('enterprises').update({
         document_content: documentContent,
         document_content_updated_at: new Date().toISOString(),
         document_files_count: docs.filter(d => d.quality !== 'failed').length,
         document_parsing_report: parsingReport,
       } as any).eq('id', enterpriseId);
+      if (updateErr) {
+        console.error('Failed to cache document content:', updateErr);
+        throw new Error('Impossible de sauvegarder le contenu documentaire: ' + updateErr.message);
+      }
 
       console.log('Document content cached:', documentContent.length, 'chars from', docs.length, 'files');
 
