@@ -937,9 +937,6 @@ export function enforceFrameworkConstraints(data: any, frameworkData: any, input
 
   // ── SECTOR GUARDRAILS — clamp AI projections to realistic bounds ──
   try {
-    const { getSectorGuardrails } = await import("./financial-knowledge.ts");
-    const sectorKey = (country || "").toLowerCase().replace(/[\s\-\/]/g, "_");
-    // We need the enterprise sector, not country — use data.company or fallback
     const guardrails = getSectorGuardrails(inputsData?.informations_generales?.secteur || "services_b2b");
 
     for (let i = 1; i < PROJ_KEYS.length; i++) {
