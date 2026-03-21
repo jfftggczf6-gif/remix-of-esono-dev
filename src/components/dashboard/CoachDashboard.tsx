@@ -835,6 +835,11 @@ export default function CoachDashboard() {
           ))}
         </div>
 
+        {/* ═══ TAB: COACHING ═══ */}
+        {detailTab === 'coaching' && selectedEnt && (
+          <CoachingTab enterpriseId={selectedEnt.id} enterpriseName={selectedEnt.name} />
+        )}
+
         {/* ═══ TAB: PARCOURS RAPIDE ═══ */}
         {detailTab === 'parcours' && (
           <div className="space-y-6">
