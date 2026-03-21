@@ -708,7 +708,7 @@ function DiagnosticViewer({ data }: { data: any }) {
 
       {/* ═══ ZONE 6 — Verdict final + prochaines étapes ═══ */}
       {(verdictFinal.synthese || verdictFinal.prochaines_etapes?.length > 0) && (
-        <Card className="bg-background border">
+        <Card className="bg-card border shadow-sm">
           <CardContent className="py-4">
             <h4 className="text-xs font-bold text-primary mb-2">Verdict final</h4>
             <p className="text-xs text-foreground leading-relaxed">{verdictFinal.synthese}</p>

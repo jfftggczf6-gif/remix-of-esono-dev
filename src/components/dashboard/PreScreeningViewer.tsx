@@ -416,19 +416,19 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
               const SevIcon = sc.icon;
               const scopeLabel = scopes.find(s => s.key === c.scope)?.label || c.scope;
               return (
-                <div key={i} className={`p-3 rounded-lg border border-l-4 ${sc.border} ${sc.bg}`}>
+                <div key={i} className={`p-3 rounded-lg border border-l-4 ${sc.border} ${sc.bg} shadow-sm`}>
                   <div className="flex items-start gap-2">
                     <SevIcon className={`h-4 w-4 ${sc.text} flex-none mt-0.5`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold">{c.titre}</span>
+                        <span className="text-xs font-semibold text-foreground">{c.titre}</span>
                         {activeScope === 'all' && (
                           <Badge variant="outline" className="text-[10px]">{scopeLabel}</Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{c.constat}</p>
+                      <p className="text-xs text-foreground leading-relaxed">{c.constat}</p>
                       {c.piste && (
-                        <p className="text-[10px] mt-1.5 font-medium text-blue-700">→ {c.piste}</p>
+                        <p className="text-[10px] mt-1.5 font-medium text-primary">→ {c.piste}</p>
                       )}
                     </div>
                   </div>
