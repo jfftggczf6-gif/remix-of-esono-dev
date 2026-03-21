@@ -564,7 +564,7 @@ function DiagnosticViewer({ data }: { data: any }) {
   return (
     <div className="space-y-4">
       {/* ═══ ZONE 1 — Où en est-on ? ═══ */}
-      <Card className="bg-background border">
+      <Card className="bg-card border shadow-sm">
         <CardContent className="py-4">
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white ${verdictColor(verdict.score || 0)}`}>
@@ -574,11 +574,11 @@ function DiagnosticViewer({ data }: { data: any }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base font-semibold">{data.metadata?.nom_entreprise}</span>
                 {verdict.label && <Badge>{verdict.label}</Badge>}
-                <Badge className={verdict.pret_pour_bailleur ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
+                <Badge className={verdict.pret_pour_bailleur ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-foreground border-warning/20'}>
                   {verdict.pret_pour_bailleur ? 'Dossier prêt' : 'Pas encore prêt'}
                 </Badge>
               </div>
-              <p className="text-xs text-foreground mt-1">{verdict.resume}</p>
+              <p className="text-xs text-foreground mt-1 leading-relaxed">{verdict.resume}</p>
             </div>
           </div>
 
@@ -589,19 +589,19 @@ function DiagnosticViewer({ data }: { data: any }) {
                 <span className="text-muted-foreground">→</span>
                 <span className="text-sm font-semibold">{progression.score_actuel}</span>
                 {progression.score_actuel != null && progression.score_initial != null && (
-                  <Badge className={(progression.score_actuel - progression.score_initial) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}>
+                  <Badge className={(progression.score_actuel - progression.score_initial) > 0 ? 'bg-success/10 text-success border-success/20' : 'bg-destructive/10 text-destructive border-destructive/20'}>
                     {(progression.score_actuel - progression.score_initial) > 0 ? '+' : ''}{progression.score_actuel - progression.score_initial} pts
                   </Badge>
                 )}
               </div>
               {progression.bloquants_leves?.map((b: string, i: number) => (
-                <p key={i} className="text-xs text-emerald-700 flex items-center gap-1.5"><CheckCircle className="h-3 w-3" />{b}</p>
+                <p key={i} className="text-xs text-success flex items-center gap-1.5"><CheckCircle className="h-3 w-3" />{b}</p>
               ))}
               {progression.bloquants_restants?.map((b: string, i: number) => (
-                <p key={i} className="text-xs text-red-600 flex items-center gap-1.5"><AlertCircle className="h-3 w-3" />{b}</p>
+                <p key={i} className="text-xs text-destructive flex items-center gap-1.5"><AlertCircle className="h-3 w-3" />{b}</p>
               ))}
               {progression.commentaire && (
-                <p className="text-xs text-muted-foreground italic">{progression.commentaire}</p>
+                <p className="text-xs text-foreground italic">{progression.commentaire}</p>
               )}
             </div>
           )}
