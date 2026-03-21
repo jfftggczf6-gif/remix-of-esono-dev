@@ -1061,7 +1061,7 @@ export default function EntrepreneurDashboard({
               {selectedModule === 'screening' && (
                 <>
                   <Search className="h-5 w-5 text-muted-foreground" />
-                  <h1 className="font-display font-semibold text-base">Diagnostic & Screening</h1>
+                  <h1 className="font-display font-semibold text-base">Décision programme</h1>
                 </>
               )}
               {selectedModule === 'pre_screening' && (
