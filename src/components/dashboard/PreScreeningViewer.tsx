@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  AlertTriangle, CheckCircle2, XCircle, Copy, Download, RefreshCw,
+  AlertTriangle, CheckCircle2, XCircle, Download, RefreshCw,
   MessageSquare, FileText, Clock, AlertCircle, BookOpen, Target,
   TrendingUp, Banknote, BarChart3, Building2, Users, Gavel, Briefcase, Factory
 } from 'lucide-react';
