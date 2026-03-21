@@ -613,18 +613,28 @@ function DiagnosticViewer({ data }: { data: any }) {
         <div className="space-y-2">
           <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Ce qui va coincer</h3>
           {problemes.map((p: any, i: number) => (
-            <div key={i} className="p-3 rounded-r-lg bg-background border"
-              style={{ borderLeft: `4px solid ${p.urgence === 'bloquant' ? '#A32D2D' : p.urgence === 'important' ? '#BA7517' : '#185FA5'}` }}>
+            <div
+              key={i}
+              className={`p-3 rounded-r-lg bg-card border border-l-4 shadow-sm ${
+                p.urgence === 'bloquant'
+                  ? 'border-l-destructive'
+                  : p.urgence === 'important'
+                  ? 'border-l-warning'
+                  : 'border-l-info'
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={`text-[9px] ${
-                  p.urgence === 'bloquant' ? 'bg-red-50 text-red-700 border-red-200' :
-                  p.urgence === 'important' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                  'bg-blue-50 text-blue-700 border-blue-200'
+                  p.urgence === 'bloquant'
+                    ? 'bg-destructive/10 text-destructive border-destructive/20'
+                    : p.urgence === 'important'
+                    ? 'bg-warning/10 text-foreground border-warning/20'
+                    : 'bg-info/10 text-info border-info/20'
                 }`}>{p.urgence}</Badge>
-                <span className="text-xs font-medium">{p.titre}</span>
+                <span className="text-xs font-medium text-foreground">{p.titre}</span>
               </div>
               <p className="text-xs text-foreground mt-2 leading-relaxed">{p.constat}</p>
-              <p className="text-xs text-blue-800 mt-2">→ {p.piste}</p>
+              <p className="text-xs text-primary mt-2 font-medium">→ {p.piste}</p>
             </div>
           ))}
         </div>
