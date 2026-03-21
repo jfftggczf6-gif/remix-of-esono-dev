@@ -29,6 +29,7 @@ import OnePagerViewer from './OnePagerViewer';
 import InvestmentMemoViewer from './InvestmentMemoViewer';
 import DataRoomManager from './DataRoomManager';
 import ValidationBanner from './ValidationBanner';
+import InputsDiffBanner from './InputsDiffBanner';
 import VersionHistory from './VersionHistory';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardOverview from './DashboardOverview';
@@ -1087,6 +1088,8 @@ export default function EntrepreneurDashboard({
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
+            {/* Inputs diff banner */}
+            {enterprise && <InputsDiffBanner enterpriseId={enterprise.id} />}
             {/* Overview / Home */}
             {selectedModule === 'overview' ? (
               <DashboardOverview

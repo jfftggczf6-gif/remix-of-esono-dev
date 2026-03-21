@@ -509,6 +509,47 @@ export type Database = {
         }
         Relationships: []
       }
+      inputs_history: {
+        Row: {
+          created_at: string | null
+          data: Json
+          diff: Json | null
+          documents_added: string[] | null
+          enterprise_id: string
+          id: string
+          score: number | null
+          trigger: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          diff?: Json | null
+          documents_added?: string[] | null
+          enterprise_id: string
+          id?: string
+          score?: number | null
+          trigger: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          diff?: Json | null
+          documents_added?: string[] | null
+          enterprise_id?: string
+          id?: string
+          score?: number | null
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inputs_history_enterprise_id_fkey"
+            columns: ["enterprise_id"]
+            isOneToOne: false
+            referencedRelation: "enterprises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_base: {
         Row: {
           auto_refresh: boolean | null
