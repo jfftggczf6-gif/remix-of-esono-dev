@@ -225,17 +225,23 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
           </div>
         );
 
-      case 'analyse_financiere':
+      case 'analyse_financiere': {
+        const ca = d.chiffre_affaires || d.ca || d.revenue || d.ca_annee_n || d.kpis?.chiffre_affaires || d.kpis?.ca || '—';
+        const margeBrute = d.marge_brute || d.kpis?.marge_brute || '—';
+        const ebitda = d.ebitda || d.kpis?.ebitda || '—';
+        const resultatNet = d.resultat_net || d.kpis?.resultat_net || '—';
+        const tresorerie = d.tresorerie || d.kpis?.tresorerie || '—';
+        const ratioDette = d.ratio_dette || d.endettement || d.kpis?.ratio_dette || '—';
         return (
           <div className="space-y-4">
             {(d.commentaire || d.analyse) && <p className="text-sm leading-relaxed">{d.commentaire || d.analyse}</p>}
             <div className="grid grid-cols-3 gap-3">
-              <KpiCard label="Chiffre d'affaires" value={d.chiffre_affaires || d.ca || '—'} />
-              <KpiCard label="Marge brute" value={d.marge_brute || '—'} />
-              <KpiCard label="EBITDA" value={d.ebitda || '—'} />
-              <KpiCard label="Résultat net" value={d.resultat_net || '—'} />
-              <KpiCard label="Trésorerie" value={d.tresorerie || '—'} />
-              <KpiCard label="Ratio dette" value={d.ratio_dette || d.endettement || '—'} />
+              <KpiCard label="Chiffre d'affaires" value={ca} />
+              <KpiCard label="Marge brute" value={margeBrute} />
+              <KpiCard label="EBITDA" value={ebitda} />
+              <KpiCard label="Résultat net" value={resultatNet} />
+              <KpiCard label="Trésorerie" value={tresorerie} />
+              <KpiCard label="Ratio dette" value={ratioDette} />
             </div>
             {d.points_forts && <Callout type="green" title="Points forts" text={d.points_forts} />}
             {d.points_attention && <Callout type="amber" title="Points d'attention" text={d.points_attention} />}
@@ -253,7 +259,7 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
                 </div>
               );
             })()}
-            {renderGenericFields(d, ['commentaire', 'analyse', 'chiffre_affaires', 'ca', 'marge_brute', 'ebitda', 'resultat_net', 'tresorerie', 'ratio_dette', 'endettement', 'points_forts', 'points_attention', 'projections', 'previsions', 'evolution'])}
+            {renderGenericFields(d, ['commentaire', 'analyse', 'chiffre_affaires', 'ca', 'revenue', 'ca_annee_n', 'kpis', 'marge_brute', 'ebitda', 'resultat_net', 'tresorerie', 'ratio_dette', 'endettement', 'points_forts', 'points_attention', 'projections', 'previsions', 'evolution'])}
           </div>
         );
 
