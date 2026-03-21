@@ -31,6 +31,7 @@ import { getValidAccessToken } from '@/lib/getValidAccessToken';
 import { runPipelineFromClient, getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
 import ScreeningDashboard from './ScreeningDashboard';
 import ProgrammeCriteriaEditor from './ProgrammeCriteriaEditor';
+import CoachingTab from './CoachingTab';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ function getPhaseLabel(phase: string) {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type View = 'list' | 'detail' | 'screening';
-type DetailTab = 'parcours' | 'mirror' | 'livrables';
+type DetailTab = 'mirror' | 'coaching' | 'parcours' | 'livrables';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ export default function CoachDashboard() {
 
   const [view, setView] = useState<View>('list');
   const [selectedEnt, setSelectedEnt] = useState<Enterprise | null>(null);
-  const [detailTab, setDetailTab] = useState<DetailTab>('parcours');
+  const [detailTab, setDetailTab] = useState<DetailTab>('mirror');
   const [selectedModule, setSelectedModule] = useState('diagnostic');
 
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
@@ -815,8 +816,9 @@ export default function CoachDashboard() {
         {/* Tabs */}
         <div className="flex border-b border-border mb-6 gap-1">
           {([
-            { key: 'parcours' as DetailTab, label: '📤 Parcours Rapide', desc: 'Espace privé coach' },
-            { key: 'mirror' as DetailTab, label: '👁 Vue Entrepreneur', desc: 'Espace partagé' },
+            { key: 'mirror' as DetailTab, label: '👁 Vue entrepreneur', desc: 'Livrables et diagnostic' },
+            { key: 'coaching' as DetailTab, label: '📝 Coaching', desc: 'Notes et rapports' },
+            { key: 'parcours' as DetailTab, label: '📤 Parcours rapide', desc: 'Upload documents' },
             { key: 'livrables' as DetailTab, label: '📁 Livrables', desc: `${entDelivs.length} générés` },
           ]).map(tab => (
             <button
@@ -833,6 +835,11 @@ export default function CoachDashboard() {
             </button>
           ))}
         </div>
+
+        {/* ═══ TAB: COACHING ═══ */}
+        {detailTab === 'coaching' && selectedEnt && (
+          <CoachingTab enterpriseId={selectedEnt.id} enterpriseName={selectedEnt.name} />
+        )}
 
         {/* ═══ TAB: PARCOURS RAPIDE ═══ */}
         {detailTab === 'parcours' && (
@@ -1299,7 +1306,7 @@ export default function CoachDashboard() {
                 <div className="col-span-3 flex items-center justify-end gap-1.5">
                   <Button
                     variant="outline" size="sm" className="h-7 px-2.5 text-xs gap-1"
-                    onClick={() => { setSelectedEnt(ent); setView('detail'); setDetailTab('parcours'); }}
+                    onClick={() => { setSelectedEnt(ent); setView('detail'); setDetailTab('mirror'); }}
                   >
                     <Eye className="h-3 w-3" /> Voir
                   </Button>
