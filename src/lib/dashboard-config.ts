@@ -20,7 +20,7 @@ export interface UploadedFile {
 }
 
 export const MODULE_CONFIG = [
-  { code: 'diagnostic' as ModuleCode, title: 'Diagnostic Expert Global', shortTitle: 'Diagnostic Expert Global', icon: Stethoscope, color: 'bg-orange-100 text-orange-600', step: 1 },
+  { code: 'diagnostic' as ModuleCode, title: 'Bilan de progression', shortTitle: 'Bilan de progression', icon: Stethoscope, color: 'bg-orange-100 text-orange-600', step: 1 },
   { code: 'bmc' as ModuleCode,        title: 'Business Model Canvas',    shortTitle: 'Business Model Canvas',    icon: LayoutGrid,  color: 'bg-emerald-100 text-emerald-600', step: 2 },
   { code: 'sic' as ModuleCode,        title: 'Social Impact Canvas',     shortTitle: 'Social Impact Canvas',     icon: Globe,       color: 'bg-teal-100 text-teal-600',    step: 3 },
   { code: 'framework' as ModuleCode,  title: 'Plan Financier Intermédiaire', shortTitle: 'Plan Financier Intermédiaire', icon: BarChart3, color: 'bg-purple-100 text-purple-600', step: 4 },
@@ -37,7 +37,7 @@ export const MODULE_CONFIG_COACH = [
   { code: 'sic',           title: 'Social Impact Canvas',        icon: Globe,           color: '#7c3aed' },
   { code: 'inputs',        title: 'Données Financières',         icon: FileSpreadsheet, color: '#d97706' },
   { code: 'framework',     title: 'Plan Financier Interm.',      icon: BarChart3,       color: '#2563eb' },
-  { code: 'diagnostic',    title: 'Diagnostic Expert',           icon: Stethoscope,     color: '#1e3a5f' },
+  { code: 'diagnostic',    title: 'Bilan de progression',        icon: Stethoscope,     color: '#1e3a5f' },
   { code: 'plan_ovo',      title: 'Plan Financier Final',        icon: ListChecks,      color: '#ea580c' },
   { code: 'business_plan', title: 'Business Plan',               icon: FileText,        color: '#4338ca' },
   { code: 'odd',           title: 'Due Diligence ODD',           icon: Target,          color: '#0891b2' },
@@ -51,7 +51,7 @@ export const DELIVERABLE_CONFIG = [
   { type: 'bmc_analysis',    label: 'Business Model Canvas',                     formats: ['html', 'json'], icon: '📊' },
   { type: 'sic_analysis',    label: 'Social Impact Canvas',                      formats: ['html', 'json'], icon: '🌍' },
   { type: 'framework_data',  label: 'Plan Financier Intermédiaire',              formats: ['html', 'xlsx'], icon: '📈' },
-  { type: 'diagnostic_data', label: 'Diagnostic Expert',                         formats: ['html', 'json'], icon: '🩺' },
+  { type: 'diagnostic_data', label: 'Bilan de progression',                      formats: ['html', 'json'], icon: '🩺' },
   { type: 'plan_ovo',        label: 'Plan Financier Final',                      formats: ['html', 'xlsx'], icon: '📋' },
   { type: 'business_plan',   label: 'Business Plan',                             formats: ['html', 'json', 'docx'], icon: '📄' },
   { type: 'odd_analysis',    label: 'ODD (17 Objectifs de Développement Durable)', formats: ['html', 'json', 'xlsx'], icon: '🌍' },
@@ -143,7 +143,7 @@ export const PHASES: PhaseConfig[] = [
       { code: 'sic', label: 'Social Impact Canvas', icon: Globe },
       { code: 'framework', label: 'Plan Financier Interm.', icon: BarChart3 },
       { code: 'plan_ovo', label: 'Plan Financier Final', icon: ListChecks },
-      { code: 'diagnostic', label: 'Diagnostic Expert', icon: Stethoscope },
+      { code: 'diagnostic', label: 'Bilan de progression', icon: Stethoscope },
       { code: 'odd', label: 'ODD', icon: Target },
       { code: 'business_plan', label: 'Business Plan', icon: FileText },
     ],
