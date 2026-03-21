@@ -126,8 +126,8 @@ export const PHASES: PhaseConfig[] = [
   },
   {
     id: 'phase_1',
-    label: 'Triage',
-    shortLabel: 'Triage',
+    label: 'Diagnostic initial',
+    shortLabel: 'Diagnostic',
     color: 'rose',
     modules: [
       { code: 'pre_screening', label: 'Diagnostic initial', icon: FileSearch, special: 'pre_screening' },
