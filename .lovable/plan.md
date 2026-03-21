@@ -1,31 +1,17 @@
 
 
-## Plan : Nettoyage complet de GOTCHE-SARL (données + fichiers)
+## Problème
 
-### Enterprise
-- ID : `e7cfb861-02b0-4679-a91f-4d399001fa4f`
+Le `DashboardLayout` utilise la classe Tailwind `container` sur le header et le `<main>`, ce qui limite la largeur à ~1280px et centre le contenu. Le contenu ne prend donc pas toute la largeur de l'écran.
 
-### Actions
+## Solution
 
-**1. Migration SQL — Supprimer toutes les données liées**
+Remplacer `container` par `max-w-full px-6` (ou `px-8`) dans `DashboardLayout.tsx` pour que le contenu occupe toute la largeur disponible avec un padding latéral raisonnable.
 
-```sql
-DELETE FROM deliverable_versions WHERE enterprise_id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-DELETE FROM deliverable_corrections WHERE enterprise_id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-DELETE FROM deliverables WHERE enterprise_id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-DELETE FROM enterprise_modules WHERE enterprise_id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-DELETE FROM score_history WHERE enterprise_id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-DELETE FROM activity_log WHERE enterprise_id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-UPDATE enterprises SET score_ir = 0, phase = 'identite', document_content = NULL, document_content_updated_at = NULL, document_files_count = 0, document_parsing_report = NULL, operating_mode = NULL, data_room_enabled = false, data_room_slug = NULL WHERE id = 'e7cfb861-02b0-4679-a91f-4d399001fa4f';
-```
+### Fichier : `src/components/dashboard/DashboardLayout.tsx`
 
-**2. Script — Supprimer les fichiers dans le bucket `documents`**
+- **Ligne 32** : header inner div — remplacer `container` par `w-full px-6`
+- **Ligne 67** : main — remplacer `container` par `w-full px-6`
 
-Lister et supprimer tous les fichiers dans `documents/e7cfb861-02b0-4679-a91f-4d399001fa4f/` (dossiers `reconstruction/` et autres).
-
-| Action | Cible |
-|---|---|
-| DELETE (SQL) | deliverable_versions, deliverable_corrections, deliverables, enterprise_modules, score_history, activity_log |
-| UPDATE (SQL) | enterprises — reset complet |
-| DELETE (Storage) | Tous les fichiers dans `documents/{enterpriseId}/` |
+Cela donnera un layout pleine largeur tout en gardant un espacement latéral propre.
 
