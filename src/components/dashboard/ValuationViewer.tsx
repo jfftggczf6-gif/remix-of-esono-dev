@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import ConfidenceIndicator from './ConfidenceIndicator';
 
 interface Props {
