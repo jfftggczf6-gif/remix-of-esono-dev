@@ -356,11 +356,11 @@ ${ragContext}
 ${programmeSection}
 
 ══════ INSTRUCTIONS ══════
-Fais un TRIAGE COMPLET de ce dossier. C'est le premier regard d'un analyste — sois exhaustif et direct.
-Compare CHAQUE ratio financier disponible aux benchmarks du secteur.
-Évalue ce que l'IA pourrait reconstituer vs ce qui nécessite des documents réels.
+Fais un DIAGNOSTIC INITIAL complet de ce dossier. C'est le premier bilan que le coach lira.
+Remplis les 3 blocs clés : contexte_entreprise (histoire/marché/activité), constats_par_scope (tous les constats regroupés par domaine), guide_coach (questions, documents, actions).
+Compare CHAQUE ratio financier aux benchmarks du secteur.
+Remplis kpis_bandeau avec les chiffres financiers clés.
 Classe le dossier : AVANCER_DIRECTEMENT / ACCOMPAGNER / COMPLETER_DABORD / REJETER.
-Le plan d'action doit être concret — pas "améliorer la gouvernance" mais "rédiger un PV d'AG et le faire signer".
 
 Réponds en JSON selon ce schéma :
 ${PRE_SCREENING_SCHEMA}`;
