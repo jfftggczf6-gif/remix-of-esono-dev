@@ -29,7 +29,7 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-sm">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="w-full px-6 flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-sm font-display font-bold text-primary-foreground">ES</span>
@@ -64,7 +64,7 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
       </header>
 
       {/* Page content */}
-      <main className="container py-8">
+      <main className="w-full px-6 py-8">
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">{title}</h1>
           {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
