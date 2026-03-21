@@ -197,11 +197,8 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-border/30">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopySummary}>
-            <Copy className="h-3.5 w-3.5" /> Copier
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadJSON}>
-            <Download className="h-3.5 w-3.5" /> JSON
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadHtml}>
+            <Download className="h-3.5 w-3.5" /> HTML (A4)
           </Button>
           <div className="flex-1" />
           {onRegenerate && (
