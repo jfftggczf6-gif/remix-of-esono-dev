@@ -76,7 +76,7 @@ export default function CoachDashboard() {
 
   const [view, setView] = useState<View>('list');
   const [selectedEnt, setSelectedEnt] = useState<Enterprise | null>(null);
-  const [detailTab, setDetailTab] = useState<DetailTab>('parcours');
+  const [detailTab, setDetailTab] = useState<DetailTab>('mirror');
   const [selectedModule, setSelectedModule] = useState('diagnostic');
 
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
