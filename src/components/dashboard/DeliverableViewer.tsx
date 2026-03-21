@@ -1378,9 +1378,7 @@ function BusinessPlanViewer({ data }: { data: any }) {
 function GenericJsonViewer({ data }: { data: any }) {
   return (
     <Card><CardContent className="py-4">
-      <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-[600px] text-muted-foreground">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      <p className="text-sm text-muted-foreground italic">Données disponibles — aucun viewer spécifique pour ce module.</p>
     </CardContent></Card>
   );
 }
