@@ -29,6 +29,7 @@ import OnePagerViewer from './OnePagerViewer';
 import InvestmentMemoViewer from './InvestmentMemoViewer';
 import DataRoomManager from './DataRoomManager';
 import ValidationBanner from './ValidationBanner';
+import InputsDiffBanner from './InputsDiffBanner';
 import VersionHistory from './VersionHistory';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardOverview from './DashboardOverview';
