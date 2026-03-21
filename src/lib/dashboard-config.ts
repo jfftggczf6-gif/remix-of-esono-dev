@@ -37,7 +37,7 @@ export const MODULE_CONFIG_COACH = [
   { code: 'sic',           title: 'Social Impact Canvas',        icon: Globe,           color: '#7c3aed' },
   { code: 'inputs',        title: 'Données Financières',         icon: FileSpreadsheet, color: '#d97706' },
   { code: 'framework',     title: 'Plan Financier Interm.',      icon: BarChart3,       color: '#2563eb' },
-  { code: 'diagnostic',    title: 'Diagnostic Expert',           icon: Stethoscope,     color: '#1e3a5f' },
+  { code: 'diagnostic',    title: 'Bilan de progression',        icon: Stethoscope,     color: '#1e3a5f' },
   { code: 'plan_ovo',      title: 'Plan Financier Final',        icon: ListChecks,      color: '#ea580c' },
   { code: 'business_plan', title: 'Business Plan',               icon: FileText,        color: '#4338ca' },
   { code: 'odd',           title: 'Due Diligence ODD',           icon: Target,          color: '#0891b2' },
