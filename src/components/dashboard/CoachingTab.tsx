@@ -67,17 +67,14 @@ export default function CoachingTab({ enterpriseId, enterpriseName }: CoachingTa
     setMode('processing');
     setAnalyzing(true);
 
-    let content = text;
+    try {
+      let content = text;
 
-    // If file, upload to coaching-files bucket
-        const formData = new FormData();
-        formData.append('file', file);
-
-        // Upload file to coaching-files bucket
+      // If file, upload to coaching-files bucket
+      if (file) {
         const filePath = `${enterpriseId}/${Date.now()}_${file.name}`;
         await supabase.storage.from('coaching-files').upload(filePath, file, { upsert: true });
 
-        // If it's a text-readable file, read it; otherwise note the file name
         if (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
           content = await file.text() + '\n\n' + text;
         } else {
