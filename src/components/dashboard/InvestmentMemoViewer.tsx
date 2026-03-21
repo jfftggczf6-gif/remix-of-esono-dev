@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Briefcase, Download, Copy, CheckCircle2, FileText, Presentation, Loader2, TrendingUp, Users, Shield, Target } from 'lucide-react';
+import { Briefcase, Download, CheckCircle2, FileText, Presentation, Loader2, TrendingUp, Users, Shield, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateMemoHtml } from '@/lib/memo-html-generator';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,20 +73,7 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
   const score = data.score || data.resume_executif?.score_ir || 0;
   const scoreBg = score >= 70 ? 'bg-emerald-100 text-emerald-700' : score >= 40 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
 
-  const handleCopySummary = () => {
-    const summary = data.resume_executif?.synthese || '';
-    navigator.clipboard.writeText(summary);
-    toast.success('Résumé copié !');
-  };
-
-  const handleDownloadJson = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `InvestmentMemo_${data.page_de_garde?.titre || 'memo'}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
+  // Removed handleCopySummary and handleDownloadJson — only HTML and PPTX remain
 
   const handleDownloadPptx = async () => {
     setGeneratingPptx(true);
@@ -238,17 +225,23 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
           </div>
         );
 
-      case 'analyse_financiere':
+      case 'analyse_financiere': {
+        const ca = d.chiffre_affaires || d.ca || d.revenue || d.ca_annee_n || d.kpis?.chiffre_affaires || d.kpis?.ca || '—';
+        const margeBrute = d.marge_brute || d.kpis?.marge_brute || '—';
+        const ebitda = d.ebitda || d.kpis?.ebitda || '—';
+        const resultatNet = d.resultat_net || d.kpis?.resultat_net || '—';
+        const tresorerie = d.tresorerie || d.kpis?.tresorerie || '—';
+        const ratioDette = d.ratio_dette || d.endettement || d.kpis?.ratio_dette || '—';
         return (
           <div className="space-y-4">
             {(d.commentaire || d.analyse) && <p className="text-sm leading-relaxed">{d.commentaire || d.analyse}</p>}
             <div className="grid grid-cols-3 gap-3">
-              <KpiCard label="Chiffre d'affaires" value={d.chiffre_affaires || d.ca || '—'} />
-              <KpiCard label="Marge brute" value={d.marge_brute || '—'} />
-              <KpiCard label="EBITDA" value={d.ebitda || '—'} />
-              <KpiCard label="Résultat net" value={d.resultat_net || '—'} />
-              <KpiCard label="Trésorerie" value={d.tresorerie || '—'} />
-              <KpiCard label="Ratio dette" value={d.ratio_dette || d.endettement || '—'} />
+              <KpiCard label="Chiffre d'affaires" value={ca} />
+              <KpiCard label="Marge brute" value={margeBrute} />
+              <KpiCard label="EBITDA" value={ebitda} />
+              <KpiCard label="Résultat net" value={resultatNet} />
+              <KpiCard label="Trésorerie" value={tresorerie} />
+              <KpiCard label="Ratio dette" value={ratioDette} />
             </div>
             {d.points_forts && <Callout type="green" title="Points forts" text={d.points_forts} />}
             {d.points_attention && <Callout type="amber" title="Points d'attention" text={d.points_attention} />}
@@ -266,9 +259,10 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
                 </div>
               );
             })()}
-            {renderGenericFields(d, ['commentaire', 'analyse', 'chiffre_affaires', 'ca', 'marge_brute', 'ebitda', 'resultat_net', 'tresorerie', 'ratio_dette', 'endettement', 'points_forts', 'points_attention', 'projections', 'previsions', 'evolution'])}
+            {renderGenericFields(d, ['commentaire', 'analyse', 'chiffre_affaires', 'ca', 'revenue', 'ca_annee_n', 'kpis', 'marge_brute', 'ebitda', 'resultat_net', 'tresorerie', 'ratio_dette', 'endettement', 'points_forts', 'points_attention', 'projections', 'previsions', 'evolution'])}
           </div>
         );
+      }
 
       case 'analyse_risques':
         return (
@@ -410,25 +404,27 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
       case 'these_investissement':
         return (
           <div className="space-y-4">
-            {(d.these || d.synthese) && <p className="text-sm leading-relaxed">{d.these || d.synthese}</p>}
+            {(d.these || d.synthese || d.resume) && (
+              <p className="text-sm leading-relaxed">{d.these || d.synthese || d.resume}</p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg border-l-4 border-emerald-400 bg-emerald-50/50 p-4">
                 <p className="text-xs font-semibold text-emerald-700 mb-2">✅ Arguments Pour</p>
-                <ul className="space-y-1">{arr(d.arguments_pour).map((a: string, i: number) => (
-                  <li key={i} className="text-sm">{a}</li>
+                <ul className="space-y-1">{arr(d.arguments_pour || d.pour || []).map((a: any, i: number) => (
+                  <li key={i} className="text-sm">{typeof a === 'string' ? a : a.argument || JSON.stringify(a)}</li>
                 ))}</ul>
               </div>
               <div className="rounded-lg border-l-4 border-red-400 bg-red-50/50 p-4">
                 <p className="text-xs font-semibold text-red-700 mb-2">⚠️ Arguments Contre</p>
-                <ul className="space-y-1">{arr(d.arguments_contre).map((a: string, i: number) => (
-                  <li key={i} className="text-sm">{a}</li>
+                <ul className="space-y-1">{arr(d.arguments_contre || d.contre || d.risques || []).map((a: any, i: number) => (
+                  <li key={i} className="text-sm">{typeof a === 'string' ? a : a.argument || JSON.stringify(a)}</li>
                 ))}</ul>
               </div>
             </div>
-            {arr(d.facteurs_cles).length > 0 && (
+            {arr(d.facteurs_cles || d.facteurs_cles_succes || []).length > 0 && (
               <div>
                 <p className="text-xs font-semibold mb-1">Facteurs clés de succès</p>
-                <ul className="space-y-1">{arr(d.facteurs_cles).map((f: string, i: number) => (
+                <ul className="space-y-1">{arr(d.facteurs_cles || d.facteurs_cles_succes).map((f: string, i: number) => (
                   <li key={i} className="text-sm flex items-start gap-2"><Target className="h-3.5 w-3.5 text-primary mt-0.5 flex-none" />{f}</li>
                 ))}</ul>
               </div>
@@ -525,9 +521,7 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
                 </button>
               ))}
               <div className="pt-4 space-y-2">
-                <Button variant="outline" size="sm" className="w-full text-xs" onClick={handleCopySummary}><Copy className="h-3 w-3 mr-1" /> Copier résumé</Button>
                 <Button variant="outline" size="sm" className="w-full text-xs" onClick={handleDownloadHtml}><Download className="h-3 w-3 mr-1" /> HTML (A4)</Button>
-                <Button variant="outline" size="sm" className="w-full text-xs" onClick={handleDownloadJson}><Download className="h-3 w-3 mr-1" /> JSON</Button>
                 {onRegenerate && <Button variant="ghost" size="sm" className="w-full text-xs" onClick={onRegenerate}>Regénérer</Button>}
               </div>
             </div>

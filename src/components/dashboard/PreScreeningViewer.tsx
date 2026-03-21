@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  AlertTriangle, CheckCircle2, XCircle, Copy, Download, RefreshCw,
+  AlertTriangle, CheckCircle2, XCircle, Download, RefreshCw,
   MessageSquare, FileText, Clock, AlertCircle, BookOpen, Target,
   TrendingUp, Banknote, BarChart3, Building2, Users, Gavel, Briefcase, Factory
 } from 'lucide-react';
@@ -65,22 +65,17 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
     return new Intl.NumberFormat('fr-FR').format(v);
   };
 
-  const handleCopySummary = () => {
-    const exec = resumeExecutif?.synthese || classDetail;
-    const text = `Diagnostic initial ${classification} (${score}/100)\n${exec}`;
-    navigator.clipboard.writeText(text);
-    toast.success('Résumé copié !');
-  };
-
-  const handleDownloadJSON = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const handleDownloadHtml = () => {
+    const content = document.getElementById('prescreening-viewer-content')?.innerHTML || '';
+    const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Diagnostic initial — ${entInfo.name || ''}</title>
+    <style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}h2,h3,h4{margin-top:16px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}</style>
+    </head><body>${content}</body></html>`;
+    const blob = new Blob([fullHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `diagnostic_initial_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    a.href = url; a.download = `diagnostic_initial_${new Date().toISOString().slice(0, 10)}.html`; a.click();
     URL.revokeObjectURL(url);
-    toast.success('JSON téléchargé');
+    toast.success('HTML téléchargé');
   };
 
   // ─── Constats helpers ───
@@ -126,7 +121,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="prescreening-viewer-content">
 
       {/* ══════════ ZONE 1 — Bandeau verdict ══════════ */}
       <Card className={`p-5 ${cc.bg} border-2 ${cc.border}`}>
@@ -202,11 +197,8 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-border/30">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopySummary}>
-            <Copy className="h-3.5 w-3.5" /> Copier
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadJSON}>
-            <Download className="h-3.5 w-3.5" /> JSON
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadHtml}>
+            <Download className="h-3.5 w-3.5" /> HTML (A4)
           </Button>
           <div className="flex-1" />
           {onRegenerate && (

@@ -45,7 +45,7 @@ function SicViewer({ data }: { data: any }) {
       {data.probleme_social && (
         <Card><CardContent className="py-4">
           <h4 className="text-xs font-bold text-primary mb-1">🎯 Problème social adressé</h4>
-          <p className="text-sm text-muted-foreground">{data.probleme_social}</p>
+          <p className="text-sm text-foreground">{data.probleme_social}</p>
         </CardContent></Card>
       )}
 
@@ -548,7 +548,7 @@ function DiagnosticViewer({ data }: { data: any }) {
   return (
     <div className="space-y-4">
       {/* ═══ ZONE 1 — Où en est-on ? ═══ */}
-      <Card className="bg-secondary">
+      <Card className="bg-background border">
         <CardContent className="py-4">
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white ${verdictColor(verdict.score || 0)}`}>
@@ -562,7 +562,7 @@ function DiagnosticViewer({ data }: { data: any }) {
                   {verdict.pret_pour_bailleur ? 'Dossier prêt' : 'Pas encore prêt'}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{verdict.resume}</p>
+              <p className="text-xs text-foreground mt-1">{verdict.resume}</p>
             </div>
           </div>
 
@@ -597,7 +597,7 @@ function DiagnosticViewer({ data }: { data: any }) {
         <div className="space-y-2">
           <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Ce qui va coincer</h3>
           {problemes.map((p: any, i: number) => (
-            <div key={i} className="p-3 rounded-r-lg bg-secondary border"
+            <div key={i} className="p-3 rounded-r-lg bg-background border"
               style={{ borderLeft: `4px solid ${p.urgence === 'bloquant' ? '#A32D2D' : p.urgence === 'important' ? '#BA7517' : '#185FA5'}` }}>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={`text-[9px] ${
@@ -607,7 +607,7 @@ function DiagnosticViewer({ data }: { data: any }) {
                 }`}>{p.urgence}</Badge>
                 <span className="text-xs font-medium">{p.titre}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{p.constat}</p>
+              <p className="text-xs text-foreground mt-2 leading-relaxed">{p.constat}</p>
               <p className="text-xs text-blue-800 mt-2">→ {p.piste}</p>
             </div>
           ))}
@@ -636,9 +636,9 @@ function DiagnosticViewer({ data }: { data: any }) {
         <div className="space-y-2">
           <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Ce qui est solide</h3>
           {pointsForts.map((pf: any, i: number) => (
-            <div key={i} className="p-3 rounded-r-lg bg-secondary border" style={{ borderLeft: '4px solid #639922' }}>
+            <div key={i} className="p-3 rounded-r-lg bg-background border" style={{ borderLeft: '4px solid #639922' }}>
               <p className="text-xs font-medium">{pf.titre}</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{pf.constat}</p>
+              <p className="text-xs text-foreground mt-1 leading-relaxed">{pf.constat}</p>
               <p className="text-xs text-emerald-700 mt-2 font-medium">Argument bailleur : {pf.argument_bailleur}</p>
             </div>
           ))}
@@ -682,10 +682,10 @@ function DiagnosticViewer({ data }: { data: any }) {
 
       {/* ═══ ZONE 6 — Verdict final + prochaines étapes ═══ */}
       {(verdictFinal.synthese || verdictFinal.prochaines_etapes?.length > 0) && (
-        <Card className="bg-secondary">
+        <Card className="bg-background border">
           <CardContent className="py-4">
             <h4 className="text-xs font-bold text-primary mb-2">Verdict final</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">{verdictFinal.synthese}</p>
+            <p className="text-xs text-foreground leading-relaxed">{verdictFinal.synthese}</p>
             {verdictFinal.delai_estime && (
               <Badge className="mt-3" variant="outline">
                 {verdictFinal.delai_estime}
@@ -694,7 +694,7 @@ function DiagnosticViewer({ data }: { data: any }) {
             {verdictFinal.prochaines_etapes?.length > 0 && (
               <div className="mt-4 pt-3 border-t space-y-1">
                 {verdictFinal.prochaines_etapes.map((e: string, i: number) => (
-                  <p key={i} className="text-xs text-muted-foreground">{e}</p>
+                  <p key={i} className="text-xs text-foreground">{e}</p>
                 ))}
               </div>
             )}
@@ -1375,12 +1375,10 @@ function BusinessPlanViewer({ data }: { data: any }) {
 
 
 // ===== GENERIC FALLBACK =====
-function GenericJsonViewer({ data }: { data: any }) {
+function GenericJsonViewer({ data: _data }: { data: any }) {
   return (
     <Card><CardContent className="py-4">
-      <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-[600px] text-muted-foreground">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      <p className="text-sm text-muted-foreground italic">Données disponibles — aucun viewer spécifique pour ce module.</p>
     </CardContent></Card>
   );
 }

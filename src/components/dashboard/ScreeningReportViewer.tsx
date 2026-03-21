@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Download, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ScreeningReportViewerProps {
@@ -12,27 +12,21 @@ interface ScreeningReportViewerProps {
 export default function ScreeningReportViewer({ data, onRegenerate }: ScreeningReportViewerProps) {
   const isNewFormat = !!(data.decision?.verdict);
 
-  const handleCopySummary = () => {
-    const text = isNewFormat
-      ? `Décision: ${data.decision?.verdict} (${data.decision?.niveau_conviction}%)\n${data.decision?.justification}`
-      : `Screening ${data.verdict} (${data.screening_score}/100)\n${data.verdict_summary}`;
-    navigator.clipboard.writeText(text);
-    toast.success('Résumé copié !');
-  };
-
-  const handleDownloadJSON = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const handleDownloadHtml = () => {
+    const content = document.getElementById('screening-viewer-content')?.innerHTML || '';
+    const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Décision Programme</title>
+    <style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}</style>
+    </head><body>${content}</body></html>`;
+    const blob = new Blob([fullHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `decision_programme_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    a.href = url; a.download = `decision_programme_${new Date().toISOString().slice(0, 10)}.html`; a.click();
     URL.revokeObjectURL(url);
-    toast.success('JSON téléchargé');
+    toast.success('HTML téléchargé');
   };
 
   if (!isNewFormat) {
-    return <LegacyScreeningViewer data={data} onRegenerate={onRegenerate} handleCopy={handleCopySummary} handleDownload={handleDownloadJSON} />;
+    return <LegacyScreeningViewer data={data} onRegenerate={onRegenerate} handleDownloadHtml={handleDownloadHtml} />;
   }
 
   const decision = data.decision || {};
@@ -43,14 +37,11 @@ export default function ScreeningReportViewer({ data, onRegenerate }: ScreeningR
   const risques = data.risques_programme || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id="screening-viewer-content">
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopySummary}>
-          <Copy className="h-3.5 w-3.5" /> Copier
-        </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadJSON}>
-          <Download className="h-3.5 w-3.5" /> JSON
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadHtml}>
+          <Download className="h-3.5 w-3.5" /> HTML (A4)
         </Button>
         {onRegenerate && (
           <Button variant="outline" size="sm" className="gap-1.5" onClick={onRegenerate}>
@@ -261,11 +252,10 @@ export default function ScreeningReportViewer({ data, onRegenerate }: ScreeningR
 }
 
 // ===== LEGACY VIEWER (ancien format) =====
-function LegacyScreeningViewer({ data, onRegenerate, handleCopy, handleDownload }: {
+function LegacyScreeningViewer({ data, onRegenerate, handleDownloadHtml }: {
   data: Record<string, any>;
   onRegenerate?: () => void;
-  handleCopy: () => void;
-  handleDownload: () => void;
+  handleDownloadHtml: () => void;
 }) {
   const score = data.screening_score ?? 0;
   const verdict = data.verdict || 'INSUFFISANT';
@@ -282,13 +272,10 @@ function LegacyScreeningViewer({ data, onRegenerate, handleCopy, handleDownload 
   const scoreColor = score >= 70 ? 'text-emerald-600' : score >= 40 ? 'text-amber-600' : 'text-red-600';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="screening-viewer-content">
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCopy}>
-          <Copy className="h-3.5 w-3.5" /> Copier
-        </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload}>
-          <Download className="h-3.5 w-3.5" /> JSON
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadHtml}>
+          <Download className="h-3.5 w-3.5" /> HTML (A4)
         </Button>
         {onRegenerate && (
           <Button variant="outline" size="sm" className="gap-1.5" onClick={onRegenerate}>
@@ -372,14 +359,6 @@ function LegacyScreeningViewer({ data, onRegenerate, handleCopy, handleDownload 
         </Card>
       )}
 
-      {/* Fallback: raw JSON for anything else */}
-      {!resumeExecutif && !data.programme_match && (
-        <Card className="p-4">
-          <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-[600px] text-muted-foreground">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </Card>
-      )}
     </div>
   );
 }
