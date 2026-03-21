@@ -11,9 +11,10 @@ interface DeliverableViewerProps {
   moduleCode: string;
   data: any;
   allDeliverables?: any[];
+  onRegenerate?: () => void;
 }
 
-export default function DeliverableViewer({ moduleCode, data, allDeliverables }: DeliverableViewerProps) {
+export default function DeliverableViewer({ moduleCode, data, allDeliverables, onRegenerate }: DeliverableViewerProps) {
   if (!data || typeof data !== 'object') return null;
 
   switch (moduleCode) {
