@@ -165,7 +165,7 @@ export const PHASES: PhaseConfig[] = [
     shortLabel: 'Décision',
     color: 'amber',
     modules: [
-      { code: 'screening', label: 'Screening final', icon: Search, special: 'screening' },
+      { code: 'screening', label: 'Décision programme', icon: Search, special: 'screening' },
       { code: 'dataroom', label: 'Data Room', icon: FolderPlus, special: 'dataroom' },
     ],
   },
