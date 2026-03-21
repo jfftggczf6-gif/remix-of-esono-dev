@@ -362,21 +362,21 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           </h3>
           <div className="space-y-3">
             {contexte.histoire && (
-              <div className="p-4 rounded-lg bg-secondary border">
-                <h4 className="text-xs font-semibold mb-2">L'histoire</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">{contexte.histoire}</p>
+              <div className="p-4 rounded-lg bg-card border shadow-sm">
+                <h4 className="text-xs font-semibold mb-2 text-foreground">L'histoire</h4>
+                <p className="text-xs text-foreground leading-relaxed">{contexte.histoire}</p>
               </div>
             )}
             {contexte.marche && (
-              <div className="p-4 rounded-lg bg-secondary border">
-                <h4 className="text-xs font-semibold mb-2">Le marché</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">{contexte.marche}</p>
+              <div className="p-4 rounded-lg bg-card border shadow-sm">
+                <h4 className="text-xs font-semibold mb-2 text-foreground">Le marché</h4>
+                <p className="text-xs text-foreground leading-relaxed">{contexte.marche}</p>
               </div>
             )}
             {contexte.activite && (
-              <div className="p-4 rounded-lg bg-secondary border">
-                <h4 className="text-xs font-semibold mb-2">L'activité</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">{contexte.activite}</p>
+              <div className="p-4 rounded-lg bg-card border shadow-sm">
+                <h4 className="text-xs font-semibold mb-2 text-foreground">L'activité</h4>
+                <p className="text-xs text-foreground leading-relaxed">{contexte.activite}</p>
               </div>
             )}
           </div>
