@@ -19,7 +19,7 @@ interface PreScreeningViewerProps {
   onLaunchPipeline?: () => void;
 }
 
-export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate, onLaunchPipeline }: PreScreeningViewerProps) {
+export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate, onLaunchPipeline: _onLaunchPipeline }: PreScreeningViewerProps) {
   const [activeScope, setActiveScope] = useState('all');
   const [programmes, setProgrammes] = useState<any[]>([]);
   const [selectedProgrammeId, setSelectedProgrammeId] = useState<string | null>(null);
