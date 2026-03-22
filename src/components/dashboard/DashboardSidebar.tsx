@@ -32,19 +32,8 @@ export default function DashboardSidebar({
   enterprise, deliverables, modules, selectedModule, onSelectModule,
   onGenerateAll, generating, generationProgress, globalScore,
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    if (window.innerWidth < 1024) return true;
-    return localStorage.getItem('esono_sidebar_collapsed') === 'true';
-  });
-  
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const collapsed = false;
 
-  // Persist collapsed state
-  useEffect(() => {
-    localStorage.setItem('esono_sidebar_collapsed', String(collapsed));
-  }, [collapsed]);
 
 
 
