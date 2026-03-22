@@ -383,7 +383,7 @@ export default function CoachDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => { setView('list'); setSelectedEnt(null); }}>
+            <Button variant="ghost" size="sm" onClick={handleBackToList}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour
             </Button>
             <div>
