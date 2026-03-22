@@ -41,7 +41,7 @@ interface StorageFile {
   metadata?: { size?: number };
 }
 
-export default function ReconstructionUploader({ enterpriseId, session, navigate, onComplete, onPreScreeningDone }: ReconstructionUploaderProps) {
+export default function ReconstructionUploader({ enterpriseId, session, navigate, onComplete }: ReconstructionUploaderProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<StorageFile[]>([]);
   const [uploading, setUploading] = useState(false);
