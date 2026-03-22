@@ -191,53 +191,49 @@ export default function DashboardSidebar({
 
           return (
             <div key={phase.id} className="py-0.5">
-              <button
-                onClick={() => togglePhase(phase.id)}
+              <div
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-muted/50',
+                  'w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider',
                   colorClass
                 )}
               >
-                {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
                 <span className="flex-1 text-left">{phase.label}</span>
                 {allDone ? (
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
                   <span className="text-[10px] font-normal opacity-70">{done}/{total}</span>
                 )}
-              </button>
+              </div>
 
-              {isExpanded && (
-                <div className="pb-1">
-                  {phase.modules.map(mod => {
-                    const status = getModuleStatus(mod.code);
-                    const isActive = selectedModule === mod.code;
-                    const Icon = mod.icon;
-                    return (
-                      <button
-                        key={mod.code}
-                        onClick={() => { onSelectModule(mod.code); if (isMobile) setMobileOpen(false); }}
-                        className={cn(
-                          'w-full flex items-center gap-2.5 px-4 py-1.5 text-sm transition-colors border-l-2',
-                          isActive
-                            ? `bg-primary/10 text-primary font-medium ${accentClass}`
-                            : `border-l-transparent hover:bg-muted/50 ${status === 'completed' ? 'text-foreground' : 'text-muted-foreground'}`
-                        )}
-                      >
-                        <Icon className="h-4 w-4 flex-none" />
-                        <span className="flex-1 text-left truncate text-xs">{mod.label}</span>
-                        {status === 'completed' ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-none" />
-                        ) : status === 'in_progress' ? (
-                          <Loader2 className="h-3.5 w-3.5 text-primary animate-spin flex-none" />
-                        ) : (
-                          <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 flex-none" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="pb-1">
+                {phase.modules.map(mod => {
+                  const status = getModuleStatus(mod.code);
+                  const isActive = selectedModule === mod.code;
+                  const Icon = mod.icon;
+                  return (
+                    <button
+                      key={mod.code}
+                      onClick={() => { onSelectModule(mod.code); if (isMobile) setMobileOpen(false); }}
+                      className={cn(
+                        'w-full flex items-center gap-2.5 px-4 py-1.5 text-sm transition-colors border-l-2',
+                        isActive
+                          ? `bg-primary/10 text-primary font-medium ${accentClass}`
+                          : `border-l-transparent hover:bg-muted/50 ${status === 'completed' ? 'text-foreground' : 'text-muted-foreground'}`
+                      )}
+                    >
+                      <Icon className="h-4 w-4 flex-none" />
+                      <span className="flex-1 text-left truncate text-xs">{mod.label}</span>
+                      {status === 'completed' ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-none" />
+                      ) : status === 'in_progress' ? (
+                        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin flex-none" />
+                      ) : (
+                        <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 flex-none" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
