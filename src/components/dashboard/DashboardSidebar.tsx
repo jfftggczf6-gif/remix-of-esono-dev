@@ -33,7 +33,8 @@ export default function DashboardSidebar({
   onGenerateAll, generating, generationProgress, globalScore,
 }: SidebarProps) {
   const collapsed = false;
-
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
 
 
