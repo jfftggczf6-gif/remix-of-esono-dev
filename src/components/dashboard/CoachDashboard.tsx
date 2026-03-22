@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from './DashboardLayout';
@@ -54,9 +55,14 @@ type DetailTab = 'mirror' | 'coaching';
 export default function CoachDashboard() {
   const { user, profile } = useAuth();
 
-  const [view, setView] = useState<View>('list');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const entIdFromUrl = searchParams.get('ent');
+
+  const [view, setView] = useState<View>(entIdFromUrl ? 'detail' : 'list');
   const [selectedEnt, setSelectedEnt] = useState<Enterprise | null>(null);
-  const [detailTab, setDetailTab] = useState<DetailTab>('mirror');
+  const [detailTab, setDetailTab] = useState<DetailTab>(
+    () => (sessionStorage.getItem('esono_detail_tab') as DetailTab) || 'mirror'
+  );
   const [_selectedModule, _setSelectedModule] = useState('diagnostic');
 
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
@@ -74,7 +80,7 @@ export default function CoachDashboard() {
   const [addLoading, setAddLoading] = useState(false);
   const [_mirrorPipelineState, setMirrorPipelineState] = useState<PipelineState>('generate');
   const [reportPreview, setReportPreview] = useState<{ html: string; enterpriseName: string } | null>(null);
-  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(!!entIdFromUrl);
   const [extractedInfo, setExtractedInfo] = useState<{ name: string | null; country: string | null; sector: string | null } | null>(null);
   const [showExtractDialog, setShowExtractDialog] = useState(false);
   const [_extractingEntId, _setExtractingEntId] = useState<string | null>(null);
@@ -146,8 +152,45 @@ export default function CoachDashboard() {
     getPipelineState(selectedEnt.id).then(setMirrorPipelineState);
   }, [selectedEnt?.id, selectedEnt?.updated_at, deliverablesMap[selectedEnt?.id || '']?.length]);
 
+  // Persist detailTab in sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('esono_detail_tab', detailTab);
+  }, [detailTab]);
 
-  // ─── Add Entrepreneur ────────────────────────────────────────────────────
+  // Restore selectedEnt from URL when enterprises load
+  useEffect(() => {
+    if (entIdFromUrl && enterprises.length > 0 && !selectedEnt) {
+      const found = enterprises.find(e => e.id === entIdFromUrl);
+      if (found) {
+        setSelectedEnt(found);
+        setView('detail');
+        setFullscreen(true);
+      } else {
+        searchParams.delete('ent');
+        setSearchParams(searchParams, { replace: true });
+        setView('list');
+      }
+    }
+  }, [enterprises, entIdFromUrl]);
+
+  // Navigation helpers
+  const handleViewEnterprise = useCallback((ent: Enterprise) => {
+    setSelectedEnt(ent);
+    setView('detail');
+    setDetailTab('mirror');
+    setFullscreen(true);
+    setSearchParams({ ent: ent.id }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleBackToList = useCallback(() => {
+    setView('list');
+    setSelectedEnt(null);
+    setFullscreen(false);
+    searchParams.delete('ent');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+
 
   const handleAddEntrepreneur = async () => {
     if (!addForm.name.trim() || !user) return;
@@ -246,8 +289,7 @@ export default function CoachDashboard() {
       }
 
       if (selectedEnt?.id === ent.id) {
-        setView('list');
-        setSelectedEnt(null);
+        handleBackToList();
       }
       await fetchData();
     } catch (err: any) {
@@ -292,7 +334,7 @@ export default function CoachDashboard() {
                   </Badge>
                 )}
               </div>
-              <Button variant="ghost" size="sm" onClick={() => { setFullscreen(false); setView('list'); setSelectedEnt(null); }}>
+              <Button variant="ghost" size="sm" onClick={handleBackToList}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Retour à la liste
               </Button>
             </div>
@@ -318,7 +360,7 @@ export default function CoachDashboard() {
               <EntrepreneurDashboard
                 enterpriseId={ent.id}
                 showBackButton={false}
-                onBack={() => { setFullscreen(false); setView('list'); setSelectedEnt(null); }}
+                onBack={handleBackToList}
                 coachMode={true}
               />
             )}
@@ -341,7 +383,7 @@ export default function CoachDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => { setView('list'); setSelectedEnt(null); }}>
+            <Button variant="ghost" size="sm" onClick={handleBackToList}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour
             </Button>
             <div>
@@ -384,7 +426,7 @@ export default function CoachDashboard() {
           <EntrepreneurDashboard
             enterpriseId={selectedEnt.id}
             showBackButton={false}
-            onBack={() => { setView('list'); setSelectedEnt(null); }}
+            onBack={handleBackToList}
             coachMode={true}
           />
         )}
@@ -406,7 +448,7 @@ export default function CoachDashboard() {
         subtitle="Évaluez vos entreprises par critères programme"
       >
         <div className="flex gap-3 mb-6">
-          <Button variant="outline" onClick={() => setView('list')} className="gap-2">
+          <Button variant="outline" onClick={handleBackToList} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Retour au portefeuille
           </Button>
         </div>
@@ -535,7 +577,7 @@ export default function CoachDashboard() {
                 <div className="col-span-3 flex items-center justify-end gap-1.5">
                   <Button
                     variant="outline" size="sm" className="h-7 px-2.5 text-xs gap-1"
-                    onClick={() => { setSelectedEnt(ent); setView('detail'); setDetailTab('mirror'); setFullscreen(true); }}
+                    onClick={() => handleViewEnterprise(ent)}
                   >
                     <Eye className="h-3 w-3" /> Voir
                   </Button>
@@ -696,5 +738,3 @@ export default function CoachDashboard() {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-
