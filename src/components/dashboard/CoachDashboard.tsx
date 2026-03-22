@@ -116,7 +116,7 @@ export default function CoachDashboard() {
   // ─── Data loading ─────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) return;
     setLoading(true);
     try {
       const { data: ents } = await supabase
@@ -125,7 +125,17 @@ export default function CoachDashboard() {
         .eq('coach_id', user.id)
         .order('updated_at', { ascending: false });
 
-      setEnterprises(ents || []);
+      setEnterprises(prev => {
+        const newEnts = ents || [];
+        // Preserve selectedEnt reference by ID after refetch
+        if (selectedEnt) {
+          const stillExists = newEnts.find(e => e.id === selectedEnt.id);
+          if (stillExists) {
+            setTimeout(() => setSelectedEnt(stillExists), 0);
+          }
+        }
+        return newEnts;
+      });
 
       if (ents && ents.length > 0) {
         const ids = ents.map(e => e.id);
@@ -159,7 +169,7 @@ export default function CoachDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
