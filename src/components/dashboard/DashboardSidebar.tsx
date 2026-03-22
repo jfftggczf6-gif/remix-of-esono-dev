@@ -135,7 +135,7 @@ export default function DashboardSidebar({
       <div className="flex-1 overflow-y-auto py-1">
         {PHASES.map((phase) => {
           const { done, total } = getPhaseProgress(phase);
-          const isExpanded = expandedPhases.has(phase.id);
+          
           const colorClass = phaseColorMap[phase.color] || '';
           const accentClass = phaseAccentMap[phase.color] || '';
           const allDone = done === total;
