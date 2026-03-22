@@ -15,13 +15,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Users, Building2,
-  Plus, Download, Sparkles, Loader2, ArrowLeft, Eye,
+  Plus, Download, Loader2, ArrowLeft, Eye,
   UserPlus, Search, Trash2, Maximize2, Minimize2
 } from 'lucide-react';
 import {
   type Enterprise, type Deliverable, type EnterpriseModule, type CoachUpload,
 } from '@/lib/dashboard-config';
-import { getValidAccessToken } from '@/lib/getValidAccessToken';
+
 import { getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
 import ScreeningDashboard from './ScreeningDashboard';
 import ProgrammeCriteriaEditor from './ProgrammeCriteriaEditor';
@@ -52,7 +52,7 @@ type DetailTab = 'mirror' | 'coaching';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CoachDashboard() {
-  const { user, profile, session: authSession } = useAuth();
+  const { user, profile } = useAuth();
 
   const [view, setView] = useState<View>('list');
   const [selectedEnt, setSelectedEnt] = useState<Enterprise | null>(null);
@@ -65,7 +65,7 @@ export default function CoachDashboard() {
   const [_uploadsMap, setUploadsMap] = useState<Record<string, CoachUpload[]>>({});
 
   const [loading, setLoading] = useState(true);
-  const [generatingReport, setGeneratingReport] = useState<string | null>(null);
+  
 
   const [search, setSearch] = useState('');
   const [filterPhase, setFilterPhase] = useState('');
@@ -224,42 +224,6 @@ export default function CoachDashboard() {
     }
   };
 
-
-
-  const handleDownloadReport = async (ent: Enterprise) => {
-    if (generatingReport) return;
-    setGeneratingReport(ent.id);
-    try {
-      let token: string;
-      try { token = await getValidAccessToken(authSession); } catch { toast.error('Non authentifié'); return; }
-
-      toast.info('Génération du rapport détaillé en cours... (30-60s)', { duration: 10000 });
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-coach-report`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ enterprise_id: ent.id }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Erreur' }));
-        throw new Error(err.error || 'Erreur de génération du rapport');
-      }
-
-      const result = await response.json();
-      const html = result.html;
-      setReportPreview({ html, enterpriseName: ent.name });
-      toast.success('Rapport généré !');
-    } catch (err: any) {
-      console.error('Report generation error:', err);
-      toast.error(err.message || 'Erreur lors de la génération du rapport');
-    } finally {
-      setGeneratingReport(null);
-    }
-  };
 
   // ─── Delete / Detach Enterprise ────────────────────────────────────────────
 
@@ -574,9 +538,6 @@ export default function CoachDashboard() {
                     onClick={() => { setSelectedEnt(ent); setView('detail'); setDetailTab('mirror'); setFullscreen(true); }}
                   >
                     <Eye className="h-3 w-3" /> Voir
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleDownloadReport(ent)} disabled={generatingReport === ent.id}>
-                    {generatingReport === ent.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
