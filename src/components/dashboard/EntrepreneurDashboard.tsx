@@ -112,6 +112,7 @@ export default function EntrepreneurDashboard({
     onGeneratingChange?.(generating);
   }, [generating, onGeneratingChange]);
 
+  const fetchData = useCallback(async () => {
     if (!user) return;
     let ent: Enterprise | null = null;
 
