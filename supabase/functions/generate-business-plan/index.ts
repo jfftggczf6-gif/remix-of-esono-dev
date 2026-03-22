@@ -719,10 +719,12 @@ serve(async (req) => {
       false
     );
     const knowledgeBlock = `\n\n══════ BASE DE CONNAISSANCES FINANCIÈRE ══════\n${knowledgeBase}`;
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "business_plan");
+    const guardedPrompt = injectGuardrails(BP_SYSTEM_PROMPT);
 
     // PART 1: Sections 1-8
     console.log("[BP] AI Call 1/2: Sections 1-8...");
-    const part1 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart1(ctx) + knowledgeBlock + ragContext, 16384, OPUS_MODEL, 0.3);
+    const part1 = await callAI(guardedPrompt, buildPromptPart1(ctx) + knowledgeBlock + ragContext + kbContext, 16384, OPUS_MODEL, 0.3);
     console.log("[BP] Part 1 OK, keys:", Object.keys(part1).length);
 
     // Build summary of part1 for context in part2
@@ -730,7 +732,7 @@ serve(async (req) => {
 
     // PART 2: Sections 9-14
     console.log("[BP] AI Call 2/2: Sections 9-14...");
-    const part2 = await callAI(BP_SYSTEM_PROMPT, buildPromptPart2(ctx, part1Summary) + knowledgeBlock + ragContext, 16384, OPUS_MODEL, 0.3);
+    const part2 = await callAI(guardedPrompt, buildPromptPart2(ctx, part1Summary) + knowledgeBlock + ragContext + kbContext, 16384, OPUS_MODEL, 0.3);
     console.log("[BP] Part 2 OK, keys:", Object.keys(part2).length);
 
     // Merge

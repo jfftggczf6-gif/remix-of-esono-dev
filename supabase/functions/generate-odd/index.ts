@@ -162,6 +162,7 @@ serve(async (req) => {
 
     // RAG: enrichir avec données ODD
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs"], "odd_analysis");
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "odd");
 
     const donorCriteria = getDonorCriteriaPrompt();
     const userPrompt = buildUserPrompt(
@@ -170,10 +171,10 @@ serve(async (req) => {
       ent.country || "Côte d'Ivoire",
       bmcData,
       sicData
-    ) + `\n\n══════ CRITÈRES ESG DES BAILLEURS ══════\n${donorCriteria}` + ragContext;
+    ) + `\n\n══════ CRITÈRES ESG DES BAILLEURS ══════\n${donorCriteria}` + ragContext + kbContext;
 
     console.log("[generate-odd] Calling Claude API via callAI (max_tokens: 16384)...");
-    const rawData = await callAI(SYSTEM_PROMPT, userPrompt, 16384);
+    const rawData = await callAI(injectGuardrails(SYSTEM_PROMPT), userPrompt, 16384);
     const data = normalizeOdd(rawData);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "odd_analysis", data, "odd");

@@ -436,11 +436,12 @@ EXEMPLES :
 `;
     }
 
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "inputs");
     const enrichedPrompt = userPrompt(
       ent.name, ent.sector || "", ent.country || "", agentDocs, bmcData, fiscalParams.devise
-    ) + mergeInstruction + ragContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
+    ) + mergeInstruction + ragContext + kbContext + `\n\nPARAMÈTRES FISCAUX ${ent.country || "Côte d'Ivoire"}:\n${JSON.stringify(fiscalParams)}`;
 
-    const rawData = await callAI(buildSystemPrompt(fiscalParams.devise), enrichedPrompt, 16384);
+    const rawData = await callAI(injectGuardrails(buildSystemPrompt(fiscalParams.devise)), enrichedPrompt, 16384);
     const normalized = normalizeInputs(rawData);
     const data = validateAndEnrich(normalized, ent.country, ent.sector);
 
