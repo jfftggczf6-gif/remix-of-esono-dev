@@ -184,12 +184,18 @@ export default function CoachDashboard() {
   }, [setSearchParams]);
 
   const handleBackToList = useCallback(() => {
+    if (childGenerating) {
+      const confirmed = window.confirm(
+        'Une génération est en cours. Si vous quittez, elle sera interrompue. Continuer ?'
+      );
+      if (!confirmed) return;
+    }
     setView('list');
     setSelectedEnt(null);
     setFullscreen(false);
     searchParams.delete('ent');
     setSearchParams(searchParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [childGenerating, searchParams, setSearchParams]);
 
 
 
