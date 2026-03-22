@@ -420,6 +420,11 @@ export default function SuperAdminDashboard() {
         <TabsContent value="knowledge">
           <KnowledgeBaseManager />
         </TabsContent>
+
+        {/* STRUCTURED KB TAB */}
+        <TabsContent value="kb_structured">
+          <WorkspaceKnowledgeManager />
+        </TabsContent>
       </Tabs>
     </DashboardLayout>
   );
