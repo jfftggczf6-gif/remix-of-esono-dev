@@ -224,71 +224,7 @@ export default function CoachDashboard() {
     }
   };
 
-  // ─── Generate OVO Excel Plan (coach version) ────────────────────────────
-  const handleGenerateOvoPlanCoach = async (enterpriseId: string) => {
-    try {
-      const token = await getValidAccessToken(authSession);
-      
-      // Gather deliverable data for this enterprise
-      const entDelivs = deliverablesMap[enterpriseId] || [];
-      const getDelivData = (type: string): Record<string, unknown> => {
-        const d = entDelivs.find((d) => d.type === type);
-        return (d?.data && typeof d.data === 'object') ? d.data as Record<string, unknown> : {};
-      };
 
-      const ent = enterprises.find((e) => e.id === enterpriseId);
-      const planOvoData = getDelivData('plan_ovo');
-      const bmcData = getDelivData('bmc_analysis');
-      const inputsData = getDelivData('inputs_data');
-      const frameworkData = getDelivData('framework_data');
-      const sicData = getDelivData('sic_analysis');
-      const diagnosticData = getDelivData('diagnostic_data');
-
-      const requestId = crypto.randomUUID();
-
-      const payload = {
-        user_id: user?.id,
-        enterprise_id: enterpriseId,
-        request_id: requestId,
-        company: ent?.name || '',
-        country: ent?.country || "IVORY COAST",
-        sector: ent?.sector || "",
-        business_model: (bmcData as any)?.canvas?.proposition_valeur?.enonce || '',
-        current_year: new Date().getFullYear(),
-        employees: ent?.employees_count || 0,
-        existing_revenue: (inputsData as any)?.compte_resultat?.chiffre_affaires || 0,
-        products: planOvoData?.products || [],
-        services: planOvoData?.services || [],
-        bmc_data: bmcData,
-        inputs_data: inputsData,
-        framework_data: frameworkData,
-        sic_data: sicData,
-        plan_ovo_data: planOvoData,
-        diagnostic_data: diagnosticData,
-      };
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ovo-plan`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Erreur' }));
-        throw new Error(err.error || 'Génération OVO Excel échouée');
-      }
-
-      const result = await response.json();
-      toast.success('Plan Financier Excel généré !');
-      await fetchData();
-      return result;
-    } catch (err: unknown) {
-      throw err;
-    }
-  };
 
   const handleDownloadReport = async (ent: Enterprise) => {
     if (generatingReport) return;
