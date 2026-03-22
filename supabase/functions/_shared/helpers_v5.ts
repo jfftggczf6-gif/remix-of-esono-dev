@@ -737,4 +737,145 @@ ${rdvs.length ? `\nDERNIERS RDV :\n${rdvs.join('\n')}` : ''}
     console.warn("getCoachingContext error (non-blocking):", e);
     return "";
   }
+  }
+}
+
+// ===== KNOWLEDGE FOR AGENT (4-layer KB retrieval) =====
+export async function getKnowledgeForAgent(
+  supabase: any,
+  pays: string,
+  secteur: string,
+  agentType: 'valuation' | 'diagnostic' | 'framework' | 'pre_screening' | 'business_plan' | 'bmc' | 'sic' | 'inputs' | 'odd',
+  ownerId?: string
+): Promise<string> {
+  try {
+    const paysKey = pays.toLowerCase().replace(/[\s'']/g, '_').replace(/côte_d_ivoire|cote_divoire/i, 'cote_d_ivoire');
+    const secteurKey = secteur.toLowerCase().replace(/[\s\-\/]/g, '_');
+
+    // 1. Benchmarks sectoriels (couche 2)
+    const { data: benchmarks } = await supabase
+      .from('knowledge_benchmarks')
+      .select('*')
+      .or(`pays.eq.${paysKey},pays.eq.all`)
+      .eq('secteur', secteurKey)
+      .order('pays', { ascending: false })
+      .limit(1);
+
+    // 2. Paramètres risque pays (couche 2)
+    const { data: riskParams } = await supabase
+      .from('knowledge_risk_params')
+      .select('*')
+      .eq('pays', paysKey)
+      .maybeSingle();
+
+    // 3. Données macro pays (couche 2)
+    const { data: countryData } = await supabase
+      .from('knowledge_country_data')
+      .select('*')
+      .eq('pays', paysKey)
+      .maybeSingle();
+
+    // 4. Risk factors applicables (couche 2)
+    const { data: riskFactors } = await supabase
+      .from('knowledge_risk_factors')
+      .select('*')
+      .eq('is_active', true);
+
+    // 5. Données propriétaires workspace (couche 3)
+    let workspaceData = null;
+    if (ownerId) {
+      const { data } = await supabase
+        .from('workspace_knowledge')
+        .select('*')
+        .eq('owner_id', ownerId);
+      workspaceData = data;
+    }
+
+    // 6. Benchmarks auto-enrichis (couche 4)
+    const { data: aggBenchmarks } = await supabase
+      .from('aggregated_benchmarks')
+      .select('*')
+      .eq('secteur', secteurKey)
+      .eq('pays', paysKey)
+      .maybeSingle();
+
+    return buildKnowledgePrompt({
+      benchmarks: benchmarks?.[0] || null,
+      riskParams: riskParams || null,
+      countryData: countryData || null,
+      riskFactors: riskFactors || [],
+      workspaceData,
+      aggBenchmarks: aggBenchmarks?.nb_entreprises >= 10 ? aggBenchmarks : null,
+      agentType,
+    });
+  } catch (e) {
+    console.warn("getKnowledgeForAgent error (non-blocking):", e);
+    return "";
+  }
+}
+
+function buildKnowledgePrompt(ctx: {
+  benchmarks: any; riskParams: any; countryData: any;
+  riskFactors: any[]; workspaceData: any; aggBenchmarks: any; agentType: string;
+}): string {
+  const parts: string[] = [];
+
+  if (ctx.benchmarks) {
+    const b = ctx.benchmarks;
+    parts.push(`══ BENCHMARKS SECTORIELS (${b.secteur}, source: ${b.source}) ══
+Marge brute: ${b.marge_brute_min}-${b.marge_brute_max}% (médiane ${b.marge_brute_mediane}%)
+Marge EBITDA: ${b.marge_ebitda_min}-${b.marge_ebitda_max}%
+Marge nette: ${b.marge_nette_min}-${b.marge_nette_max}%
+Ratio personnel/CA: ${b.ratio_personnel_ca_min}-${b.ratio_personnel_ca_max}%
+Croissance CA max raisonnable: ${b.croissance_ca_max}%/an
+Multiples EBITDA: ${b.multiple_ebitda_min}-${b.multiple_ebitda_max}×
+Multiples CA: ${b.multiple_ca_min}-${b.multiple_ca_max}×`);
+  }
+
+  if (ctx.riskParams) {
+    const r = ctx.riskParams;
+    parts.push(`══ PARAMÈTRES RISQUE PAYS (${r.pays}, source: ${r.source}) ══
+Risk-free rate: ${r.risk_free_rate}% | ERP: ${r.equity_risk_premium}%
+CRP: ${r.country_risk_premium}% | Default spread: ${r.default_spread}%
+Size premium micro/small/medium: ${r.size_premium_micro}/${r.size_premium_small}/${r.size_premium_medium}%
+Illiquidity premium: ${r.illiquidity_premium_min}-${r.illiquidity_premium_max}%
+Coût dette: ${r.cost_of_debt}% | Taux IS: ${r.tax_rate}%
+Taux directeur: ${r.taux_directeur}%
+Risque pays: ${r.risque_pays_label} (prime ${r.risque_pays_prime}%)`);
+  }
+
+  if (ctx.countryData) {
+    const c = ctx.countryData;
+    parts.push(`══ DONNÉES MACRO PAYS (${c.pays}, source: ${c.source}) ══
+PIB: ${c.pib_usd_millions} M USD | Croissance: ${c.croissance_pib_pct}% | Inflation: ${c.inflation_pct}%
+Devise: ${c.devise} | Cadre: ${c.cadre_comptable}
+IS: ${c.taux_is}% | TVA: ${c.taux_tva}% | Cotis. sociales: ${c.cotisations_sociales_pct}%
+SMIG: ${c.salaire_minimum?.toLocaleString('fr-FR')} ${c.devise}/mois
+Salaire dirigeant PME: ${c.salaire_dirigeant_pme_min?.toLocaleString('fr-FR')}-${c.salaire_dirigeant_pme_max?.toLocaleString('fr-FR')} ${c.devise}/mois
+Taux emprunt PME: ${c.taux_emprunt_pme}% | Accès crédit: ${c.acces_credit_pme_pct}%`);
+  }
+
+  if (ctx.riskFactors?.length) {
+    const relevant = ctx.riskFactors.filter(f => 
+      !f.secteurs_concernes || f.secteurs_concernes.length === 0
+    );
+    if (relevant.length) {
+      parts.push(`══ RISQUES TERRAIN À VÉRIFIER (${relevant.length} facteurs actifs) ══
+${relevant.map(f => `[${f.severity}] ${f.titre}: ${f.description}`).join('\n')}`);
+    }
+  }
+
+  if (ctx.workspaceData?.length) {
+    parts.push(`══ PARAMÈTRES PROPRIÉTAIRES PROGRAMME ══
+${ctx.workspaceData.map((w: any) => `${w.type}/${w.cle}: ${JSON.stringify(w.valeur)}`).join('\n')}`);
+  }
+
+  if (ctx.aggBenchmarks) {
+    const a = ctx.aggBenchmarks;
+    parts.push(`══ BENCHMARKS ESONO (${a.nb_entreprises} entreprises analysées, ${a.secteur}/${a.pays}) ══
+Marge brute P25/médiane/P75: ${a.marge_brute_p25}/${a.marge_brute_mediane}/${a.marge_brute_p75}%
+EBITDA médiane: ${a.marge_ebitda_mediane}% | CA médiane: ${a.ca_mediane?.toLocaleString('fr-FR')}`);
+  }
+
+  return parts.length ? `\n${parts.join('\n\n')}\n` : '';
 }

@@ -61,6 +61,48 @@ export type Database = {
           },
         ]
       }
+      aggregated_benchmarks: {
+        Row: {
+          ca_mediane: number | null
+          derniere_agregation: string | null
+          effectifs_mediane: number | null
+          id: string
+          marge_brute_mediane: number | null
+          marge_brute_p25: number | null
+          marge_brute_p75: number | null
+          marge_ebitda_mediane: number | null
+          nb_entreprises: number | null
+          pays: string
+          secteur: string
+        }
+        Insert: {
+          ca_mediane?: number | null
+          derniere_agregation?: string | null
+          effectifs_mediane?: number | null
+          id?: string
+          marge_brute_mediane?: number | null
+          marge_brute_p25?: number | null
+          marge_brute_p75?: number | null
+          marge_ebitda_mediane?: number | null
+          nb_entreprises?: number | null
+          pays: string
+          secteur: string
+        }
+        Update: {
+          ca_mediane?: number | null
+          derniere_agregation?: string | null
+          effectifs_mediane?: number | null
+          id?: string
+          marge_brute_mediane?: number | null
+          marge_brute_p25?: number | null
+          marge_brute_p75?: number | null
+          marge_ebitda_mediane?: number | null
+          nb_entreprises?: number | null
+          pays?: string
+          secteur?: string
+        }
+        Relationships: []
+      }
       coach_uploads: {
         Row: {
           category: string
@@ -663,6 +705,351 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_benchmarks: {
+        Row: {
+          croissance_ca_max: number | null
+          date_mise_a_jour: string | null
+          date_source: string | null
+          id: string
+          marge_brute_max: number | null
+          marge_brute_mediane: number | null
+          marge_brute_min: number | null
+          marge_ebitda_max: number | null
+          marge_ebitda_min: number | null
+          marge_nette_max: number | null
+          marge_nette_min: number | null
+          multiple_ca_max: number | null
+          multiple_ca_min: number | null
+          multiple_ebitda_max: number | null
+          multiple_ebitda_min: number | null
+          notes: string | null
+          pays: string
+          perimetre: string | null
+          ratio_charges_fixes_ca_max: number | null
+          ratio_charges_fixes_ca_min: number | null
+          ratio_personnel_ca_max: number | null
+          ratio_personnel_ca_min: number | null
+          secteur: string
+          source: string
+          source_type: string | null
+          source_url: string | null
+          zone: string | null
+        }
+        Insert: {
+          croissance_ca_max?: number | null
+          date_mise_a_jour?: string | null
+          date_source?: string | null
+          id?: string
+          marge_brute_max?: number | null
+          marge_brute_mediane?: number | null
+          marge_brute_min?: number | null
+          marge_ebitda_max?: number | null
+          marge_ebitda_min?: number | null
+          marge_nette_max?: number | null
+          marge_nette_min?: number | null
+          multiple_ca_max?: number | null
+          multiple_ca_min?: number | null
+          multiple_ebitda_max?: number | null
+          multiple_ebitda_min?: number | null
+          notes?: string | null
+          pays?: string
+          perimetre?: string | null
+          ratio_charges_fixes_ca_max?: number | null
+          ratio_charges_fixes_ca_min?: number | null
+          ratio_personnel_ca_max?: number | null
+          ratio_personnel_ca_min?: number | null
+          secteur: string
+          source: string
+          source_type?: string | null
+          source_url?: string | null
+          zone?: string | null
+        }
+        Update: {
+          croissance_ca_max?: number | null
+          date_mise_a_jour?: string | null
+          date_source?: string | null
+          id?: string
+          marge_brute_max?: number | null
+          marge_brute_mediane?: number | null
+          marge_brute_min?: number | null
+          marge_ebitda_max?: number | null
+          marge_ebitda_min?: number | null
+          marge_nette_max?: number | null
+          marge_nette_min?: number | null
+          multiple_ca_max?: number | null
+          multiple_ca_min?: number | null
+          multiple_ebitda_max?: number | null
+          multiple_ebitda_min?: number | null
+          notes?: string | null
+          pays?: string
+          perimetre?: string | null
+          ratio_charges_fixes_ca_max?: number | null
+          ratio_charges_fixes_ca_min?: number | null
+          ratio_personnel_ca_max?: number | null
+          ratio_personnel_ca_min?: number | null
+          secteur?: string
+          source?: string
+          source_type?: string | null
+          source_url?: string | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_country_data: {
+        Row: {
+          acces_credit_pme_pct: number | null
+          cadre_comptable: string | null
+          corruption_index: number | null
+          cotisations_sociales_pct: number | null
+          croissance_pib_pct: number | null
+          date_mise_a_jour: string | null
+          devise: string | null
+          id: string
+          inflation_pct: number | null
+          pays: string
+          pib_usd_millions: number | null
+          population_millions: number | null
+          risque_politique: string | null
+          salaire_dirigeant_pme_max: number | null
+          salaire_dirigeant_pme_min: number | null
+          salaire_minimum: number | null
+          source: string | null
+          taux_emprunt_pme: number | null
+          taux_is: number | null
+          taux_tva: number | null
+        }
+        Insert: {
+          acces_credit_pme_pct?: number | null
+          cadre_comptable?: string | null
+          corruption_index?: number | null
+          cotisations_sociales_pct?: number | null
+          croissance_pib_pct?: number | null
+          date_mise_a_jour?: string | null
+          devise?: string | null
+          id?: string
+          inflation_pct?: number | null
+          pays: string
+          pib_usd_millions?: number | null
+          population_millions?: number | null
+          risque_politique?: string | null
+          salaire_dirigeant_pme_max?: number | null
+          salaire_dirigeant_pme_min?: number | null
+          salaire_minimum?: number | null
+          source?: string | null
+          taux_emprunt_pme?: number | null
+          taux_is?: number | null
+          taux_tva?: number | null
+        }
+        Update: {
+          acces_credit_pme_pct?: number | null
+          cadre_comptable?: string | null
+          corruption_index?: number | null
+          cotisations_sociales_pct?: number | null
+          croissance_pib_pct?: number | null
+          date_mise_a_jour?: string | null
+          devise?: string | null
+          id?: string
+          inflation_pct?: number | null
+          pays?: string
+          pib_usd_millions?: number | null
+          population_millions?: number | null
+          risque_politique?: string | null
+          salaire_dirigeant_pme_max?: number | null
+          salaire_dirigeant_pme_min?: number | null
+          salaire_minimum?: number | null
+          source?: string | null
+          taux_emprunt_pme?: number | null
+          taux_is?: number | null
+          taux_tva?: number | null
+        }
+        Relationships: []
+      }
+      knowledge_risk_factors: {
+        Row: {
+          categorie: string
+          code: string
+          correction: string | null
+          description: string
+          id: string
+          is_active: boolean | null
+          pays_concernes: string[] | null
+          secteurs_concernes: string[] | null
+          severity: string | null
+          signaux: Json
+          source: string | null
+          titre: string
+        }
+        Insert: {
+          categorie: string
+          code: string
+          correction?: string | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          pays_concernes?: string[] | null
+          secteurs_concernes?: string[] | null
+          severity?: string | null
+          signaux: Json
+          source?: string | null
+          titre: string
+        }
+        Update: {
+          categorie?: string
+          code?: string
+          correction?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          pays_concernes?: string[] | null
+          secteurs_concernes?: string[] | null
+          severity?: string | null
+          signaux?: Json
+          source?: string | null
+          titre?: string
+        }
+        Relationships: []
+      }
+      knowledge_risk_params: {
+        Row: {
+          cost_of_debt: number | null
+          country_risk_premium: number | null
+          date_mise_a_jour: string | null
+          date_source: string | null
+          decote_gouvernance_no_audit: number | null
+          decote_gouvernance_no_board: number | null
+          decote_illiquidite: number | null
+          decote_taille_micro: number | null
+          decote_taille_small: number | null
+          default_spread: number | null
+          equity_risk_premium: number
+          id: string
+          illiquidity_premium_max: number | null
+          illiquidity_premium_min: number | null
+          pays: string
+          risk_free_rate: number
+          risque_pays_label: string | null
+          risque_pays_prime: number | null
+          size_premium_medium: number | null
+          size_premium_micro: number | null
+          size_premium_small: number | null
+          source: string
+          source_url: string | null
+          taux_directeur: number | null
+          tax_rate: number | null
+          zone: string
+        }
+        Insert: {
+          cost_of_debt?: number | null
+          country_risk_premium?: number | null
+          date_mise_a_jour?: string | null
+          date_source?: string | null
+          decote_gouvernance_no_audit?: number | null
+          decote_gouvernance_no_board?: number | null
+          decote_illiquidite?: number | null
+          decote_taille_micro?: number | null
+          decote_taille_small?: number | null
+          default_spread?: number | null
+          equity_risk_premium: number
+          id?: string
+          illiquidity_premium_max?: number | null
+          illiquidity_premium_min?: number | null
+          pays: string
+          risk_free_rate: number
+          risque_pays_label?: string | null
+          risque_pays_prime?: number | null
+          size_premium_medium?: number | null
+          size_premium_micro?: number | null
+          size_premium_small?: number | null
+          source: string
+          source_url?: string | null
+          taux_directeur?: number | null
+          tax_rate?: number | null
+          zone: string
+        }
+        Update: {
+          cost_of_debt?: number | null
+          country_risk_premium?: number | null
+          date_mise_a_jour?: string | null
+          date_source?: string | null
+          decote_gouvernance_no_audit?: number | null
+          decote_gouvernance_no_board?: number | null
+          decote_illiquidite?: number | null
+          decote_taille_micro?: number | null
+          decote_taille_small?: number | null
+          default_spread?: number | null
+          equity_risk_premium?: number
+          id?: string
+          illiquidity_premium_max?: number | null
+          illiquidity_premium_min?: number | null
+          pays?: string
+          risk_free_rate?: number
+          risque_pays_label?: string | null
+          risque_pays_prime?: number | null
+          size_premium_medium?: number | null
+          size_premium_micro?: number | null
+          size_premium_small?: number | null
+          source?: string
+          source_url?: string | null
+          taux_directeur?: number | null
+          tax_rate?: number | null
+          zone?: string
+        }
+        Relationships: []
+      }
+      knowledge_sources: {
+        Row: {
+          acces: string | null
+          date_publication: string | null
+          frequence_mise_a_jour: string | null
+          id: string
+          nom: string
+          notes: string | null
+          organisme: string
+          pays_couverts: string[] | null
+          perimetre_temporel: string | null
+          priorite: number | null
+          secteurs_couverts: string[] | null
+          themes: string[] | null
+          type_source: string
+          url: string | null
+          utilise_dans: string[] | null
+        }
+        Insert: {
+          acces?: string | null
+          date_publication?: string | null
+          frequence_mise_a_jour?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          organisme: string
+          pays_couverts?: string[] | null
+          perimetre_temporel?: string | null
+          priorite?: number | null
+          secteurs_couverts?: string[] | null
+          themes?: string[] | null
+          type_source: string
+          url?: string | null
+          utilise_dans?: string[] | null
+        }
+        Update: {
+          acces?: string | null
+          date_publication?: string | null
+          frequence_mise_a_jour?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          organisme?: string
+          pays_couverts?: string[] | null
+          perimetre_temporel?: string | null
+          priorite?: number | null
+          secteurs_couverts?: string[] | null
+          themes?: string[] | null
+          type_source?: string
+          url?: string | null
+          utilise_dans?: string[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -806,6 +1193,39 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      workspace_knowledge: {
+        Row: {
+          cle: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          owner_id: string
+          type: string
+          valeur: Json
+        }
+        Insert: {
+          cle: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          owner_id: string
+          type: string
+          valeur: Json
+        }
+        Update: {
+          cle?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          type?: string
+          valeur?: Json
         }
         Relationships: []
       }
