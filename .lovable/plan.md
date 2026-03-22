@@ -1,14 +1,14 @@
 
 
-# Cacher le bouton replier/déplier des phases — toujours ouvert
+# Élargir la vue Coaching à pleine largeur
+
+## Problème
+Le composant `CoachingTab` utilise `max-w-2xl` (672px max), ce qui le rend étroit dans le dashboard coach. La zone de contenu devrait occuper toute la largeur disponible.
 
 ## Changement
 
-**Fichier : `src/components/dashboard/DashboardSidebar.tsx`**
+**Fichier : `src/components/dashboard/CoachingTab.tsx`**
+- Ligne 135 : Remplacer `className="space-y-4 max-w-2xl"` par `className="space-y-4"` pour supprimer la contrainte de largeur maximale.
 
-Transformer le header de chaque phase (lignes 194-208) : retirer le `onClick` et les icônes chevron pour que les phases restent toujours dépliées sans possibilité de les replier.
-
-- Ligne 194-195 : Remplacer `<button onClick={() => togglePhase(phase.id)}>` par un simple `<div>` non-cliquable
-- Ligne 201 : Supprimer le chevron (`ChevronDown` / `ChevronUp`)
-- Ligne 210 : Retirer le `{isExpanded &&` conditionnel — les modules s'affichent toujours
+Un seul changement, une seule ligne.
 
