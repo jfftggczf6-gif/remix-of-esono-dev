@@ -102,7 +102,7 @@ export default function CoachDashboard() {
   const [_mirrorPipelineState, setMirrorPipelineState] = useState<PipelineState>('generate');
   const [_generatingOvoPlanMirror, _setGeneratingOvoPlanMirror] = useState(false);
   const [reportPreview, setReportPreview] = useState<{ html: string; enterpriseName: string } | null>(null);
-
+  const [fullscreen, setFullscreen] = useState(false);
   // Enterprise info extraction states
   const [extractedInfo, setExtractedInfo] = useState<{ name: string | null; country: string | null; sector: string | null } | null>(null);
   const [showExtractDialog, setShowExtractDialog] = useState(false);
