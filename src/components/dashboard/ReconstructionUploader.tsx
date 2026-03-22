@@ -239,7 +239,6 @@ export default function ReconstructionUploader({ enterpriseId, session, navigate
     setFiles([]);
     setParsedDocs([]);
     setParsingSummary(null);
-    setPreScreeningFailed(false);
     onComplete();
   };
 
