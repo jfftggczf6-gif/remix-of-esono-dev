@@ -392,7 +392,7 @@ export default function CoachDashboard() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={handleBackToList}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+              <ArrowLeft className="h-4 w-4 mr-1" /> {childGenerating ? 'Génération en cours…' : 'Retour'}
             </Button>
             <div>
               <h2 className="text-xl font-display font-bold">{ent.name}</h2>
