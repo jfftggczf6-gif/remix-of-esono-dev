@@ -5,8 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import {
-  ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2,
-  ChevronDown, ChevronUp, Menu, X,
+  ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Menu, X,
 } from 'lucide-react';
 import { PHASES, type Enterprise, type Deliverable, type EnterpriseModule, type PhaseConfig } from '@/lib/dashboard-config';
 
@@ -38,7 +37,7 @@ export default function DashboardSidebar({
     if (window.innerWidth < 1024) return true;
     return localStorage.getItem('esono_sidebar_collapsed') === 'true';
   });
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(PHASES.map(p => p.id)));
+  
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -47,13 +46,8 @@ export default function DashboardSidebar({
     localStorage.setItem('esono_sidebar_collapsed', String(collapsed));
   }, [collapsed]);
 
-  // Auto-expand the phase containing the selected module
-  useEffect(() => {
-    const phase = PHASES.find(p => p.modules.some(m => m.code === selectedModule));
-    if (phase && !expandedPhases.has(phase.id)) {
-      setExpandedPhases(prev => new Set([...prev, phase.id]));
-    }
-  }, [selectedModule]);
+
+
 
   const getModuleStatus = (code: string): 'completed' | 'in_progress' | 'not_started' => {
     // Special modules
@@ -82,14 +76,8 @@ export default function DashboardSidebar({
     return Math.round((done / allModules.length) * 100);
   }, [deliverables, modules]);
 
-  const togglePhase = (phaseId: string) => {
-    setExpandedPhases(prev => {
-      const next = new Set(prev);
-      if (next.has(phaseId)) next.delete(phaseId);
-      else next.add(phaseId);
-      return next;
-    });
-  };
+
+
 
   const phaseColorMap: Record<string, string> = {
     emerald: 'text-emerald-600 bg-emerald-500/10',
@@ -147,7 +135,7 @@ export default function DashboardSidebar({
       <div className="flex-1 overflow-y-auto py-1">
         {PHASES.map((phase) => {
           const { done, total } = getPhaseProgress(phase);
-          const isExpanded = expandedPhases.has(phase.id);
+          
           const colorClass = phaseColorMap[phase.color] || '';
           const accentClass = phaseAccentMap[phase.color] || '';
           const allDone = done === total;
@@ -191,53 +179,49 @@ export default function DashboardSidebar({
 
           return (
             <div key={phase.id} className="py-0.5">
-              <button
-                onClick={() => togglePhase(phase.id)}
+              <div
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-muted/50',
+                  'w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider',
                   colorClass
                 )}
               >
-                {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
                 <span className="flex-1 text-left">{phase.label}</span>
                 {allDone ? (
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
                   <span className="text-[10px] font-normal opacity-70">{done}/{total}</span>
                 )}
-              </button>
+              </div>
 
-              {isExpanded && (
-                <div className="pb-1">
-                  {phase.modules.map(mod => {
-                    const status = getModuleStatus(mod.code);
-                    const isActive = selectedModule === mod.code;
-                    const Icon = mod.icon;
-                    return (
-                      <button
-                        key={mod.code}
-                        onClick={() => { onSelectModule(mod.code); if (isMobile) setMobileOpen(false); }}
-                        className={cn(
-                          'w-full flex items-center gap-2.5 px-4 py-1.5 text-sm transition-colors border-l-2',
-                          isActive
-                            ? `bg-primary/10 text-primary font-medium ${accentClass}`
-                            : `border-l-transparent hover:bg-muted/50 ${status === 'completed' ? 'text-foreground' : 'text-muted-foreground'}`
-                        )}
-                      >
-                        <Icon className="h-4 w-4 flex-none" />
-                        <span className="flex-1 text-left truncate text-xs">{mod.label}</span>
-                        {status === 'completed' ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-none" />
-                        ) : status === 'in_progress' ? (
-                          <Loader2 className="h-3.5 w-3.5 text-primary animate-spin flex-none" />
-                        ) : (
-                          <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 flex-none" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="pb-1">
+                {phase.modules.map(mod => {
+                  const status = getModuleStatus(mod.code);
+                  const isActive = selectedModule === mod.code;
+                  const Icon = mod.icon;
+                  return (
+                    <button
+                      key={mod.code}
+                      onClick={() => { onSelectModule(mod.code); if (isMobile) setMobileOpen(false); }}
+                      className={cn(
+                        'w-full flex items-center gap-2.5 px-4 py-1.5 text-sm transition-colors border-l-2',
+                        isActive
+                          ? `bg-primary/10 text-primary font-medium ${accentClass}`
+                          : `border-l-transparent hover:bg-muted/50 ${status === 'completed' ? 'text-foreground' : 'text-muted-foreground'}`
+                      )}
+                    >
+                      <Icon className="h-4 w-4 flex-none" />
+                      <span className="flex-1 text-left truncate text-xs">{mod.label}</span>
+                      {status === 'completed' ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-none" />
+                      ) : status === 'in_progress' ? (
+                        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin flex-none" />
+                      ) : (
+                        <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 flex-none" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
