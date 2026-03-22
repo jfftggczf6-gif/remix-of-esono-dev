@@ -9,7 +9,7 @@ import { getValidAccessToken } from '@/lib/getValidAccessToken';
 import { parseFile, buildDocumentContent, buildParsingReport, type ParsedDocument, type ParsingReport } from '@/lib/document-parser';
 import {
   Wand2, X, FileText, Loader2, CheckCircle2,
-  AlertTriangle, RotateCcw, RefreshCw
+  AlertTriangle, RotateCcw
 } from 'lucide-react';
 
 const ACCEPTED_EXTENSIONS = '.csv,.txt,.md,.xlsx,.xls,.docx,.doc,.pdf,.jpg,.jpeg,.png,.webp,.pptx,.ppt';
