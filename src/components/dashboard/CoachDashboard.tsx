@@ -334,7 +334,7 @@ export default function CoachDashboard() {
                   </Badge>
                 )}
               </div>
-              <Button variant="ghost" size="sm" onClick={() => { setFullscreen(false); setView('list'); setSelectedEnt(null); }}>
+              <Button variant="ghost" size="sm" onClick={handleBackToList}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Retour à la liste
               </Button>
             </div>
