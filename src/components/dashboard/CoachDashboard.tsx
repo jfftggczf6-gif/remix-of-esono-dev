@@ -342,7 +342,7 @@ export default function CoachDashboard() {
                 )}
               </div>
               <Button variant="ghost" size="sm" onClick={handleBackToList}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Retour à la liste
+                <ArrowLeft className="h-4 w-4 mr-1" /> {childGenerating ? 'Génération en cours…' : 'Retour à la liste'}
               </Button>
             </div>
             <div className="flex gap-0 px-4 border-t border-border">
