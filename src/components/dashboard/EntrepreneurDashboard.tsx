@@ -866,6 +866,18 @@ export default function EntrepreneurDashboard({
     );
   }
   if (!enterprise) {
+    if (coachMode) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+          <div className="text-center space-y-2">
+            <Building2 className="h-12 w-12 text-muted-foreground mx-auto" />
+            <h2 className="text-xl font-display font-bold">Entreprise introuvable</h2>
+            <p className="text-muted-foreground text-sm">Les données de cette entreprise ne sont pas accessibles.</p>
+          </div>
+          {onBack && <Button variant="outline" onClick={onBack}>Retour</Button>}
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b bg-card/80 backdrop-blur-sm">
