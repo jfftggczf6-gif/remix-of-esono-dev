@@ -2,11 +2,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  jsonResponse, errorResponse, getDocumentContentForAgent, getCoachingContext,
+  jsonResponse, errorResponse, getDocumentContentForAgent, getCoachingContext, getKnowledgeForAgent,
 } from "../_shared/helpers_v5.ts";
 import { normalizeScreeningReport, getFinancialTruth } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { detectRisks, buildRiskBlock } from "../_shared/risk-detector.ts";
 
 const SYSTEM_PROMPT = `Tu es un chargé de programme senior dans une ONG/DFI avec 15 ans d'expérience en Afrique de l'Ouest. Tu évalues si une entreprise est éligible à un programme d'accompagnement et/ou de financement.
 

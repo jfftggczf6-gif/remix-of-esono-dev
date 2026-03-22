@@ -3,11 +3,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  jsonResponse, errorResponse, getDocumentContentForAgent, getCoachingContext,
+  jsonResponse, errorResponse, getDocumentContentForAgent, getCoachingContext, getKnowledgeForAgent,
 } from "../_shared/helpers_v5.ts";
 import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 import { normalizePreScreening } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { detectRisks, buildRiskBlock } from "../_shared/risk-detector.ts";
 
 const SYSTEM_PROMPT = `Tu es un consultant senior en accompagnement PME en Afrique subsaharienne (15 ans, UEMOA/CEMAC). Tu travailles pour un programme d'accélération et tu prépares le DIAGNOSTIC INITIAL d'une entreprise — le premier bilan que le coach lira avant de rencontrer l'entrepreneur.
 

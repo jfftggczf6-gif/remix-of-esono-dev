@@ -745,7 +745,7 @@ export async function getKnowledgeForAgent(
   supabase: any,
   pays: string,
   secteur: string,
-  agentType: 'valuation' | 'diagnostic' | 'framework' | 'pre_screening' | 'business_plan' | 'bmc' | 'sic' | 'inputs' | 'odd',
+  agentType: 'valuation' | 'diagnostic' | 'framework' | 'pre_screening' | 'screening_report' | 'business_plan' | 'bmc' | 'sic' | 'inputs' | 'odd' | 'plan_ovo',
   ownerId?: string
 ): Promise<string> {
   try {

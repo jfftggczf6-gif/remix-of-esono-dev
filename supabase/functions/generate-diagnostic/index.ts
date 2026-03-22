@@ -3,10 +3,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  getFiscalParams, getDocumentContentForAgent, getCoachingContext
+  getFiscalParams, getDocumentContentForAgent, getCoachingContext, getKnowledgeForAgent
 } from "../_shared/helpers_v5.ts";
 import { normalizeDiagnostic, getFinancialTruth } from "../_shared/normalizers.ts";
 import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { detectRisks, buildRiskBlock } from "../_shared/risk-detector.ts";
 
 // ── Helpers locaux ──────────────────────────────────────────────────────────
 

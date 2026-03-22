@@ -6,6 +6,8 @@ import {
 } from "../_shared/helpers_v5.ts";
 import { getValuationBenchmarksPrompt } from "../_shared/financial-knowledge.ts";
 import { computeValuation, extractValuationInputs } from "../_shared/valuation-engine.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { getKnowledgeForAgent } from "../_shared/helpers_v5.ts";
 
 const ANALYSIS_PROMPT = `Tu es un analyste senior en valorisation d'entreprises, spécialisé dans le private equity africain (I&P, Partech, Phatisa, AfricInvest). 15 ans d'expérience.
 
