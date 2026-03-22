@@ -125,7 +125,7 @@ export default function CoachDashboard() {
         .eq('coach_id', user.id)
         .order('updated_at', { ascending: false });
 
-      setEnterprises(prev => {
+      setEnterprises(_prev => {
         const newEnts = ents || [];
         // Preserve selectedEnt reference by ID after refetch
         if (selectedEnt) {
