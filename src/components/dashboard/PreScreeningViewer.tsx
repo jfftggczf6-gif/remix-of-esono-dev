@@ -254,7 +254,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
             {guideCoach.actions_coach_semaine?.length > 0 && (
               <div>
                 <h4 className="text-xs font-semibold text-blue-800 mb-2 uppercase tracking-wide flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" /> Actions cette semaine
+                  <Clock className="h-3.5 w-3.5" /> Actions recommandées
                 </h4>
                 <div className="space-y-1.5">
                   {guideCoach.actions_coach_semaine.map((a: any, i: number) => (
@@ -264,9 +264,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                         <p className="font-medium">{a.action}</p>
                         <p className="text-[10px] text-muted-foreground">{a.objectif}</p>
                       </div>
-                      {a.duree_estimee && (
-                        <Badge variant="outline" className="text-[10px] flex-none">{a.duree_estimee}</Badge>
-                      )}
+                      {/* durée estimée masquée pour le pilote */}
                     </div>
                   ))}
                 </div>

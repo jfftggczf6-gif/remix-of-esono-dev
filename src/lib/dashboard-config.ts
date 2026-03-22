@@ -2,7 +2,7 @@ import {
   LayoutGrid, Globe, FileSpreadsheet, BarChart3,
   Stethoscope, ListChecks, FileText, Target,
   TrendingUp, Briefcase, Upload, RefreshCw,
-  FileSearch, Search, FolderPlus,
+  FileSearch,
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -159,14 +159,5 @@ export const PHASES: PhaseConfig[] = [
       { code: 'investment_memo', label: 'Mémo Investissement', icon: Briefcase },
     ],
   },
-  {
-    id: 'phase_4',
-    label: 'Décision',
-    shortLabel: 'Décision',
-    color: 'amber',
-    modules: [
-      { code: 'screening', label: 'Décision programme', icon: Search, special: 'screening' },
-      { code: 'dataroom', label: 'Data Room', icon: FolderPlus, special: 'dataroom' },
-    ],
-  },
+  // Phase 4 (Décision) masquée pour le pilote
 ];

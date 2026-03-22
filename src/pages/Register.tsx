@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Rocket, GraduationCap } from 'lucide-react';
+import { Loader2, GraduationCap } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -18,10 +18,10 @@ const COUNTRIES = [
 ];
 
 export default function Register() {
-  const [searchParams] = useSearchParams();
-  const initialRole = (searchParams.get('role') as AppRole) || 'entrepreneur';
+  const [_searchParams] = useSearchParams();
+  const initialRole = 'coach' as AppRole;
 
-  const [selectedRole, setSelectedRole] = useState<AppRole>(initialRole);
+  const [selectedRole] = useState<AppRole>(initialRole);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,30 +69,12 @@ export default function Register() {
           </p>
         </div>
 
-        {/* Role tabs */}
+        {/* Role fixed to coach for pilot */}
         <div className="flex mb-6 bg-muted rounded-lg p-1">
-          <button
-            onClick={() => setSelectedRole('entrepreneur')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors ${
-              selectedRole === 'entrepreneur'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Rocket className="h-4 w-4" />
-            Entrepreneur
-          </button>
-          <button
-            onClick={() => setSelectedRole('coach')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors ${
-              selectedRole === 'coach'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
+          <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium bg-primary text-primary-foreground shadow-sm">
             <GraduationCap className="h-4 w-4" />
             Coach
-          </button>
+          </div>
         </div>
 
         {/* Form card */}
