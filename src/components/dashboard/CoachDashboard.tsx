@@ -436,6 +436,7 @@ export default function CoachDashboard() {
             showBackButton={false}
             onBack={handleBackToList}
             coachMode={true}
+            onGeneratingChange={setChildGenerating}
           />
         )}
 
