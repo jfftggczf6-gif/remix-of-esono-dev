@@ -360,7 +360,7 @@ export default function CoachDashboard() {
               <EntrepreneurDashboard
                 enterpriseId={ent.id}
                 showBackButton={false}
-                onBack={() => { setFullscreen(false); setView('list'); setSelectedEnt(null); }}
+                onBack={handleBackToList}
                 coachMode={true}
               />
             )}
