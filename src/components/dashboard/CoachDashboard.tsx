@@ -537,13 +537,7 @@ export default function CoachDashboard() {
       title={`Bonjour, ${profile?.full_name || 'Coach'} 👋`}
       subtitle="Tableau de bord de coaching"
     >
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <KpiCard icon={Users} color="purple" value={totalEntreprises} label="Entrepreneurs suivis" />
-        <KpiCard icon={TrendingUp} color="blue" value={`${avgScore}/100`} label="Score moyen IR" gauge={avgScore} />
-        <KpiCard icon={CheckCircle2} color="green" value={completedMods} label="Modules complétés" />
-        <KpiCard icon={Sparkles} color="orange" value={delivsThisWeek} label="Livrables cette semaine" />
-      </div>
+      {/* Liste des entreprises */}
 
       {/* Actions rapides */}
       <div className="flex flex-wrap gap-3 mb-6">
