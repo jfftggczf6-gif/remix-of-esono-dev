@@ -1,15 +1,11 @@
 
 
-# Corriger l'état vide de la Vue Entrepreneur en mode Coach
-
-## Probleme
-Quand le coach ouvre la "Vue entrepreneur" et que l'entreprise n'est pas trouvee (probleme RLS, latence reseau, etc.), l'ecran "Creer votre entreprise" s'affiche — ce qui n'a aucun sens pour un coach.
+# Supprimer l'icône Sparkles (étoile) du tableau coach
 
 ## Changement
 
-**Fichier : `src/components/dashboard/EntrepreneurDashboard.tsx`**
+**Fichier : `src/components/dashboard/CoachDashboard.tsx`**
 
-Dans le bloc `if (!enterprise)` (ligne 868), ajouter une condition `coachMode` :
-- Si `coachMode === true` : afficher un message d'erreur ("Entreprise introuvable") avec un bouton "Retour" qui appelle `onBack`
-- Si `coachMode === false` : garder le formulaire "Creer votre entreprise" actuel (comportement entrepreneur inchange)
+- Supprimer le bouton `Sparkles` (lignes 578-580) qui se trouve entre le bouton "Voir" et le bouton suppression dans la liste des entreprises. Ce bouton déclenche `handleDownloadReport` mais n'est pas essentiel.
+- Nettoyer l'import `Sparkles` de lucide-react s'il n'est plus utilisé ailleurs.
 
