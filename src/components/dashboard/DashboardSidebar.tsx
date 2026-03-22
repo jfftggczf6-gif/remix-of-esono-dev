@@ -16,6 +16,7 @@ interface SidebarProps {
   selectedModule: string;
   onSelectModule: (code: string) => void;
   onGenerateAll: () => void;
+  onStopGeneration?: () => void;
   generating: boolean;
   generationProgress?: { current: number; total: number; name: string } | null;
   globalScore: number;
