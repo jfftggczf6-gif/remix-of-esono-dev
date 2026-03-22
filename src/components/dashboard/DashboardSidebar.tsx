@@ -289,19 +289,8 @@ export default function DashboardSidebar({
   // Desktop/Tablet: sidebar
   return (
     <div
-      className={cn(
-        'flex-none border-r border-border bg-card flex flex-col transition-all duration-200 ease-in-out overflow-hidden',
-        collapsed ? 'w-14' : 'w-[220px]'
-      )}
+      className="flex-none border-r border-border bg-card flex flex-col overflow-hidden w-[220px]"
     >
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="h-8 flex items-center justify-center border-b border-border hover:bg-muted/50 transition-colors"
-      >
-        {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
-      </button>
-
       {renderSidebarContent()}
     </div>
   );
