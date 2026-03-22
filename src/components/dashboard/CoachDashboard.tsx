@@ -62,7 +62,7 @@ export default function CoachDashboard() {
   const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
   const [modulesMap, setModulesMap] = useState<Record<string, EnterpriseModule[]>>({});
   const [deliverablesMap, setDeliverablesMap] = useState<Record<string, Deliverable[]>>({});
-  const [uploadsMap, setUploadsMap] = useState<Record<string, CoachUpload[]>>({});
+  const [_uploadsMap, setUploadsMap] = useState<Record<string, CoachUpload[]>>({});
 
   const [loading, setLoading] = useState(true);
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
