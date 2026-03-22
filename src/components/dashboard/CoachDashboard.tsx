@@ -52,7 +52,7 @@ type DetailTab = 'mirror' | 'coaching';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CoachDashboard() {
-  const { user, profile, session: authSession } = useAuth();
+  const { user, profile } = useAuth();
 
   const [view, setView] = useState<View>('list');
   const [selectedEnt, setSelectedEnt] = useState<Enterprise | null>(null);
