@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Users, Building2,
-  Plus, Download, Sparkles, Loader2, ArrowLeft, Eye,
+  Plus, Download, Loader2, ArrowLeft, Eye,
   UserPlus, Search, Trash2, Maximize2, Minimize2
 } from 'lucide-react';
 import {
