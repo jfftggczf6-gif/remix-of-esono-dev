@@ -146,18 +146,6 @@ export default function CoachDashboard() {
     getPipelineState(selectedEnt.id).then(setMirrorPipelineState);
   }, [selectedEnt?.id, selectedEnt?.updated_at, deliverablesMap[selectedEnt?.id || '']?.length]);
 
-  // ─── KPIs ─────────────────────────────────────────────────────────────────
-
-  const totalEntreprises = enterprises.length;
-  const allScores = enterprises.map((e) => e.score_ir || 0).filter((s) => s > 0);
-  const avgScore = allScores.length > 0 ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
-  const allDelivs = Object.values(deliverablesMap).flat();
-  const delivsThisWeek = allDelivs.filter(d => {
-    const date = new Date(d.created_at || d.updated_at);
-    return Date.now() - date.getTime() < 7 * 24 * 60 * 60 * 1000;
-  }).length;
-  const allMods = Object.values(modulesMap).flat();
-  const completedMods = allMods.filter(m => m.status === 'completed').length;
 
   // ─── Add Entrepreneur ────────────────────────────────────────────────────
 
@@ -236,71 +224,7 @@ export default function CoachDashboard() {
     }
   };
 
-  // ─── Generate OVO Excel Plan (coach version) ────────────────────────────
-  const handleGenerateOvoPlanCoach = async (enterpriseId: string) => {
-    try {
-      const token = await getValidAccessToken(authSession);
-      
-      // Gather deliverable data for this enterprise
-      const entDelivs = deliverablesMap[enterpriseId] || [];
-      const getDelivData = (type: string): Record<string, unknown> => {
-        const d = entDelivs.find((d) => d.type === type);
-        return (d?.data && typeof d.data === 'object') ? d.data as Record<string, unknown> : {};
-      };
 
-      const ent = enterprises.find((e) => e.id === enterpriseId);
-      const planOvoData = getDelivData('plan_ovo');
-      const bmcData = getDelivData('bmc_analysis');
-      const inputsData = getDelivData('inputs_data');
-      const frameworkData = getDelivData('framework_data');
-      const sicData = getDelivData('sic_analysis');
-      const diagnosticData = getDelivData('diagnostic_data');
-
-      const requestId = crypto.randomUUID();
-
-      const payload = {
-        user_id: user?.id,
-        enterprise_id: enterpriseId,
-        request_id: requestId,
-        company: ent?.name || '',
-        country: ent?.country || "IVORY COAST",
-        sector: ent?.sector || "",
-        business_model: (bmcData as any)?.canvas?.proposition_valeur?.enonce || '',
-        current_year: new Date().getFullYear(),
-        employees: ent?.employees_count || 0,
-        existing_revenue: (inputsData as any)?.compte_resultat?.chiffre_affaires || 0,
-        products: planOvoData?.products || [],
-        services: planOvoData?.services || [],
-        bmc_data: bmcData,
-        inputs_data: inputsData,
-        framework_data: frameworkData,
-        sic_data: sicData,
-        plan_ovo_data: planOvoData,
-        diagnostic_data: diagnosticData,
-      };
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-ovo-plan`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Erreur' }));
-        throw new Error(err.error || 'Génération OVO Excel échouée');
-      }
-
-      const result = await response.json();
-      toast.success('Plan Financier Excel généré !');
-      await fetchData();
-      return result;
-    } catch (err: unknown) {
-      throw err;
-    }
-  };
 
   const handleDownloadReport = async (ent: Enterprise) => {
     if (generatingReport) return;
@@ -812,34 +736,4 @@ export default function CoachDashboard() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function KpiCard({ icon: Icon, color, value, label, gauge }: { icon: any; color: string; value: any; label: string; gauge?: number }) {
-  const colorMap: Record<string, string> = {
-    purple: 'bg-purple-100 text-purple-600',
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    orange: 'bg-orange-100 text-orange-600',
-  };
-  const gaugeColorMap: Record<string, string> = {
-    purple: 'bg-purple-500', blue: 'bg-blue-500', green: 'bg-green-500', orange: 'bg-orange-500',
-  };
-  return (
-    <Card>
-      <CardContent className="pt-5 pb-4">
-        <div className="flex items-center gap-3 mb-1">
-          <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-none ${colorMap[color]}`}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-2xl font-display font-black leading-none">{value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-          </div>
-        </div>
-        {gauge !== undefined && (
-          <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div className={`h-full rounded-full transition-all ${gaugeColorMap[color]}`} style={{ width: `${gauge}%` }} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+
