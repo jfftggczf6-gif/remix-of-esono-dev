@@ -152,6 +152,12 @@ export async function runPipelineFromClient(
   const FINANCIAL_STEPS = new Set(['generate-framework', 'generate-plan-ovo', 'reconcile-plan-ovo', 'generate-ovo-plan']);
 
   for (let i = 0; i < PIPELINE.length; i++) {
+    // Check if cancelled by user
+    if (signal?.aborted) {
+      results.push({ step: 'Pipeline', success: false, error: 'Interrompu par l\'utilisateur' });
+      break;
+    }
+
     const step = PIPELINE[i];
 
     // Skip financial steps if inputs has no real financial data
@@ -185,6 +191,10 @@ export async function runPipelineFromClient(
       const timeoutMs = veryLongSteps.has(step.fn) ? 360000 : longSteps.has(step.fn) ? 180000 : 120000;
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+      // Abort fetch if user cancels
+      const onAbort = () => controller.abort();
+      signal?.addEventListener('abort', onAbort, { once: true });
+
       const currentToken = await getFreshToken();
       const response = await fetch(`${supabaseUrl}/functions/v1/${step.fn}`, {
         method: 'POST',
@@ -193,6 +203,7 @@ export async function runPipelineFromClient(
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      signal?.removeEventListener('abort', onAbort);
 
       if (response.ok) {
         let result = await response.json();
