@@ -157,6 +157,7 @@ export const PHASES: PhaseConfig[] = [
       { code: 'valuation', label: 'Valorisation', icon: TrendingUp },
       { code: 'onepager', label: 'One-Pager', icon: FileText },
       { code: 'investment_memo', label: 'Mémo Investissement', icon: Briefcase },
+      { code: 'dataroom', label: 'Data Room', icon: FolderOpen, special: 'dataroom' },
     ],
   },
   {
