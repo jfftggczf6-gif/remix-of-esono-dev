@@ -89,11 +89,12 @@ export async function runPipelineFromClient(
   initialToken: string,
   options: {
     force?: boolean;
+    signal?: AbortSignal;
     onProgress?: (progress: PipelineProgress) => void;
     onStepComplete?: () => void;
   } = {},
 ): Promise<PipelineResult> {
-  const { force = false, onProgress, onStepComplete } = options;
+  const { force = false, signal, onProgress, onStepComplete } = options;
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   /** Always use a fresh token to avoid mid-pipeline expiry */
