@@ -289,8 +289,7 @@ export default function CoachDashboard() {
       }
 
       if (selectedEnt?.id === ent.id) {
-        setView('list');
-        setSelectedEnt(null);
+        handleBackToList();
       }
       await fetchData();
     } catch (err: any) {
