@@ -3,10 +3,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
   verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  getFiscalParams, getDocumentContentForAgent, getCoachingContext
+  getFiscalParams, getDocumentContentForAgent, getCoachingContext, getKnowledgeForAgent
 } from "../_shared/helpers_v5.ts";
 import { normalizeDiagnostic, getFinancialTruth } from "../_shared/normalizers.ts";
 import { getValidationRulesPrompt, getSectorKnowledgePrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { detectRisks, buildRiskBlock } from "../_shared/risk-detector.ts";
 
 // ── Helpers locaux ──────────────────────────────────────────────────────────
 
@@ -251,17 +253,36 @@ Indique lesquels sont levés et lesquels persistent.
 
     // RAG context
     const ragContext = await buildRAGContext(ctx.supabase, pays, secteur, ["benchmarks", "fiscal", "bailleurs", "reglementation"], "diagnostic_data");
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, pays, secteur, "diagnostic");
     const validationRules = getValidationRulesPrompt();
     const sectorBenchmarks = getSectorKnowledgePrompt(secteur);
+
+    // Risk detection
+    let riskBlock = "";
+    try {
+      const { data: riskFactors } = await ctx.supabase.from('knowledge_risk_factors').select('*').eq('is_active', true);
+      if (riskFactors?.length && inputsRaw) {
+        const financialData = {
+          salaire_dirigeant: inputsRaw?.salaire_dirigeant,
+          ebitda: truth?.ebitda, ca: truth?.ca_n,
+          tresorerie: truth?.tresorerie_nette,
+          capitaux_propres: inputsRaw?.capitaux_propres,
+          capital_social: inputsRaw?.capital_social,
+        };
+        const flags = detectRisks(financialData, riskFactors);
+        riskBlock = buildRiskBlock(flags);
+      }
+    } catch (e) { console.warn("[diagnostic] risk detection non-blocking:", e); }
 
     const agentDocs = getDocumentContentForAgent(ent, "diagnostic", 80_000);
     const coachingContext = await getCoachingContext(ctx.supabase, ctx.enterprise_id);
     const rawData = await callAI(
-      SYSTEM_PROMPT,
+      injectGuardrails(SYSTEM_PROMPT),
       buildUserPrompt(ent.name, secteur, pays, agentDocs, livrables, truthBlock, progressionBlock) + coachingContext
+        + riskBlock
         + `\n\n══════ RÈGLES DE VALIDATION CROISÉE ══════\n${validationRules}`
         + `\n\n══════ BENCHMARKS SECTORIELS ══════\n${sectorBenchmarks}`
-        + ragContext
+        + ragContext + kbContext
     );
 
     const data = normalizeDiagnostic(rawData);

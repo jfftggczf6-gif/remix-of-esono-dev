@@ -1,10 +1,11 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParams, getDocumentContentForAgent, getKnowledgeForAgent } from "../_shared/helpers_v5.ts";
 import { normalizeFramework } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { fillFrameworkExcelTemplate } from "../_shared/framework-excel-template.ts";
 import { getFinancialKnowledgePrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
 
 const OPUS_MODEL = "claude-opus-4-20250514";
 
@@ -459,9 +460,10 @@ UTILISE CETTE CHAÎNE pour projeter : applique les taux de croissance à CHAQUE 
       ent.name, ent.sector || "", ent.country || "Côte d'Ivoire", agentDocs, inputsData, bmcData, fiscalParams.devise
     ) + truthBlock + produitsContext + historiqueContext + capexContext + financementContext + bfrContext + hypothesesContext + coutsContext + equipeContext + ragContext + `\n\nPARAMÈTRES FISCAUX:\n${JSON.stringify(fiscalParams)}`;
 
-    const enrichedSystemPrompt = SYSTEM_PROMPT + "\n\n" + knowledgeBase;
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "framework");
+    const enrichedSystemPrompt = injectGuardrails(SYSTEM_PROMPT + "\n\n" + knowledgeBase);
 
-    const rawData = await callAI(enrichedSystemPrompt, enrichedPrompt, 16384, OPUS_MODEL);
+    const rawData = await callAI(enrichedSystemPrompt, enrichedPrompt + kbContext, 16384, OPUS_MODEL);
     
     // Post-force CA année N from truth
     if (truth && rawData.kpis) {

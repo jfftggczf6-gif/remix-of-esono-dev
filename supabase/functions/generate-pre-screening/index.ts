@@ -3,11 +3,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
-  jsonResponse, errorResponse, getDocumentContentForAgent, getCoachingContext,
+  jsonResponse, errorResponse, getDocumentContentForAgent, getCoachingContext, getKnowledgeForAgent,
 } from "../_shared/helpers_v5.ts";
 import { getSectorKnowledgePrompt, getDonorCriteriaPrompt, getValidationRulesPrompt } from "../_shared/financial-knowledge.ts";
 import { normalizePreScreening } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { detectRisks, buildRiskBlock } from "../_shared/risk-detector.ts";
 
 const SYSTEM_PROMPT = `Tu es un consultant senior en accompagnement PME en Afrique subsaharienne (15 ans, UEMOA/CEMAC). Tu travailles pour un programme d'accélération et tu prépares le DIAGNOSTIC INITIAL d'une entreprise — le premier bilan que le coach lira avant de rencontrer l'entrepreneur.
 
@@ -365,8 +367,27 @@ Classe le dossier : AVANCER_DIRECTEMENT / ACCOMPAGNER / COMPLETER_DABORD / REJET
 Réponds en JSON selon ce schéma :
 ${PRE_SCREENING_SCHEMA}`;
 
+    // KB context + risk detection
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "pre_screening");
+    let riskBlock = "";
+    try {
+      const { data: riskFactors } = await ctx.supabase.from('knowledge_risk_factors').select('*').eq('is_active', true);
+      if (riskFactors?.length && inputsData) {
+        const id = inputsData as any;
+        const financialData = {
+          salaire_dirigeant: id.salaire_dirigeant,
+          ebitda: id.ebitda || id.resultat_exploitation, ca: id.ca || id.chiffre_affaires,
+          tresorerie: id.tresorerie_nette || id.tresorerie,
+          capitaux_propres: id.capitaux_propres,
+          capital_social: id.capital_social,
+        };
+        const flags = detectRisks(financialData, riskFactors);
+        riskBlock = buildRiskBlock(flags);
+      }
+    } catch (e) { console.warn("[pre-screening] risk detection non-blocking:", e); }
+
     const coachingContext = await getCoachingContext(ctx.supabase, ctx.enterprise_id);
-    const rawData = await callAI(SYSTEM_PROMPT, prompt + coachingContext, 32768);
+    const rawData = await callAI(injectGuardrails(SYSTEM_PROMPT), prompt + coachingContext + kbContext + riskBlock, 32768);
     const normalizedData = normalizePreScreening(rawData);
     const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
 

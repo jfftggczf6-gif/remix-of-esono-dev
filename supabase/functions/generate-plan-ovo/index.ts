@@ -1,10 +1,11 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParamsForPrompt, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getFiscalParamsForPrompt, getDocumentContentForAgent, getKnowledgeForAgent } from "../_shared/helpers_v5.ts";
 import { getFinancialTruth, validateCrossDeliverables } from "../_shared/normalizers.ts";
 import { validateAndEnrich } from "../_shared/post-validator.ts";
 import { normalizePlanOvo, enforceFrameworkConstraints } from "../_shared/normalizers.ts";
 import { getFinancialKnowledgePrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
 
 // Use centralized fiscal params from helpers.ts
 
@@ -255,11 +256,12 @@ UTILISE CETTE CHAÎNE pour le current_year. Projette chaque poste séparément.
 
     // RAG: enrichir avec benchmarks et fiscal
     const ragContext = await buildRAGContext(ctx.supabase, country, ent.sector || "", ["benchmarks", "fiscal", "bailleurs"], "plan_ovo");
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, country, ent.sector || "", "plan_ovo");
 
     const agentDocs = getDocumentContentForAgent(ent, "plan_ovo", 80_000);
-    const rawData = await callAI(buildSystemPrompt(country, ent.sector || ""), buildUserPrompt(
+    const rawData = await callAI(injectGuardrails(buildSystemPrompt(country, ent.sector || "")), buildUserPrompt(
       ent.name, ent.sector || "", country, agentDocs, allData, ctx.baseYear
-    ) + truthBlock + ragContext);
+    ) + truthBlock + ragContext + kbContext);
     
     // Normalize: fix years, ensure consistency, fill gaps
     let data = normalizePlanOvo(rawData);

@@ -6,6 +6,8 @@ import {
 } from "../_shared/helpers_v5.ts";
 import { getValuationBenchmarksPrompt } from "../_shared/financial-knowledge.ts";
 import { computeValuation, extractValuationInputs } from "../_shared/valuation-engine.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
+import { getKnowledgeForAgent } from "../_shared/helpers_v5.ts";
 
 const ANALYSIS_PROMPT = `Tu es un analyste senior en valorisation d'entreprises, spécialisé dans le private equity africain (I&P, Partech, Phatisa, AfricInvest). 15 ans d'expérience.
 
@@ -63,7 +65,10 @@ serve(async (req) => {
       synthese_haute: calcResult.synthese.valeur_haute,
     });
 
-    // 4. Appel IA pour l'analyse qualitative
+    // 4. KB context
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "valuation");
+
+    // 5. Appel IA pour l'analyse qualitative
     const analysisInput = `ENTREPRISE : ${ent.name}
 SECTEUR : ${ent.sector || 'Non spécifié'}
 PAYS : ${ent.country || "Côte d'Ivoire"}
@@ -108,7 +113,7 @@ Produis l'analyse qualitative en JSON :
   "score": <0-100 — qualité et fiabilité de la valorisation>
 }`;
 
-    const aiAnalysis = await callAI(ANALYSIS_PROMPT, analysisInput, 4096, undefined, 0.2);
+    const aiAnalysis = await callAI(injectGuardrails(ANALYSIS_PROMPT), analysisInput + kbContext, 4096, undefined, 0.2);
 
     // 5. Fusionner calculs + analyse IA
     const finalData = {

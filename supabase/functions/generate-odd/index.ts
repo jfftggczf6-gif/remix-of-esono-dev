@@ -2,10 +2,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
-  verifyAndGetContext, callAI, saveDeliverable, buildRAGContext
+  verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getKnowledgeForAgent
 } from "../_shared/helpers_v5.ts";
 import { normalizeOdd } from "../_shared/normalizers.ts";
 import { getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
 
 const SYSTEM_PROMPT = `Tu es un expert en Objectifs de Développement Durable (ODD) pour PME en Afrique de l'Ouest (UEMOA).
 Tu évalues l'alignement des projets avec les 17 ODD de l'ONU à partir du Business Model Canvas (BMC) et du Social Impact Canvas (SIC).
@@ -161,6 +162,7 @@ serve(async (req) => {
 
     // RAG: enrichir avec données ODD
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs"], "odd_analysis");
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "odd");
 
     const donorCriteria = getDonorCriteriaPrompt();
     const userPrompt = buildUserPrompt(
@@ -169,10 +171,10 @@ serve(async (req) => {
       ent.country || "Côte d'Ivoire",
       bmcData,
       sicData
-    ) + `\n\n══════ CRITÈRES ESG DES BAILLEURS ══════\n${donorCriteria}` + ragContext;
+    ) + `\n\n══════ CRITÈRES ESG DES BAILLEURS ══════\n${donorCriteria}` + ragContext + kbContext;
 
     console.log("[generate-odd] Calling Claude API via callAI (max_tokens: 16384)...");
-    const rawData = await callAI(SYSTEM_PROMPT, userPrompt, 16384);
+    const rawData = await callAI(injectGuardrails(SYSTEM_PROMPT), userPrompt, 16384);
     const data = normalizeOdd(rawData);
 
     await saveDeliverable(ctx.supabase, ctx.enterprise_id, "odd_analysis", data, "odd");

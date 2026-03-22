@@ -1,7 +1,8 @@
 // v4 — restore corsHeaders 2026-03-19
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getDocumentContentForAgent } from "../_shared/helpers_v5.ts";
+import { corsHeaders, errorResponse, jsonResponse, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getDocumentContentForAgent, getKnowledgeForAgent } from "../_shared/helpers_v5.ts";
 import { normalizeSic } from "../_shared/normalizers.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
 
 const SYSTEM_PROMPT = `Tu es un expert en Impact Investing et évaluation ESG (Environnement, Social, Gouvernance) spécialisé dans les PME en Afrique de l'Ouest (UEMOA / Côte d'Ivoire).
 
@@ -188,11 +189,12 @@ serve(async (req) => {
 
     // RAG: enrichir avec données ODD et impact social
     const ragContext = await buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["odd", "bailleurs", "secteurs"], "sic_analysis");
+    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "sic");
 
     const agentDocs = getDocumentContentForAgent(ent, "sic", 80_000);
-    const rawAiData = await callAI(SYSTEM_PROMPT, userPrompt(
+    const rawAiData = await callAI(injectGuardrails(SYSTEM_PROMPT), userPrompt(
       ent.name, ent.sector || "", ent.country || "", agentDocs, bmcData
-    ) + ragContext);
+    ) + ragContext + kbContext);
 
     // Normalize AI response
     const sicData = normalizeSic(rawAiData);
