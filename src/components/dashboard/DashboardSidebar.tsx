@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import {
-  ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Menu, X,
+  Sparkles, Loader2, CheckCircle2, Menu, X,
 } from 'lucide-react';
 import { PHASES, type Enterprise, type Deliverable, type EnterpriseModule, type PhaseConfig } from '@/lib/dashboard-config';
 
@@ -32,19 +32,9 @@ export default function DashboardSidebar({
   enterprise, deliverables, modules, selectedModule, onSelectModule,
   onGenerateAll, generating, generationProgress, globalScore,
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    if (window.innerWidth < 1024) return true;
-    return localStorage.getItem('esono_sidebar_collapsed') === 'true';
-  });
-  
+  const collapsed = false;
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
-  // Persist collapsed state
-  useEffect(() => {
-    localStorage.setItem('esono_sidebar_collapsed', String(collapsed));
-  }, [collapsed]);
 
 
 
@@ -289,19 +279,8 @@ export default function DashboardSidebar({
   // Desktop/Tablet: sidebar
   return (
     <div
-      className={cn(
-        'flex-none border-r border-border bg-card flex flex-col transition-all duration-200 ease-in-out overflow-hidden',
-        collapsed ? 'w-14' : 'w-[220px]'
-      )}
+      className="flex-none border-r border-border bg-card flex flex-col overflow-hidden w-[220px]"
     >
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="h-8 flex items-center justify-center border-b border-border hover:bg-muted/50 transition-colors"
-      >
-        {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
-      </button>
-
       {renderSidebarContent()}
     </div>
   );
