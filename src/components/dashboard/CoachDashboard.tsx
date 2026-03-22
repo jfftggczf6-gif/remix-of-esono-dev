@@ -19,11 +19,10 @@ import {
   UserPlus, Search, Trash2, Maximize2, Minimize2
 } from 'lucide-react';
 import {
-  PIPELINE,
   type Enterprise, type Deliverable, type EnterpriseModule, type CoachUpload,
 } from '@/lib/dashboard-config';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
-import { runPipelineFromClient, getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
+import { getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
 import ScreeningDashboard from './ScreeningDashboard';
 import ProgrammeCriteriaEditor from './ProgrammeCriteriaEditor';
 import CoachingTab from './CoachingTab';
