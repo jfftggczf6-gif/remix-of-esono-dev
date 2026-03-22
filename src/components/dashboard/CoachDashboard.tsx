@@ -448,7 +448,7 @@ export default function CoachDashboard() {
         subtitle="Évaluez vos entreprises par critères programme"
       >
         <div className="flex gap-3 mb-6">
-          <Button variant="outline" onClick={() => setView('list')} className="gap-2">
+          <Button variant="outline" onClick={handleBackToList} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Retour au portefeuille
           </Button>
         </div>
