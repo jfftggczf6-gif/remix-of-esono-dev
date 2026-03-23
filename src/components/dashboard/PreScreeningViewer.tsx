@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { exportToPdf } from '@/lib/export-pdf';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
