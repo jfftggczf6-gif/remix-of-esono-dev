@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { exportToPdf } from '@/lib/export-pdf';
 
 interface Props {
   data: Record<string, any>;
