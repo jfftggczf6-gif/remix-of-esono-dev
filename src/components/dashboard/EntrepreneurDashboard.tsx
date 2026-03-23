@@ -1416,7 +1416,7 @@ export default function EntrepreneurDashboard({
                 ) : selectedModule === 'business_plan' ? (
                   <BusinessPlanPreview data={selectedDeliv.data as Record<string, any>} />
                 ) : selectedModule === 'valuation' ? (
-                  <ValuationViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('valuation')} />
+                  <ValuationViewer data={selectedDeliv.data as Record<string, any>} enterpriseId={enterprise?.id} enterpriseName={enterprise?.name} onRegenerate={() => handleGenerateModule('valuation')} />
                 ) : selectedModule === 'onepager' ? (
                   <OnePagerViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('onepager')} />
                 ) : selectedModule === 'investment_memo' ? (
