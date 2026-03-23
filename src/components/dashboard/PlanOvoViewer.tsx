@@ -494,7 +494,7 @@ export default function PlanOvoViewer({ data, staleness: _staleness }: { data: a
                 <TableRow>
                   <TableHead className="text-xs">Investissement</TableHead>
                   <TableHead className="text-xs text-right">Année</TableHead>
-                  <TableHead className="text-xs text-right">Montant (FCFA)</TableHead>
+                  <TableHead className="text-xs text-right">Montant ({devise})</TableHead>
                   <TableHead className="text-xs text-right">Amortissement</TableHead>
                 </TableRow>
               </TableHeader>
