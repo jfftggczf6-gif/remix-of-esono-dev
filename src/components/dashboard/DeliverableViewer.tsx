@@ -704,6 +704,11 @@ function DiagnosticViewer({ data }: { data: any }) {
                           'bg-destructive/10 text-destructive border-destructive/20'
                         }`}>{bench.verdict?.replace(/_/g, ' ') || '—'}</span>
                       </td>
+                      <td className="pl-2">
+                        {bench.source && (
+                          <span className="text-[9px] text-muted-foreground/60 italic">{bench.source}</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

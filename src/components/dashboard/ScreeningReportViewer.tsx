@@ -316,6 +316,9 @@ export default function ScreeningReportViewer({ data, enterpriseId, enterpriseNa
                         <p className="text-sm font-medium">{r.risque}</p>
                         <p className="text-xs text-muted-foreground mt-1">{r.impact}</p>
                         <p className="text-xs text-primary mt-1 font-medium">→ {r.mitigation}</p>
+                        {r.source && (
+                          <p className="text-[10px] text-muted-foreground/60 mt-0.5 italic">{r.source}</p>
+                        )}
                       </div>
                     </div>
                   </div>
