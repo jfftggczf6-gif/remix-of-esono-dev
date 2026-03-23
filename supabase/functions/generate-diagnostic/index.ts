@@ -120,7 +120,8 @@ const BILAN_SCHEMA = `{
     {
       "titre": "string",
       "constat": "string — 2-3 phrases chiffrées",
-      "argument_bailleur": "string — phrase réutilisable par le coach devant le bailleur"
+      "argument_bailleur": "string — phrase réutilisable par le coach devant le bailleur",
+      "source": "string"
     }
   ],
 
