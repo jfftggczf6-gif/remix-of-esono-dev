@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, errorResponse, jsonResponse,
-  verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getKnowledgeForAgent
+  verifyAndGetContext, callAI, saveDeliverable, buildRAGContext, getKnowledgeForAgent, getCoachingContext
 } from "../_shared/helpers_v5.ts";
 import { normalizeOdd } from "../_shared/normalizers.ts";
 import { getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
