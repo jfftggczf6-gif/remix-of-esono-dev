@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { exportToPdf } from '@/lib/export-pdf';
 import ConfidenceIndicator from './ConfidenceIndicator';
 
 interface Props {
@@ -56,6 +57,16 @@ export default function ValuationViewer({ data, onRegenerate }: Props) {
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadHtml}>
             <Download className="h-3.5 w-3.5" /> HTML (A4)
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={async () => {
+            try {
+              const content = document.getElementById('valuation-viewer-content')?.innerHTML || '';
+              const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Valorisation</title><style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}</style></head><body>${content}</body></html>`;
+              await exportToPdf(fullHtml, `valorisation_${new Date().toISOString().slice(0, 10)}.pdf`);
+              toast.success('PDF téléchargé');
+            } catch (err: any) { toast.error(`Erreur PDF : ${err.message}`); }
+          }}>
+            <Download className="h-3.5 w-3.5" /> PDF
           </Button>
           <Badge className={`text-lg px-4 py-2 ${scoreBg}`}>{data.score || 0}/100</Badge>
           {onRegenerate && (

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Briefcase, Download, CheckCircle2, FileText, Presentation, Loader2, TrendingUp, Users, Shield, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateMemoHtml } from '@/lib/memo-html-generator';
+import { exportToPdf } from '@/lib/export-pdf';
 import { supabase } from '@/integrations/supabase/client';
 
 const SLIDE_TITLES = [
@@ -522,6 +523,13 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
               ))}
               <div className="pt-4 space-y-2">
                 <Button variant="outline" size="sm" className="w-full text-xs" onClick={handleDownloadHtml}><Download className="h-3 w-3 mr-1" /> HTML (A4)</Button>
+                <Button variant="outline" size="sm" className="w-full text-xs" onClick={async () => {
+                  try {
+                    const html = generateMemoHtml(data);
+                    await exportToPdf(html, `InvestmentMemo_${data.page_de_garde?.titre?.replace(/[^a-zA-Z0-9]/g, '_') || 'memo'}.pdf`);
+                    toast.success('PDF téléchargé');
+                  } catch (err: any) { toast.error(`Erreur PDF : ${err.message}`); }
+                }}><Download className="h-3 w-3 mr-1" /> PDF</Button>
                 {onRegenerate && <Button variant="ghost" size="sm" className="w-full text-xs" onClick={onRegenerate}>Regénérer</Button>}
               </div>
             </div>
