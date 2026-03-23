@@ -14,24 +14,29 @@ interface ScreeningReportViewerProps {
   onRegenerate?: () => void;
 }
 
-export default function ScreeningReportViewer({ data, onRegenerate }: ScreeningReportViewerProps) {
+export default function ScreeningReportViewer({ data, enterpriseId, enterpriseName, onRegenerate }: ScreeningReportViewerProps) {
+  const { session: authSession } = useAuth();
+  const navigate = useNavigate();
   const isNewFormat = !!(data.decision?.verdict);
 
   const handleDownloadHtml = () => {
-    const content = document.getElementById('screening-viewer-content')?.innerHTML || '';
-    const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Décision Programme</title>
-    <style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}h2{font-size:14pt;border-bottom:2px solid #1e3a5f;padding-bottom:4px;margin-top:20px}h3{font-size:11pt;margin-top:16px}.card{border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:8px 0}.verdict-box{padding:20px;border-radius:12px;margin:16px 0}</style>
-    </head><body>${content}</body></html>`;
-    const blob = new Blob([fullHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `decision_programme_${new Date().toISOString().slice(0, 10)}.html`; a.click();
-    URL.revokeObjectURL(url);
-    toast.success('HTML téléchargé');
+    if (enterpriseId) {
+      downloadRichHtml('screening_report', enterpriseId, enterpriseName || 'enterprise', authSession, navigate);
+    } else {
+      toast.error('ID entreprise manquant');
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (enterpriseId) {
+      downloadRichPdf('screening_report', enterpriseId, enterpriseName || 'enterprise', authSession, navigate);
+    } else {
+      toast.error('ID entreprise manquant');
+    }
   };
 
   if (!isNewFormat) {
-    return <LegacyScreeningViewer data={data} onRegenerate={onRegenerate} handleDownloadHtml={handleDownloadHtml} />;
+    return <LegacyScreeningViewer data={data} onRegenerate={onRegenerate} handleDownloadHtml={handleDownloadHtml} handleDownloadPdf={handleDownloadPdf} />;
   }
 
   const decision = data.decision || {};
