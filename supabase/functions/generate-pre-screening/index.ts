@@ -249,7 +249,7 @@ const PRE_SCREENING_SCHEMA = `{
 }`;
 
 serve(async (req) => {
-  console.log("[generate-pre-screening] v3 loaded");
+  console.log("[generate-pre-screening] v5 loaded");
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
