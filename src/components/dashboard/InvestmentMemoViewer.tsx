@@ -352,6 +352,9 @@ export default function InvestmentMemoViewer({ data, onRegenerate }: Props) {
               <p className="text-xs text-violet-600 mb-1">Fourchette de Valorisation</p>
               <p className="text-xl font-bold text-violet-700">{d.fourchette_valorisation || '—'}</p>
               <p className="text-sm text-violet-600">Médiane : {d.valeur_mediane || '—'}</p>
+              {d.source && (
+                <p className="text-[10px] text-muted-foreground/60 mt-1 italic">{d.source}</p>
+              )}
             </div>
             {d.note_valorisation && <p className="text-sm text-muted-foreground italic">{d.note_valorisation}</p>}
           </div>
