@@ -1276,7 +1276,7 @@ export default function EntrepreneurDashboard({
               </div>
             ) : selectedModule === 'screening' && selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
               <div className="p-6">
-                <ScreeningReportViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={handleGenerateScreening} />
+                <ScreeningReportViewer data={selectedDeliv.data as Record<string, any>} enterpriseId={enterprise?.id} enterpriseName={enterprise?.name} onRegenerate={handleGenerateScreening} />
               </div>
             ) : selectedDeliv?.data && typeof selectedDeliv.data === 'object' ? (
               <div className="p-6">
@@ -1416,7 +1416,7 @@ export default function EntrepreneurDashboard({
                 ) : selectedModule === 'business_plan' ? (
                   <BusinessPlanPreview data={selectedDeliv.data as Record<string, any>} />
                 ) : selectedModule === 'valuation' ? (
-                  <ValuationViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('valuation')} />
+                  <ValuationViewer data={selectedDeliv.data as Record<string, any>} enterpriseId={enterprise?.id} enterpriseName={enterprise?.name} onRegenerate={() => handleGenerateModule('valuation')} />
                 ) : selectedModule === 'onepager' ? (
                   <OnePagerViewer data={selectedDeliv.data as Record<string, any>} onRegenerate={() => handleGenerateModule('onepager')} />
                 ) : selectedModule === 'investment_memo' ? (

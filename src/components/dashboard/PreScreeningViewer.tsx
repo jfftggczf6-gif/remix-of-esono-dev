@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { exportToPdf } from '@/lib/export-pdf';
+import { useNavigate } from 'react-router-dom';
+import { downloadRichHtml, downloadRichPdf } from '@/lib/download-rich-html';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,8 @@ interface PreScreeningViewerProps {
 }
 
 export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate, onLaunchPipeline: _onLaunchPipeline }: PreScreeningViewerProps) {
+  const { session: authSession } = useAuth();
+  const navigate = useNavigate();
   const [activeScope, setActiveScope] = useState('all');
   const [programmes, setProgrammes] = useState<any[]>([]);
   const [selectedProgrammeId, setSelectedProgrammeId] = useState<string | null>(null);
@@ -66,17 +70,23 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
     return new Intl.NumberFormat('fr-FR').format(v);
   };
 
+  const entId = ent?.id;
+  const entName = entInfo.name || 'enterprise';
+
   const handleDownloadHtml = () => {
-    const content = document.getElementById('prescreening-viewer-content')?.innerHTML || '';
-    const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Diagnostic initial — ${entInfo.name || ''}</title>
-    <style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}h2,h3,h4{margin-top:16px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}</style>
-    </head><body>${content}</body></html>`;
-    const blob = new Blob([fullHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `diagnostic_initial_${new Date().toISOString().slice(0, 10)}.html`; a.click();
-    URL.revokeObjectURL(url);
-    toast.success('HTML téléchargé');
+    if (entId) {
+      downloadRichHtml('pre_screening', entId, entName, authSession, navigate);
+    } else {
+      toast.error('ID entreprise manquant');
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (entId) {
+      downloadRichPdf('pre_screening', entId, entName, authSession, navigate);
+    } else {
+      toast.error('ID entreprise manquant');
+    }
   };
 
   // ─── Constats helpers ───
@@ -201,14 +211,7 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
           <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadHtml}>
             <Download className="h-3.5 w-3.5" /> HTML (A4)
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={async () => {
-            try {
-              const content = document.getElementById('prescreening-viewer-content')?.innerHTML || '';
-              const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Diagnostic initial</title><style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}h2,h3,h4{margin-top:16px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}</style></head><body>${content}</body></html>`;
-              await exportToPdf(fullHtml, `diagnostic_initial_${entInfo.name || 'livrable'}.pdf`);
-              toast.success('PDF téléchargé');
-            } catch (err: any) { toast.error(`Erreur PDF : ${err.message}`); }
-          }}>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadPdf}>
             <Download className="h-3.5 w-3.5" /> PDF
           </Button>
           <div className="flex-1" />
