@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable,
-  jsonResponse, errorResponse,
+  jsonResponse, errorResponse, getCoachingContext,
 } from "../_shared/helpers_v5.ts";
 import { getValuationBenchmarksPrompt } from "../_shared/financial-knowledge.ts";
 import { computeValuation, extractValuationInputs } from "../_shared/valuation-engine.ts";
