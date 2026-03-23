@@ -1250,7 +1250,7 @@ export default function EntrepreneurDashboard({
               </div>
             ) : selectedModule === 'sources' ? (
               <div className="p-6">
-                <SourcesViewer coachUploads={coachUploads} />
+                <SourcesViewer />
               </div>
             ) : selectedModule === 'dataroom' && enterprise && user ? (
               <div className="p-6">
