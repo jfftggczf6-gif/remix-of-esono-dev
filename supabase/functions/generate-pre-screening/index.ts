@@ -265,36 +265,27 @@ serve(async (req) => {
     const ctx = await verifyAndGetContext(req);
     const ent = ctx.enterprise;
 
-    // Get reconstructed inputs if they exist
-    const { data: inputsDeliv } = await ctx.supabase
-      .from("deliverables")
-      .select("data, score")
-      .eq("enterprise_id", ctx.enterprise_id)
-      .eq("type", "inputs_data")
-      .maybeSingle();
-
-    const inputsData = inputsDeliv?.data || null;
-
     const sectorBenchmarks = getSectorKnowledgePrompt(ent.sector || "services_b2b");
     const donorCriteria = getDonorCriteriaPrompt();
     const validationRules = getValidationRulesPrompt();
 
-    const ragContext = await buildRAGContext(
-      ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "pre_screening"
-    );
+    // Parallel block 1: inputs, RAG, programme criteria
+    const [inputsRes, ragContext, pcRes] = await Promise.all([
+      ctx.supabase.from("deliverables").select("data, score")
+        .eq("enterprise_id", ctx.enterprise_id).eq("type", "inputs_data").maybeSingle(),
+      buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "pre_screening"),
+      programmeCriteriaId && !programmeCriteria
+        ? ctx.supabase.from("programme_criteria").select("*").eq("id", programmeCriteriaId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
-    // If a programme_criteria_id is provided, fetch the full record including raw_criteria_text
+    const inputsData = inputsRes?.data?.data || null;
+
+    // Resolve programme criteria
     let rawCriteriaText: string | null = null;
-    if (programmeCriteriaId && !programmeCriteria) {
-      const { data: pcRecord } = await ctx.supabase
-        .from("programme_criteria")
-        .select("*")
-        .eq("id", programmeCriteriaId)
-        .maybeSingle();
-      if (pcRecord) {
-        programmeCriteria = pcRecord;
-        rawCriteriaText = (pcRecord as any).raw_criteria_text || null;
-      }
+    if (pcRes?.data && !programmeCriteria) {
+      programmeCriteria = pcRes.data;
+      rawCriteriaText = (pcRes.data as any).raw_criteria_text || null;
     } else if (programmeCriteria?.raw_criteria_text) {
       rawCriteriaText = programmeCriteria.raw_criteria_text;
     }
@@ -366,11 +357,16 @@ Classe le dossier : AVANCER_DIRECTEMENT / ACCOMPAGNER / COMPLETER_DABORD / REJET
 Réponds en JSON selon ce schéma :
 ${PRE_SCREENING_SCHEMA}`;
 
-    // KB context + risk detection
-    const kbContext = await getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "pre_screening");
+    // Parallel block 2: KB context, risk factors, coaching context
+    const [kbContext, riskRes, coachingContext] = await Promise.all([
+      getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "pre_screening"),
+      ctx.supabase.from('knowledge_risk_factors').select('*').eq('is_active', true),
+      getCoachingContext(ctx.supabase, ctx.enterprise_id),
+    ]);
+
     let riskBlock = "";
     try {
-      const { data: riskFactors } = await ctx.supabase.from('knowledge_risk_factors').select('*').eq('is_active', true);
+      const riskFactors = riskRes?.data;
       if (riskFactors?.length && inputsData) {
         const id = inputsData as any;
         const financialData = {
@@ -384,8 +380,6 @@ ${PRE_SCREENING_SCHEMA}`;
         riskBlock = buildRiskBlock(flags);
       }
     } catch (e) { console.warn("[pre-screening] risk detection non-blocking:", e); }
-
-    const coachingContext = await getCoachingContext(ctx.supabase, ctx.enterprise_id);
     const rawData = await callAI(injectGuardrails(SYSTEM_PROMPT), prompt + coachingContext + kbContext + riskBlock, 32768);
     const normalizedData = normalizePreScreening(rawData);
     const validatedData = validateAndEnrich(normalizedData, ent.country, ent.sector);
