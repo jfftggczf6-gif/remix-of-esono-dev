@@ -1,5 +1,4 @@
-// v3 — force redeploy 2026-03-19
-// v4 — restore corsHeaders 2026-03-19
+// v5 — fix timeout: reduce context, parallelize queries 2026-03-23
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
@@ -250,7 +249,7 @@ const PRE_SCREENING_SCHEMA = `{
 }`;
 
 serve(async (req) => {
-  console.log("[generate-pre-screening] v3 loaded");
+  console.log("[generate-pre-screening] v5 loaded");
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
