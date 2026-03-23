@@ -527,7 +527,7 @@ export default function PlanOvoViewer({ data, staleness: _staleness }: { data: a
                 return (
                   <div key={key} className="p-3 rounded-lg border bg-muted/20">
                     <p className="text-xs font-semibold">{loanLabels[key] || key}</p>
-                    <p className="text-sm font-bold mt-1">{fmt(loan.amount)} FCFA</p>
+                    <p className="text-sm font-bold mt-1">{fmt(loan.amount)} {devise}</p>
                     <p className="text-[10px] text-muted-foreground">Taux: {pct((loan.rate || 0) * 100)} • {loan.term_years} ans</p>
                   </div>
                 );
