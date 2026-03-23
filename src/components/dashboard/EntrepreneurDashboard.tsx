@@ -852,6 +852,26 @@ export default function EntrepreneurDashboard({
     }
   };
 
+  const handleDownloadPdf = async (type: string, filename: string) => {
+    if (!enterprise) return;
+    try {
+      toast.info('Génération du PDF en cours...');
+      const token = await getValidAccessToken(authSession, navigate);
+      const ts = Date.now();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=html&_ts=${ts}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      if (!response.ok) throw new Error('Erreur de téléchargement HTML');
+      const htmlContent = await response.text();
+      await exportToPdf(htmlContent, filename);
+      toast.success('PDF téléchargé');
+    } catch (err: any) {
+      toast.error(`Erreur PDF : ${err.message}`);
+    }
+  };
+
   const handleDownloadBpWord = async () => {
     try {
       const bpDeliv = deliverables.find((d: any) => d.type === 'business_plan');
