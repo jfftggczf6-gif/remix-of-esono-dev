@@ -244,6 +244,9 @@ export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate
                       <p className="font-medium text-red-800">{p.blocage}</p>
                       <p className="text-red-600 mt-0.5">Conséquence : {p.consequence}</p>
                       <p className="text-emerald-700 mt-0.5">Résolution : {p.resolution}</p>
+                      {p.source && (
+                        <p className="text-[10px] text-muted-foreground mt-1 italic">Source : {p.source}</p>
+                      )}
                     </div>
                   ))}
                 </div>
