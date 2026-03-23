@@ -1,5 +1,4 @@
-// v3 — force redeploy 2026-03-19
-// v4 — restore corsHeaders 2026-03-19
+// v5 — fix timeout: reduce context, parallelize queries 2026-03-23
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, verifyAndGetContext, callAI, saveDeliverable, buildRAGContext,
