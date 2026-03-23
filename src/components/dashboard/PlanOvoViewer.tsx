@@ -6,6 +6,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { useMemo } from 'react';
+import { formatAmount as formatAmountUtil, getDevise } from '@/lib/format-currency';
 
 const YEAR_KEYS = ['year_minus_2', 'year_minus_1', 'current_year', 'year2', 'year3', 'year4', 'year5', 'year6'] as const;
 
