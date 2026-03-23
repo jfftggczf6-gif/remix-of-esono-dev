@@ -39,6 +39,7 @@ import {
   type Enterprise, type Deliverable, type EnterpriseModule, type UploadedFile,
 } from '@/lib/dashboard-config';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
+import { exportToPdf } from '@/lib/export-pdf';
 import { runPipelineFromClient, getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
 
 interface EntrepreneurDashboardProps {
@@ -851,6 +852,26 @@ export default function EntrepreneurDashboard({
     }
   };
 
+  const handleDownloadPdf = async (type: string, filename: string) => {
+    if (!enterprise) return;
+    try {
+      toast.info('Génération du PDF en cours...');
+      const token = await getValidAccessToken(authSession, navigate);
+      const ts = Date.now();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-deliverable?type=${type}&enterprise_id=${enterprise.id}&format=html&_ts=${ts}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      if (!response.ok) throw new Error('Erreur de téléchargement HTML');
+      const htmlContent = await response.text();
+      await exportToPdf(htmlContent, filename);
+      toast.success('PDF téléchargé');
+    } catch (err: any) {
+      toast.error(`Erreur PDF : ${err.message}`);
+    }
+  };
+
   const handleDownloadBpWord = async () => {
     try {
       const bpDeliv = deliverables.find((d: any) => d.type === 'business_plan');
@@ -1303,9 +1324,14 @@ export default function EntrepreneurDashboard({
                         <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center"><Stethoscope className="h-5 w-5 text-orange-600" /></div>
                         <div><p className="text-sm font-semibold text-orange-900">Diagnostic Expert</p></div>
                       </div>
-                      <button onClick={() => handleDownload('diagnostic_data', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition-colors shadow-sm">
-                        <Download className="h-3.5 w-3.5" /> HTML
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleDownload('diagnostic_data', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-orange-700 border border-orange-300 text-xs font-semibold hover:bg-orange-50 transition-colors">
+                          <Download className="h-3.5 w-3.5" /> HTML
+                        </button>
+                        <button onClick={() => handleDownloadPdf('diagnostic_data', `Diagnostic_${enterprise?.name || 'entreprise'}.pdf`)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 transition-colors shadow-sm">
+                          <Download className="h-3.5 w-3.5" /> PDF
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1316,9 +1342,14 @@ export default function EntrepreneurDashboard({
                         <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center"><LayoutGrid className="h-5 w-5 text-emerald-600" /></div>
                         <div><p className="text-sm font-semibold text-emerald-900">Business Model Canvas</p></div>
                       </div>
-                      <button onClick={() => handleDownload('bmc_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
-                        <Download className="h-3.5 w-3.5" /> HTML
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleDownload('bmc_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 border border-emerald-300 text-xs font-semibold hover:bg-emerald-50 transition-colors">
+                          <Download className="h-3.5 w-3.5" /> HTML
+                        </button>
+                        <button onClick={() => handleDownloadPdf('bmc_analysis', `BMC_${enterprise?.name || 'entreprise'}.pdf`)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
+                          <Download className="h-3.5 w-3.5" /> PDF
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1329,9 +1360,14 @@ export default function EntrepreneurDashboard({
                         <div className="h-10 w-10 rounded-lg bg-teal-100 flex items-center justify-center"><Globe className="h-5 w-5 text-teal-600" /></div>
                         <div><p className="text-sm font-semibold text-teal-900">Social Impact Canvas</p></div>
                       </div>
-                      <button onClick={() => handleDownload('sic_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm">
-                        <Download className="h-3.5 w-3.5" /> HTML
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleDownload('sic_analysis', 'html')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-teal-700 border border-teal-300 text-xs font-semibold hover:bg-teal-50 transition-colors">
+                          <Download className="h-3.5 w-3.5" /> HTML
+                        </button>
+                        <button onClick={() => handleDownloadPdf('sic_analysis', `SIC_${enterprise?.name || 'entreprise'}.pdf`)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm">
+                          <Download className="h-3.5 w-3.5" /> PDF
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
