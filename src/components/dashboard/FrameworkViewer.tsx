@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ConfidenceIndicator from './ConfidenceIndicator';
+import { formatAmount as formatAmountUtil, getDevise } from '@/lib/format-currency';
 
 
 interface FrameworkViewerProps {
