@@ -24,7 +24,9 @@ const fmt = (n: any, devise = 'FCFA') => {
   return `${num.toLocaleString('fr-FR')} ${devise}`;
 };
 
-export default function ValuationViewer({ data, onRegenerate }: Props) {
+export default function ValuationViewer({ data, enterpriseId, enterpriseName, onRegenerate }: Props) {
+  const { session: authSession } = useAuth();
+  const navigate = useNavigate();
   const devise = data.devise || 'FCFA';
   const dcf = data.dcf || {};
   const multiples = data.multiples || {};
@@ -36,16 +38,19 @@ export default function ValuationViewer({ data, onRegenerate }: Props) {
   const scoreBg = (data.score || 0) >= 70 ? 'bg-emerald-100 text-emerald-700' : (data.score || 0) >= 40 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
 
   const handleDownloadHtml = () => {
-    const content = document.getElementById('valuation-viewer-content')?.innerHTML || '';
-    const fullHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Valorisation</title>
-    <style>@page{size:A4;margin:16mm}body{font-family:"Segoe UI",sans-serif;font-size:10pt;color:#1E293B;max-width:190mm;margin:0 auto;padding:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px;text-align:left;font-size:9pt}</style>
-    </head><body>${content}</body></html>`;
-    const blob = new Blob([fullHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `valorisation_${new Date().toISOString().slice(0, 10)}.html`; a.click();
-    URL.revokeObjectURL(url);
-    toast.success('HTML téléchargé');
+    if (enterpriseId) {
+      downloadRichHtml('valuation', enterpriseId, enterpriseName || 'enterprise', authSession, navigate);
+    } else {
+      toast.error('ID entreprise manquant');
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (enterpriseId) {
+      downloadRichPdf('valuation', enterpriseId, enterpriseName || 'enterprise', authSession, navigate);
+    } else {
+      toast.error('ID entreprise manquant');
+    }
   };
 
   return (
