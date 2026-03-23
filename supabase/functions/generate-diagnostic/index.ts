@@ -107,7 +107,8 @@ const BILAN_SCHEMA = `{
       "urgence": "bloquant | important | mineur",
       "titre": "string — court et factuel",
       "constat": "string — 2-3 phrases chiffrées avec source (quel livrable, quelle valeur, quel écart)",
-      "piste": "string — action concrète : correction technique, question à poser à l'entrepreneur, ou réflexion"
+      "piste": "string — action concrète : correction technique, question à poser à l'entrepreneur, ou réflexion",
+      "source": "string — ex: 'États financiers 2024' ou 'Plan OVO — projections' ou 'calcul ESONO'"
     }
   ],
 
@@ -119,16 +120,17 @@ const BILAN_SCHEMA = `{
     {
       "titre": "string",
       "constat": "string — 2-3 phrases chiffrées",
-      "argument_bailleur": "string — phrase réutilisable par le coach devant le bailleur"
+      "argument_bailleur": "string — phrase réutilisable par le coach devant le bailleur",
+      "source": "string"
     }
   ],
 
   "benchmarks": {
-    "marge_brute": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous" },
-    "marge_ebitda": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous" },
-    "marge_nette": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous" },
-    "charges_fixes_ca": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous" },
-    "masse_salariale_ca": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous" }
+    "marge_brute": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous", "source": "string" },
+    "marge_ebitda": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous", "source": "string" },
+    "marge_nette": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous", "source": "string" },
+    "charges_fixes_ca": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous", "source": "string" },
+    "masse_salariale_ca": { "entreprise": <number>, "secteur_min": <number>, "secteur_max": <number>, "verdict": "au_dessus | dans_norme | en_dessous", "source": "string" }
   },
 
   "verdict_final": {
