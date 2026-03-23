@@ -5,6 +5,7 @@ import {
   jsonResponse, errorResponse, getCoachingContext,
 } from "../_shared/helpers_v5.ts";
 import { getDonorCriteriaPrompt } from "../_shared/financial-knowledge.ts";
+import { injectGuardrails } from "../_shared/guardrails.ts";
 
 const SYSTEM_PROMPT = `Tu es un analyste deal sourcing senior spécialisé en investissement d'impact en Afrique francophone.
 
