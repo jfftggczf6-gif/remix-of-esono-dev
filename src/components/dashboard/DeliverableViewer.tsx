@@ -670,6 +670,9 @@ function DiagnosticViewer({ data }: { data: any }) {
               <p className="text-xs font-medium text-foreground">{pf.titre}</p>
               <p className="text-xs text-foreground mt-1 leading-relaxed">{pf.constat}</p>
               <p className="text-xs text-success mt-2 font-medium">Argument bailleur : {pf.argument_bailleur}</p>
+              {pf.source && (
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5 italic">{pf.source}</p>
+              )}
             </div>
           ))}
         </div>
