@@ -1247,6 +1247,10 @@ export default function EntrepreneurDashboard({
                   />
                 </div>
               </div>
+            ) : selectedModule === 'sources' ? (
+              <div className="p-6">
+                <SourcesViewer coachUploads={coachUploads} />
+              </div>
             ) : selectedModule === 'dataroom' && enterprise && user ? (
               <div className="p-6">
                 <DataRoomManager enterpriseId={enterprise.id} userId={user.id} dataRoomSlug={(enterprise as any).data_room_slug || ''} />
