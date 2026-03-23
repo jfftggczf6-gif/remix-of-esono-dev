@@ -39,6 +39,7 @@ import {
   type Enterprise, type Deliverable, type EnterpriseModule, type UploadedFile,
 } from '@/lib/dashboard-config';
 import { getValidAccessToken } from '@/lib/getValidAccessToken';
+import { exportToPdf } from '@/lib/export-pdf';
 import { runPipelineFromClient, getPipelineState, type PipelineState } from '@/lib/pipeline-runner';
 
 interface EntrepreneurDashboardProps {
