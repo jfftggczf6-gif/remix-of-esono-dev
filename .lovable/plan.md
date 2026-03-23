@@ -1,43 +1,60 @@
 
 
-# Fix pre-screening timeout — paralléliser sans réduire le contexte
+# Plan : Intégrer le champ `source` dans les schémas JSON des prompts
 
-## Problème
-L'Edge Function fait ~7 requêtes DB séquentielles avant l'appel AI. Chaque requête prend 50-200ms, ce qui cumule 500ms-1.5s de latence inutile avant même de commencer la génération. Combiné avec un appel AI long (30-60s pour 250k chars), on dépasse le timeout de 60s de l'Edge Function.
+## Problème identifié
 
-## Solution
-Paralléliser toutes les requêtes DB indépendantes avec `Promise.all`. Le contexte documentaire de 250 000 caractères reste intact.
+Les guardrails disent "ajoute un champ source à chaque élément" mais les schémas JSON dans les prompts des edge functions ne contiennent PAS ce champ. L'IA suit le schéma (qui est plus explicite) et ignore l'instruction générale des guardrails.
 
-## Changements — `supabase/functions/generate-pre-screening/index.ts`
+**La solution** : Ajouter `"source": "string"` directement dans les schémas JSON de chaque edge function, aux endroits où des constats chiffrés sont produits.
 
-### 1. Paralléliser le premier bloc de fetches (lignes 269-284)
-Regrouper `inputsDeliv`, `ragContext`, et `programmeCriteria` (si ID fourni) dans un seul `Promise.all` :
+## Fichiers et modifications
 
-```typescript
-const [inputsRes, ragContext, pcRecord] = await Promise.all([
-  ctx.supabase.from("deliverables").select("data, score")
-    .eq("enterprise_id", ctx.enterprise_id).eq("type", "inputs_data").maybeSingle(),
-  buildRAGContext(ctx.supabase, ent.country || "", ent.sector || "", ["benchmarks", "fiscal", "secteur"], "pre_screening"),
-  programmeCriteriaId && !programmeCriteria
-    ? ctx.supabase.from("programme_criteria").select("*").eq("id", programmeCriteriaId).maybeSingle()
-    : Promise.resolve({ data: null }),
-]);
+### 1. `generate-pre-screening/index.ts` — Diagnostic Initial
+
+Ajouter `"source"` dans :
+- `constats_par_scope` — chaque constat (financier, commercial, operationnel, equipe_rh, legal_conformite)
+- `guide_coach.points_bloquants_pipeline` — chaque blocage
+- `sante_financiere.benchmark_comparison` — chaque indicateur
+
+Schema avant :
+```
+"titre": "string", "severite": "urgent|attention|positif", "constat": "string", "piste": "string"
+```
+Schema après :
+```
+"titre": "string", "severite": "urgent|attention|positif", "constat": "string", "piste": "string", "source": "string"
 ```
 
-### 2. Paralléliser le second bloc (lignes 370-388)
-Regrouper `kbContext`, `riskFactors`, et `coachingContext` :
+### 2. `generate-diagnostic/index.ts` — Bilan de progression
 
-```typescript
-const [kbContext, riskRes, coachingContext] = await Promise.all([
-  getKnowledgeForAgent(ctx.supabase, ent.country || "", ent.sector || "", "pre_screening"),
-  ctx.supabase.from('knowledge_risk_factors').select('*').eq('is_active', true),
-  getCoachingContext(ctx.supabase, ctx.enterprise_id),
-]);
-```
+Ajouter `"source"` dans :
+- `problemes[]` — chaque problème
+- `points_forts[]` — chaque point fort
+- `benchmarks` — chaque indicateur benchmark
 
-### 3. Aucun changement sur le contexte documentaire
-La ligne `getDocumentContentForAgent(ent, "pre_screening", 250_000)` reste intacte.
+### 3. `generate-screening-report/index.ts` — Décision Programme
 
-## Gain estimé
-~500ms-1s économisés sur les requêtes DB, ce qui laisse plus de marge pour l'appel AI dans la fenêtre de timeout.
+Ajouter `"source"` dans :
+- `matching_criteres.criteres[]`
+- `risques_programme[]`
+- `conditions[]`
+
+### 4. `generate-investment-memo/index.ts` — Memo Investisseur
+
+Ajouter `"source"` dans :
+- `analyse_risques.risques_identifies[]`
+- `besoins_financement.utilisation_fonds[]`
+
+### 5. `generate-onepager/index.ts` — One-Pager
+
+Vérifier et ajouter `"source"` dans les items listés (traction, finances).
+
+### 6. `generate-pitch-deck/index.ts` — Pitch Deck
+
+Ajouter `"source"` dans `slides[].contenu.chiffres_cles[]`.
+
+## Résumé
+
+6 edge functions modifiées. Chaque schéma JSON inclura explicitement `"source": "string"` sur les objets contenant des constats chiffrés. Après redéploiement, toute nouvelle génération inclura les sources, et les viewers existants les afficheront automatiquement (le code d'affichage `{item.source && ...}` est déjà en place).
 
