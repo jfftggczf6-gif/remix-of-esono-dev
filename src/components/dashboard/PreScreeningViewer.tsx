@@ -23,6 +23,8 @@ interface PreScreeningViewerProps {
 }
 
 export default function PreScreeningViewer({ data, enterprise: ent, onRegenerate, onLaunchPipeline: _onLaunchPipeline }: PreScreeningViewerProps) {
+  const { session: authSession } = useAuth();
+  const navigate = useNavigate();
   const [activeScope, setActiveScope] = useState('all');
   const [programmes, setProgrammes] = useState<any[]>([]);
   const [selectedProgrammeId, setSelectedProgrammeId] = useState<string | null>(null);
