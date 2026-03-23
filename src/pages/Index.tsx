@@ -5,7 +5,7 @@ import {
   Loader2, LogIn, ArrowRight, ArrowDown,
   Upload, Sparkles, ClipboardCheck,
   FileSearch, LayoutGrid, BarChart3, Target, TrendingUp, FileText,
-  CheckCircle2, Shield, Lock, Eye, Users, BookOpen
+  CheckCircle2, Shield, Lock, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
