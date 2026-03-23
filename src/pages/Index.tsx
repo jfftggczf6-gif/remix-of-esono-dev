@@ -182,6 +182,30 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Données fiables */}
+      <section className="container py-16 md:py-20">
+        <div className="text-center mb-12">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Fiabilité</p>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">Données fiables</h2>
+          <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
+            Chaque chiffre a une source. Chaque benchmark est tracé.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
+          {[
+            { title: 'Benchmarks sourcés', desc: 'Chaque référence sectorielle est citée avec sa source et son année' },
+            { title: 'Calculs vérifiables', desc: 'Les valorisations et ratios sont calculés, pas générés par l\'IA' },
+            { title: 'Adapté à l\'Afrique', desc: 'Normes SYSCOHADA, devises locales, contexte terrain intégré' },
+            { title: 'Alertes terrain', desc: 'Signaux de risques identifiés automatiquement à partir des données' },
+          ].map(item => (
+            <div key={item.title} className="bg-card rounded-xl border p-5 hover:shadow-md transition-shadow">
+              <h4 className="text-sm font-display font-bold text-foreground">{item.title}</h4>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Vos données sont protégées */}
       <section className="bg-gradient-to-r from-[hsl(222,47%,14%)] to-[hsl(222,47%,20%)] text-white">
         <div className="container py-16 md:py-20">
