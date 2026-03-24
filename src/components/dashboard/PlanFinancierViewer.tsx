@@ -50,7 +50,7 @@ export default function PlanFinancierViewer({ data }: PlanFinancierViewerProps) 
   const seuil = data.seuil_rentabilite || {};
   const indicateurs = data.indicateurs_decision || {};
   const produits = data.produits || [];
-  const services = data.services || [];
+  
   const staff = data.staff || [];
   const capexItems = data.capex || [];
   const loans = data.loans || {};
