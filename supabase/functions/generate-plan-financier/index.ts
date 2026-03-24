@@ -36,7 +36,7 @@ serve(async (req: Request) => {
 
     const { data: enterprise } = await supabase
       .from("enterprises")
-      .select("name, country, sector, business_model, employees, existing_revenue, loan_needed, startup_costs")
+      .select("name, country, sector, employees_count, description, operating_mode")
       .eq("id", enterpriseId)
       .single();
 
@@ -272,18 +272,17 @@ function buildUserPrompt(
 
   const cr = inputs.compte_resultat || {};
   const bil = inputs.bilan || {};
-  const CA = cr.chiffre_affaires || cr.ca || inputs.revenue || enterprise.existing_revenue || 0;
+  const CA = cr.chiffre_affaires || cr.ca || inputs.revenue || 0;
 
   // Build context blocks
   let blocks = `ENTREPRISE :
 - Nom : ${enterprise.name}
 - Pays : ${enterprise.country}
 - Secteur : ${enterprise.sector}
-- Modèle : ${enterprise.business_model || "N/A"}
+- Mode : ${enterprise.operating_mode || "N/A"}
 - Année courante : ${currentYear}
-- Employés : ${enterprise.employees || 0}
+- Employés : ${enterprise.employees_count || 0}
 - CA déclaré : ${(CA || 0).toLocaleString("fr-FR")} ${fp.devise}
-- Prêt demandé : ${(enterprise.loan_needed || 0).toLocaleString("fr-FR")} ${fp.devise}
 `;
 
   // Compte de résultat
