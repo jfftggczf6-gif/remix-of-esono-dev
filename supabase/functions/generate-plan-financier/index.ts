@@ -50,10 +50,10 @@ serve(async (req: Request) => {
 
     const getDeliv = (type: string) => deliverables?.find((d: any) => d.type === type)?.data || {};
 
-    const inputsData = getDeliv("inputs") as InputsData;
-    const bmcData = getDeliv("bmc");
-    const sicData = getDeliv("sic");
-    const diagnosticData = getDeliv("diagnostic");
+    const inputsData = getDeliv("inputs_data") as InputsData;
+    const bmcData = getDeliv("bmc_analysis");
+    const sicData = getDeliv("sic_analysis");
+    const diagnosticData = getDeliv("diagnostic_data");
 
     // Coaching notes
     const coachingContext = await getCoachingContext(supabase, enterpriseId);
