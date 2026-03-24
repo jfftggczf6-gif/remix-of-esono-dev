@@ -32,12 +32,15 @@ const pctFmt = (n: any) => {
   return `${v.toFixed(1)}%`;
 };
 
-const _colorForStatus = (v: number, goodMin: number, warnMin: number, inverse = false) => {
+// @ts-ignore — kept for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const colorForStatus = (v: number, goodMin: number, warnMin: number, inverse = false) => {
   if (inverse) return v <= goodMin ? 'text-green-600' : v <= warnMin ? 'text-amber-600' : 'text-red-600';
   return v >= goodMin ? 'text-green-600' : v >= warnMin ? 'text-amber-600' : 'text-red-600';
 };
 
-const _statusBadge = (status: string) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const statusBadge = (status: string) => {
   const map: Record<string, { label: string; cls: string }> = {
     bon: { label: 'Bon', cls: 'bg-green-50 text-green-700 border-green-200' },
     conforme: { label: 'Conforme', cls: 'bg-green-50 text-green-700 border-green-200' },
