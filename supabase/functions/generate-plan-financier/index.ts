@@ -252,7 +252,9 @@ RÈGLES :
 5. Le pays est ${country}. CAPEX uniquement pour ${country}.
 
 Quand tu as terminé toutes tes estimations et vérifications, produis le JSON final.
-FORMAT : JSON strict, zéro markdown, zéro texte avant/après.`;
+FORMAT : JSON strict, zéro markdown, zéro texte avant/après.
+
+CRITICAL: Tu DOIS répondre UNIQUEMENT avec un objet JSON valide. Pas de texte avant, pas de texte après, pas de markdown. Commence ta réponse par { et termine par }.`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -477,7 +479,9 @@ RAPPELS CRITIQUES :
 - La SOMME des CA produits (prix × volume) doit ≈ CA total réel
 - La SOMME des salaires staff × effectif × 12 × (1 + charges) doit ≈ charges personnel réelles
 - L'OPEX total doit être cohérent avec les charges externes réelles
-- Chaque estimation porte son objet "estimation" avec niveau, méthode, sources, confiance`;
+- Chaque estimation porte son objet "estimation" avec niveau, méthode, sources, confiance
+
+RAPPEL FINAL : Ta réponse doit être UNIQUEMENT un objet JSON valide commençant par { — aucun texte explicatif, aucune introduction, aucun markdown.`;
 
   return blocks;
 }
